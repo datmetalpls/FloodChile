@@ -1,0 +1,22 @@
+{
+  "name": "climasflood-meteorologia-chile",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Aplicación Nacional de Meteorología, Pronóstico Hidrometeorológico y Anticipación de Riesgos para Chile",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests/verify-criteria.js"
+  },
+  "keywords": [
+    "chile",
+    "meteorologia",
+    "pronostico",
+    "alertas-tempranas",
+    "isoterma-cero",
+    "senapred",
+    "dmc",
+    "open-meteo"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="es-CL" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClimasFlood Chile — Meteorología Nacional y Anticipación de Riesgos</title>
+  <meta name="description" content="Plataforma nacional de meteorología para Chile: mapa interactivo y esquemático, resumen comunal, pronósticos con rangos de incertidumbre (P10-P50-P90), isoterma 0 °C, alertas oficiales vs estimaciones de la aplicación y verificación histórica." />
+  <!-- Tipografía: Plus Jakarta Sans + Space Grotesk + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+  <!-- Leaflet 1.9.4 para Cartografía Interactiva -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0284c7" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body data-view-mode="citizen">
+  <!-- Barra superior de integridad de datos, hora local, modo de vista y tema -->
+  <div class="top-status-bar" role="region" aria-label="Estado de los datos, hora local de Chile y preferencias de visualización">
+    <div class="status-left">
+      <span id="systemStatusBadge" class="epistemic-badge badge-estimacion" title="Los datos iniciales provienen del conjunto local de demostración. Se actualiza automáticamente desde Open-Meteo al abrir la app.">
+        🧪 Demostración (Datos de muestra locales)
+      </span>
+      <span id="chileClockDisplay" class="clock-mono" aria-live="polite">Hora Local Chile: Cargando...</span>
+      <span id="activeTerritoryBadge" class="territory-pill-indicator technical-only">Zona: Chile Continental (UTC-3)</span>
+    </div>
+
+    <div class="status-right">
+      <!-- Conmutador Vista Ciudadanía vs Monitoreo Técnico -->
+      <div class="view-mode-toggle" role="group" aria-label="Cambiar entre vista Ciudadanía y vista Monitoreo Técnico">
+        <button type="button" data-view-mode-opt="citizen" class="active" title="Lenguaje claro y resumen directo para ciudadanía">
+          👥 Ciudadanía
+        </button>
+        <button type="button" data-view-mode-opt="technical" title="Vista completa con métricas de cuencas, modelos, isoterma y procedencia">
+          🎛 Monitoreo
+        </button>
+      </div>
+
+      <!-- Conmutador de Tema (Claro / Oscuro / Automático) -->
+      <div class="theme-toggle" role="group" aria-label="Selector de tema visual Claro, Oscuro o Automático">
+        <button type="button" data-theme-opt="light" class="active" title="Tema Claro">☀ Claro</button>
+        <button type="button" data-theme-opt="dark" title="Tema Oscuro">🌙 Oscuro</button>
+        <button type="button" data-theme-opt="system" title="Seguir preferencia del sistema">💻 Auto</button>
+      </div>
+
+      <button id="btnLiveSync" class="btn btn-sm btn-primary" type="button" title="Vuelve a consultar Open-Meteo (pronóstico, GloFAS y oleaje) para todas las comunas. Se ejecuta automáticamente al abrir la app.">
+        ↻ Actualizar datos en vivo
+      </button>
+
+      <!-- Menú compacto de pruebas de accesibilidad y degradación -->
+      <details class="tools-dropdown">
+        <summary class="btn btn-sm" title="Opciones de verificación de accesibilidad y estado de fuentes">
+          ⚙ Verificación
+        </summary>
+        <div class="tools-dropdown-menu">
+          <button id="btnToggleGrayscale" class="btn btn-sm" type="button" aria-pressed="false" title="Activa escala de grises para comprobar que las alertas e intensidades no dependen solo del color (CA-06)">
+            ◐ Escala de Grises (A11y)
+          </button>
+          <button id="btnSimulateStale" class="btn btn-sm btn-warning" type="button" aria-pressed="false" title="Simula retraso/caída de una fuente para comprobar la advertencia de dato desactualizado (CA-05)">
+            ⚠ Simular Fuente Desactualizada
+          </button>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- Cabecera compacta con selector territorial directo -->
+  <header class="brand-header">
+    <div class="brand-header-inner">
+      <div class="brand-title-group">
+        <h1>
+          <span>🇨🇱 ClimasFlood Chile</span>
+          <span class="epistemic-badge badge-pronostico">Meteorología y Riesgo Hidrometeorológico</span>
+        </h1>
+        <p class="brand-subtitle">
+          Diferenciación explícita entre <strong>Observación</strong>, <strong>Pronóstico con Incertidumbre (P10–P90)</strong>, <strong>Estimación de la App</strong> y <strong>Alerta Oficial</strong>.
+        </p>
+      </div>
+
+      <div class="territory-controls" role="search" aria-label="Selector de región, comuna, macrozona y huso horario">
+        <div class="control-group">
+          <label for="communeSearchInput">Buscar Comuna o Cuenca</label>
+          <input
+            type="search"
+            id="communeSearchInput"
+            list="communeSearchDatalist"
+            placeholder="🔍 Ej: Maipo, Biobío, Valdivia..."
+            aria-label="Buscar comuna, región o cuenca hidrográfica"
+            style="min-width:195px;"
+          />
+          <datalist id="communeSearchDatalist"></datalist>
+        </div>
+
+        <div class="control-group control-group-primary">
+          <label for="locationSelect">Región / Comuna Activa</label>
+          <select id="locationSelect" aria-label="Seleccionar región y comuna de Chile"></select>
+        </div>
+
+        <div class="control-group">
+          <label for="macrozoneSelect">Macrozona</label>
+          <select id="macrozoneSelect" aria-label="Filtrar por macrozona de Chile">
+            <option value="ALL">Todo Chile (16 Regiones)</option>
+            <option value="Norte Grande">Norte Grande</option>
+            <option value="Norte Chico">Norte Chico</option>
+            <option value="Zona Central">Zona Central</option>
+            <option value="Zona Centro-Sur">Zona Centro-Sur</option>
+            <option value="Zona Sur">Zona Sur</option>
+            <option value="Zona Austral">Zona Austral</option>
+            <option value="Territorio Insular">Territorio Insular</option>
+          </select>
+        </div>
+
+        <div class="control-group technical-only">
+          <label for="timezoneSelect">Huso Horario</label>
+          <select id="timezoneSelect" aria-label="Huso horario de visualización">
+            <option value="AUTO">Automático según comuna</option>
+            <option value="America/Santiago">Chile Continental (America/Santiago)</option>
+            <option value="America/Punta_Arenas">Magallanes / Aysén (America/Punta_Arenas)</option>
+            <option value="Pacific/Easter">Rapa Nui Insular (Pacific/Easter)</option>
+            <option value="UTC">Tiempo Universal Coordinado (UTC)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accesos rápidos a comunas representativas -->
+    <div class="quick-communes-bar" role="group" aria-label="Acceso rápido a comunas representativas">
+      <span class="quick-bar-label">Acceso rápido:</span>
+      <button type="button" class="quick-commune-chip active" data-quick-loc="santiago">Santiago / Maipo</button>
+      <button type="button" class="quick-commune-chip" data-quick-loc="valparaiso">Valparaíso</button>
+      <button type="button" class="quick-commune-chip" data-quick-loc="talca">Talca / Maule</button>
+      <button type="button" class="quick-commune-chip" data-quick-loc="concepcion">Concepción</button>
+      <button type="button" class="quick-commune-chip" data-quick-loc="puertomontt">Puerto Montt</button>
+      <button type="button" class="quick-commune-chip" data-quick-loc="puntaarenas">Punta Arenas</button>
+      <button type="button" class="quick-commune-chip" data-quick-loc="rapanui">Rapa Nui</button>
+      <button type="button" class="quick-commune-chip" id="btnGeolocate" title="Selecciona la comuna de referencia más cercana a tu ubicación (no se envía a ningún servidor)">📍 Cerca de mí</button>
+      <button type="button" class="quick-commune-chip" id="btnShareView" title="Copia un enlace a esta comuna, capa y horizonte">🔗 Compartir vista</button>
+      <span id="quickBarStatus" class="quick-bar-label" role="status" aria-live="polite"></span>
+    </div>
+  </header>
+
+  <!-- Navegación simplificada en 4 áreas primarias + subnavegación contextual -->
+  <nav class="main-nav" aria-label="Navegación principal de la plataforma">
+    <div class="main-nav-inner">
+      <!-- 4 Grupos Primarios Comprensibles -->
+      <div class="primary-nav-groups" role="menubar" aria-label="Áreas principales">
+        <button type="button" class="nav-group-btn active" data-nav-group="mapa" aria-expanded="true">
+          🗺 Mapa y Comuna
+        </button>
+        <button type="button" class="nav-group-btn" data-nav-group="pronostico" aria-expanded="false">
+          📅 Pronóstico y Lluvia
+        </button>
+        <button type="button" class="nav-group-btn" data-nav-group="alertas" aria-expanded="false">
+          ⚠ Alertas <span id="navAlertCountChip" class="nav-count-badge">5 (Muestra)</span>
+        </button>
+        <button type="button" class="nav-group-btn" data-nav-group="mas" aria-expanded="false">
+          ➕ Más Análisis ▾
+        </button>
+      </div>
+
+      <!-- Pestañas de las 9 secciones (filtradas contextualmente según el área activa) -->
+      <div class="sub-nav-tabs" id="subNavTabsBar" role="tablist" aria-label="Secciones de la aplicación">
+        <button class="nav-tab active" role="tab" aria-selected="true" data-tab="tab-mapa" data-group="mapa">
+          Mapa y Resumen Local
+        </button>
+        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-pronostico" data-group="pronostico">
+          Pronóstico 7 Días (P10–P90)
+        </button>
+        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-lluvia" data-group="pronostico">
+          Lluvia Horaria e Isoterma 0 °C
+        </button>
+        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-alertas" data-group="alertas">
+          Alertas y Suscripciones
+        </button>
+        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-satelite" data-group="mas">
+          Satélite GOES-16 (Antes / Ahora)
+        </button>
+        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-escenarios" data-group="mas">
+          Escenarios Hidrometeorológicos
+        </button>
+        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-predictivo" data-group="mas">
+          Modelos y Verificación
+        </button>
+        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-agentes" data-group="mas">
+          Agentes IA (HITL)
+        </button>
+        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-fuentes" data-group="mas">
+          Fuentes y Criterios
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="app-container">
+    <!-- Banner de advertencia cuando una fuente está desactualizada o sin conexión (CA-05) -->
+    <div id="staleWarningBanner" class="stale-warning-banner hidden" role="alert">
+      <div>
+        <strong>⚠ Aviso de Estado de Fuente (Demostración CA-05):</strong>
+        <span id="staleWarningText">
+          Simulación activa: una fuente supera su ventana de actualización (TTL &gt; 45 min). Se mantienen visibles los últimos registros con su hora de captura y enlace al organismo oficial.
+        </span>
+      </div>
+      <a href="https://www.meteochile.gob.cl/" target="_blank" rel="noopener noreferrer" class="btn btn-sm">
+        Abrir Portal Oficial DMC ↗
+      </a>
+    </div>
+
+    <!-- Resumen de Situación de la Comuna Activa (Jerarquía clara sin repetir bloques) -->
+    <section class="local-situation-strip" aria-label="Resumen actual y pronóstico inmediato de la comuna seleccionada">
+      <div class="situation-main">
+        <div class="hero-eyebrow-row">
+          <span id="dataIntegrityBadge" class="epistemic-badge badge-estimacion">🧪 Datos de muestra (Demostración)</span>
+          <span id="kpiLocationRiskBadge" class="severity-pill sev-EXTREMA">🛑 Riesgo Extremo (Muestra)</span>
+          <span id="kpiSelectedMeta" class="situation-tech-meta technical-only">
+            CUT 13101 · Cuenca Río Maipo · 527 m s.n.m.
+          </span>
+        </div>
+
+        <div class="situation-headline-row">
+          <div>
+            <h2 id="kpiSelectedName">Santiago / San José de Maipo</h2>
+            <p id="detailConditionBanner" class="situation-condition-line">
+              Cubierto con lluvia moderada e isoterma 0 °C elevada en sector cordillerano (3.050 m s.n.m.)
+            </p>
+          </div>
+
+          <div class="situation-key-figures">
+            <div class="key-figure-item">
+              <span class="key-figure-label">Ahora (t = 0 h)</span>
+              <strong id="heroCurrentTemp" class="key-figure-val">13.4 °C · 2.4 mm/h</strong>
+            </div>
+            <div class="key-figure-item">
+              <span class="key-figure-label">Lluvia 48h (P50–P90)</span>
+              <strong id="heroPrecip48h" class="key-figure-val">46.5 – 80.5 mm</strong>
+            </div>
+            <div class="key-figure-item">
+              <span class="key-figure-label">Isoterma 0 °C</span>
+              <strong id="heroIsoLevel" class="key-figure-val">3.050 m s.n.m.</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="situation-action-row">
+          <p id="heroHumanSummary" class="hero-human-guidance"></p>
+          <div class="situation-next-steps">
+            <button type="button" class="btn btn-sm" id="btnJumpToRain">Ver lluvia horaria 48h →</button>
+            <button type="button" class="btn btn-sm" id="btnJumpToAlerts">Ver alertas (<span id="kpiActiveAlertsCount">3 Oficiales · 2 App</span>) →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 1: MAPA PROTAGONISTA DE CHILE Y RESUMEN DE COMUNA ACTIVA       -->
+    <!-- ===================================================================== -->
+    <section id="tab-mapa" class="view-section active" role="tabpanel">
+      <div class="map-workspace-grid">
+        <!-- Columna Central Protagonista: Mapa de Chile + Capas Compactas + Línea Temporal -->
+        <div class="panel-card map-primary-panel">
+          <div class="panel-header map-panel-header">
+            <div>
+              <h2>Mapa Meteorológico de Chile</h2>
+              <p class="panel-subtitle">
+                Selecciona una comuna en el mapa o cambia de capa para inspeccionar observación y pronóstico.
+              </p>
+            </div>
+            <div class="map-header-badges">
+              <span id="mapEpistemicBadge" class="epistemic-badge badge-observacion">Observación (t = 0 h)</span>
+              <span id="mapLayerUnitLabel" class="unit-pill-mono">Capa: Precipitación (mm/h)</span>
+            </div>
+          </div>
+
+          <!-- Control compacto de las 6 capas meteorológicas -->
+          <div class="map-controls-bar">
+            <div class="layer-selector-bar" role="group" aria-label="Capas activables del mapa nacional">
+              <button class="btn layer-btn active" data-layer="precipitacion" type="button">🌧 Lluvia</button>
+              <button class="btn layer-btn" data-layer="viento" type="button">💨 Viento</button>
+              <button class="btn layer-btn" data-layer="temperatura" type="button">🌡 Temp.</button>
+              <button class="btn layer-btn" data-layer="nieve" type="button">❄ Isoterma 0°C</button>
+              <button class="btn layer-btn" data-layer="nubosidad" type="button">☁ Nubes</button>
+              <button class="btn layer-btn" data-layer="alertas" type="button">⚠ Alertas</button>
+            </div>
+          </div>
+
+          <!-- Selector temporal claro junto al mapa -->
+          <div class="map-timeline-bar" role="region" aria-label="Control de horizonte temporal del mapa">
+            <div class="map-timeline-top">
+              <div class="map-timeline-controls">
+                <button id="btnMapPlayTimeline" class="btn btn-sm btn-primary" type="button" aria-pressed="false">
+                  ▶ Reproducir +48h
+                </button>
+                <label for="mapTimeSlider" class="timeline-label-group">
+                  <span id="mapTimeLabel" class="timeline-valid-label">Ahora (Observación t = 0 h)</span>
+                </label>
+              </div>
+              <span id="mapDataOriginNote" class="timeline-origin-note">Datos de muestra (sincronizable con Open-Meteo)</span>
+            </div>
+            <input id="mapTimeSlider" type="range" min="0" max="4" step="1" value="0" aria-label="Seleccionar horizonte de tiempo en el mapa" />
+            <div class="map-timeline-ticks" aria-hidden="true">
+              <span>Ahora (Obs t=0h)</span>
+              <span>+6 h (Pronóstico)</span>
+              <span>+12 h (Pronóstico)</span>
+              <span>+24 h (Pronóstico)</span>
+              <span>+48 h (Pronóstico)</span>
+            </div>
+          </div>
+
+          <!-- Lienzo Protagonista del Mapa (Leaflet Interactivo + Esquema Nacional + Perfil Altitudinal) -->
+          <div id="nationalMapContainer"></div>
+
+          <!-- Leyenda simbólica compacta + Procedencia -->
+          <div class="map-footer-bar">
+            <div id="mapLegendBox" class="map-legend-box" aria-label="Leyenda de la capa activa"></div>
+            <div id="mapProvenanceBar" class="provenance-bar"></div>
+          </div>
+        </div>
+
+        <!-- Columna Lateral: Detalle Local de la Comuna Seleccionada (Sin duplicar la franja superior) -->
+        <aside class="local-detail-sidebar" aria-label="Detalle meteorológico de la comuna seleccionada">
+          <div class="panel-card">
+            <div class="panel-header">
+              <div>
+                <h3 id="detailLocationTitle">Variables Locales en Santiago / San José de Maipo</h3>
+                <div id="detailLocationSubtitle" class="technical-only" style="font-size: 0.76rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.15rem;"></div>
+              </div>
+              <span id="detailRiskPill" class="severity-pill sev-EXTREMA">🛑 Extremo</span>
+            </div>
+
+            <!-- Grilla de métricas locales (adaptada a modo Ciudadanía o Monitoreo) -->
+            <div id="obsMetricsGrid" class="obs-metrics-grid"></div>
+
+            <div id="obsProvenanceBar" class="provenance-bar"></div>
+          </div>
+
+          <!-- Resumen 72 Horas con Rango P10-P50-P90 -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <div>
+                <h3>Pronóstico Próximos 3 Días</h3>
+                <span style="font-size: 0.76rem; color: var(--text-muted);">Mediana esperada (P50) y escenario superior (P90)</span>
+              </div>
+              <span class="epistemic-badge badge-pronostico">Banda P10–P90</span>
+            </div>
+            <p id="detailKeyPhenomenon" class="key-phenomenon-note"></p>
+            <div id="miniForecastPreview"></div>
+            <div style="margin-top: 0.65rem; display: flex; justify-content: flex-end;">
+              <button type="button" class="btn btn-sm" id="btnJumpTo7dForecast">Ver tabla completa de 7 días →</button>
+            </div>
+          </div>
+
+          <!-- Alertas asociadas a la comuna seleccionada -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <div>
+                <h3>Alertas en esta Zona</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Ejemplos de demostración (Oficiales vs. App)</span>
+              </div>
+              <span class="epistemic-badge badge-estimacion">Datos de muestra</span>
+            </div>
+            <div id="locationAlertsPreview"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 2: IMÁGENES SATELITALES Y COMPARADOR ANTES/AHORA              -->
+    <!-- ===================================================================== -->
+    <section id="tab-satelite" class="view-section" role="tabpanel">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2>Visor Satelital GOES-16 (Sector Chile) — Comparador Antes / Ahora</h2>
+            <div class="panel-subtitle">
+              Secuencia demostrativa de 7 cuadros horarios (<code>t - 6 h</code> a <code>t = 0 h</code>) y modo de consulta de mosaico infrarrojo RainViewer cuando hay conexión en vivo.
+            </div>
+          </div>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <span class="epistemic-badge badge-observacion">Observación Satelital</span>
+            <span class="epistemic-badge badge-estimacion">Secuencia de muestra</span>
+          </div>
+        </div>
+
+        <div class="sat-controls-grid">
+          <button id="btnSatPlayPause" class="btn btn-primary" type="button">▶ Reproducir Secuencia</button>
+
+          <div class="control-group" style="min-width: 210px;">
+            <label for="satChannelSelect">Canal Espectral GOES-16 / Radar</label>
+            <select id="satChannelSelect">
+              <option value="ir_b13">Banda 13 (10.3 µm Infrarrojo Limpio - Topes Nubosos)</option>
+              <option value="vapor_agua">Banda 08 (6.2 µm Vapor de Agua - Ríos Atmosféricos)</option>
+              <option value="rain_rate">Tasa de Precipitación Estimada (IR/Radar)</option>
+              <option value="geocolor">GeoColor Visible + Infrarrojo Multiespectral</option>
+            </select>
+          </div>
+
+          <div class="control-group" style="flex: 1; min-width: 180px;">
+            <label for="satFrameRange">Cuadro Temporal: <span id="satFrameLabel">Actual (t = 0 h)</span></label>
+            <input id="satFrameRange" type="range" min="0" max="6" step="1" value="6" />
+          </div>
+
+          <div class="control-group">
+            <label for="satCompareToggle">Modo Comparación Antes / Ahora</label>
+            <button id="satCompareToggle" class="btn" type="button" aria-pressed="true">
+              ⇄ Cortina Comparadora: ACTIVA
+            </button>
+          </div>
+
+          <div class="control-group" id="satCompareSelectGroup">
+            <label for="satPastFrameSelect">Imagen Anterior (Izquierda)</label>
+            <select id="satPastFrameSelect">
+              <option value="0">Hace 6 horas (t - 6 h)</option>
+              <option value="2">Hace 4 horas (t - 4 h)</option>
+              <option value="3" selected>Hace 3 horas (t - 3 h)</option>
+              <option value="5">Hace 1 hora (t - 1 h)</option>
+            </select>
+          </div>
+
+          <div class="control-group" id="satSplitSliderGroup" style="min-width: 150px;">
+            <label for="satSplitRange">Posición Cortina (<span id="satSplitVal">50%</span>)</label>
+            <input id="satSplitRange" type="range" min="10" max="90" value="50" />
+          </div>
+        </div>
+
+        <div class="satellite-canvas-wrap" style="margin-top: 0.9rem;">
+          <canvas id="satelliteCanvas" width="960" height="460" aria-label="Visor satelital GOES-16 sobre Chile y el Océano Pacífico Sur"></canvas>
+        </div>
+
+        <div id="satSynopsisBox" class="condition-summary-banner" style="margin-top: 0.85rem;"></div>
+
+        <div id="satProvenanceBar" class="provenance-bar"></div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 3: PRONÓSTICO DE LOS PRÓXIMOS 7 DÍAS                          -->
+    <!-- ===================================================================== -->
+    <section id="tab-pronostico" class="view-section" role="tabpanel">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2 id="forecast7dTitle">Pronóstico de los Próximos 7 Días (con Rangos de Incertidumbre)</h2>
+            <div class="panel-subtitle">
+              Presenta temperatura mínima/máxima (con banda P10–P90), lluvia esperada (mediana P50 y techo húmedo P90), probabilidad, isoterma 0 °C y viento.
+            </div>
+          </div>
+          <span class="epistemic-badge badge-pronostico">Pronóstico Numérico (P10–P50–P90)</span>
+        </div>
+
+        <div class="forecast-table-wrapper">
+          <table class="data-table" aria-label="Tabla de pronóstico de 7 días con rangos de incertidumbre">
+            <thead>
+              <tr>
+                <th>Día</th>
+                <th>Condición</th>
+                <th>Temp. Mín / Máx (Rango P10–P90)</th>
+                <th>Lluvia Mediana P50 (Techo P90)</th>
+                <th>Prob. Lluvia</th>
+                <th>Isoterma 0 °C</th>
+                <th>Nieve Andina</th>
+                <th>Viento (Racha)</th>
+                <th>Nubosidad</th>
+              </tr>
+            </thead>
+            <tbody id="forecast7dTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="forecast7dProvenanceBar" class="provenance-bar">
+          <span><strong>Fuente:</strong> Consenso Open-Meteo (ECMWF IFS 9 km + NOAA GFS 25 km + DWD ICON)</span>
+          <span>•</span>
+          <span><strong>Nota metodológica:</strong> Los rangos expresan la dispersión estadística del pronóstico; se actualizan automáticamente con la corrida vigente de Open-Meteo.</span>
+        </div>
+      </div>
+
+      <!-- Resumen Nacional por Macrozonas -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h3>Comparativa Nacional por Macrozonas y Regiones</h3>
+            <div class="panel-subtitle">Resumen de las 15 ubicaciones representativas de Chile en el escenario cargado.</div>
+          </div>
+          <span class="epistemic-badge badge-pronostico">Vista Comparativa Nacional</span>
+        </div>
+        <div class="forecast-table-wrapper">
+          <table class="data-table" aria-label="Resumen nacional por regiones de Chile">
+            <thead>
+              <tr>
+                <th>Macrozona</th>
+                <th>Región / Comuna</th>
+                <th>Temp. (t=0h)</th>
+                <th>Lluvia 24h</th>
+                <th>Lluvia Próximas 48h (P50–P90)</th>
+                <th>Isoterma 0 °C</th>
+                <th>Viento Máx.</th>
+                <th>Nivel de Riesgo</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="nationalOverviewTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 4: PRONÓSTICO DETALLADO DE LLUVIA E ISOTERMA 0 °C              -->
+    <!-- ===================================================================== -->
+    <section id="tab-lluvia" class="view-section" role="tabpanel">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2 id="rainSectionTitle">Pronóstico Horario de Precipitación e Isoterma 0 °C (48 Horas)</h2>
+            <div class="panel-subtitle">
+              Evolución horaria de los pulsos de precipitación (mediana P50 vs escenario húmedo P90) y altura de la isoterma 0 °C (límite lluvia/nieve).
+            </div>
+          </div>
+          <span class="epistemic-badge badge-pronostico">Estimación Probabilística — No es certeza determinista</span>
+        </div>
+
+        <div class="condition-summary-banner">
+          <strong>Nota de Incertidumbre Hidrometeorológica:</strong> Los montos de precipitación e isoterma 0 °C son estimaciones sujetas a variaciones por topografía andina. Utilice siempre el rango <strong>P50 (escenario central)</strong> a <strong>P90 (escenario húmedo exigente)</strong> para planificación preventiva.
+        </div>
+
+        <div id="hourlyRainChartContainer"></div>
+
+        <div id="rainEpisodesSummary" class="grid-equal-2col" style="margin-top: 1.1rem;"></div>
+
+        <div class="provenance-bar">
+          <span><strong>Fuente Hidrometeorológica:</strong> Serie horaria Open-Meteo (Sincronizable en vivo) / Escenario de demostración</span>
+          <span>•</span>
+          <span><strong>Variables:</strong> Precipitación horaria (mm/h) y <code>freezing_level_height</code> (m s.n.m.)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 5: ALERTAS TEMPRANAS, EXTREMAS Y NOTIFICACIONES               -->
+    <!-- ===================================================================== -->
+    <section id="tab-alertas" class="view-section" role="tabpanel">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2>Sistema de Alertas Tempranas y Extremas</h2>
+            <div class="panel-subtitle">
+              Diferenciación explícita entre <strong>Alertas Oficiales (DMC, SENAPRED, SHOA)</strong> y <strong>Estimaciones Preventivas de la Aplicación</strong>.
+            </div>
+          </div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <span class="epistemic-badge badge-estimacion">🧪 Alertas de Demostración (Datos de muestra)</span>
+            <span class="epistemic-badge badge-alerta-oficial">Formato Alerta Oficial</span>
+            <span class="epistemic-badge badge-alerta-app">Estimación App</span>
+          </div>
+        </div>
+
+        <div class="condition-summary-banner">
+          <strong>Aviso de Integridad de Datos:</strong> Las alertas listadas a continuación corresponden a <strong>datos de muestra predefinidos</strong> en el repositorio para demostrar la separación entre avisos oficiales y estimaciones por umbral. Para consultar alertas reales vigentes hoy en Chile, acuda directamente a <a href="https://senapred.cl/alertas/" target="_blank" rel="noopener noreferrer">SENAPRED Alertas ↗</a> y <a href="https://www.meteochile.gob.cl/" target="_blank" rel="noopener noreferrer">DMC MeteoChile ↗</a>.
+        </div>
+
+        <!-- Filtros de Alertas -->
+        <div class="filter-bar">
+          <div class="control-group">
+            <label for="alertOriginFilter">Origen de la Alerta</label>
+            <select id="alertOriginFilter">
+              <option value="ALL">Todas (Oficiales + Estimaciones de la App)</option>
+              <option value="OFFICIAL_AUTHORITY">Solo Alertas Oficiales (DMC / SENAPRED / SHOA)</option>
+              <option value="APP_THRESHOLD_ESTIMATE">Solo Estimaciones Preventivas de la App</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="alertSeverityFilter">Nivel de Riesgo</label>
+            <select id="alertSeverityFilter">
+              <option value="ALL">Todos los niveles</option>
+              <option value="EXTREMA">🛑 Extrema</option>
+              <option value="TEMPRANA">▲ Temprana</option>
+              <option value="PREVENTIVA">◆ Preventiva</option>
+              <option value="INFORMATIVA">ℹ Informativa</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="alertsListContainer"></div>
+      </div>
+
+      <!-- Configurador de Notificaciones Personalizadas -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h3>Configuración de Notificaciones Locales por Comuna y Severidad</h3>
+            <div class="panel-subtitle">
+              Guarda tus preferencias en este navegador (<code>localStorage</code>). Las alertas críticas nunca son emitidas autónomamente por IA.
+            </div>
+          </div>
+          <span class="epistemic-badge badge-observacion">Preferencias Locales</span>
+        </div>
+
+        <form id="notificationForm" class="sat-controls-grid" style="margin-top:0;">
+          <div class="control-group">
+            <label for="notifCommuneSelect">Comuna a Monitorear</label>
+            <select id="notifCommuneSelect"></select>
+          </div>
+
+          <div class="control-group">
+            <label for="notifEventType">Tipo de Evento</label>
+            <select id="notifEventType">
+              <option value="TODOS">Todos los fenómenos hidrometeorológicos</option>
+              <option value="LLUVIA_ISOTERMA">Lluvia Intensa e Isoterma 0 °C Alta</option>
+              <option value="CRECIDA_ALUVION">Crecida de Ríos / Activación de Quebradas</option>
+              <option value="VIENTO_TEMPORAL">Viento Fuerte / Temporal</option>
+              <option value="HELADA_NIEVE">Heladas y Nevadas</option>
+              <option value="MAREJADAS">Marejadas Costeras</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="notifMinSeverity">Nivel Mínimo de Severidad</label>
+            <select id="notifMinSeverity">
+              <option value="INFORMATIVA">ℹ Informativa o superior</option>
+              <option value="PREVENTIVA">◆ Preventiva o superior</option>
+              <option value="TEMPRANA" selected>▲ Temprana o Extrema</option>
+              <option value="EXTREMA">🛑 Solo Extrema</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary">+ Guardar Suscripción</button>
+          <button type="button" id="btnTestNotification" class="btn">🔔 Probar Alerta Simulada</button>
+        </form>
+
+        <div id="savedNotificationsContainer" style="margin-top: 0.9rem;"></div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 6: POSIBLES ESCENARIOS HIDROMETEOROLÓGICOS                     -->
+    <!-- ===================================================================== -->
+    <section id="tab-escenarios" class="view-section" role="tabpanel">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2>Posibles Escenarios Hidrometeorológicos</h2>
+            <div class="panel-subtitle">
+              Evaluación estructurada de escenarios plausibles (lluvias con isoterma alta, anegamientos, crecidas, heladas, viento y marejadas), detallando los factores de respaldo y las <strong>señales que cambiarían la evaluación</strong>.
+            </div>
+          </div>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <span class="epistemic-badge badge-estimacion">Escenarios Plausibles Condicionados</span>
+            <span class="epistemic-badge badge-estimacion">🧪 Datos de muestra</span>
+          </div>
+        </div>
+
+        <div id="scenariosListContainer"></div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 7: ANÁLISIS PREDICTIVO, MULTIMODELO Y VERIFICACIÓN HISTÓRICA  -->
+    <!-- ===================================================================== -->
+    <section id="tab-predictivo" class="view-section" role="tabpanel">
+      <div class="grid-equal-2col">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2 id="predictiveModelTitle">Comparación entre Modelos Numéricos (ECMWF vs. GFS vs. ICON)</h2>
+              <div class="panel-subtitle">
+                Diferencias e incertidumbre inter-modelo para las próximas 72 horas en la comuna seleccionada (Datos de muestra).
+              </div>
+            </div>
+            <span class="epistemic-badge badge-pronostico">Dispersión Multimodelo (Muestra)</span>
+          </div>
+
+          <div id="modelComparisonContainer"></div>
+
+          <div class="condition-summary-banner" style="margin-top: 1rem;">
+            <strong>Sustento y limitaciones en terreno complejo:</strong>
+            <ul style="margin: 0.4rem 0 0; padding-left: 1.2rem; color: var(--text-secondary);">
+              <li><strong>Sustento:</strong> Comparación referencial entre las resoluciones de grilla de ECMWF IFS (9 km), DWD ICON (13 km) y NOAA GFS (25 km).</li>
+              <li><strong>Limitación topográfica en los Andes:</strong> La pendiente entre el valle central y la cordillera (&gt;4.500 m en menos de 60 km) introduce incertidumbre de ±150 m en la cota de la isoterma 0 °C dentro de cajones cordilleranos estrechos.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2>Registro de Predicciones Anteriores vs. Lo Ocurrido (Verificación)</h2>
+              <div class="panel-subtitle">
+                Contraste auditable entre pronósticos pasados (-24 h, -48 h, -72 h) y observaciones medidas (Conjunto de demostración CA-03).
+              </div>
+            </div>
+            <span class="epistemic-badge badge-estimacion">Auditoría Histórica (Muestra)</span>
+          </div>
+
+          <div id="verificationSummaryMetrics" class="obs-metrics-grid" style="margin-top:0;"></div>
+
+          <div class="forecast-table-wrapper">
+            <table class="data-table" aria-label="Tabla de verificación de pronósticos anteriores frente a observaciones reales">
+              <thead>
+                <tr>
+                  <th>Ubicación</th>
+                  <th>Fecha Evaluada (Horizonte)</th>
+                  <th>Lluvia Predicha P50 (Banda)</th>
+                  <th>Lluvia Observada Real</th>
+                  <th>Error Abs. (mm)</th>
+                  <th>Temp. Máx Pred. / Obs.</th>
+                  <th>Dentro de Banda</th>
+                </tr>
+              </thead>
+              <tbody id="verificationTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 8: AGENTES DE IA CON TRAZABILIDAD, LÍMITES Y REVISIÓN HUMANA   -->
+    <!-- ===================================================================== -->
+    <section id="tab-agentes" class="view-section" role="tabpanel">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2>Agentes de IA con Trazabilidad de Evidencia y Supervisión Humana (HITL)</h2>
+            <div class="panel-subtitle">
+              Demostración de gobernanza de agentes: cada afirmación exige cita verificable (<code>[Ref: EV-*]</code>) y las recomendaciones de alto impacto requieren firma humana.
+            </div>
+          </div>
+          <span class="epistemic-badge badge-estimacion">Demostración de Guardrails + HITL</span>
+        </div>
+
+        <div class="obs-metrics-grid" style="margin-bottom: 1rem;">
+          <div class="obs-metric-box">
+            <div class="obs-metric-label">Guardrail 1: Alertas Oficiales</div>
+            <div style="font-size: 0.84rem; font-weight: 700; margin-top: 0.2rem;">🔒 Permiso SOLO LECTURA</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Prohibido emitir o modificar alertas de DMC, SENAPRED o SHOA.</div>
+          </div>
+          <div class="obs-metric-box">
+            <div class="obs-metric-label">Guardrail 2: Trazabilidad de Citas</div>
+            <div style="font-size: 0.84rem; font-weight: 700; margin-top: 0.2rem;">✓ 100% Citas Vinculadas</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Afirmaciones sin vínculo a <code>[EV-*]</code> son descartadas.</div>
+          </div>
+          <div class="obs-metric-box">
+            <div class="obs-metric-label">Guardrail 3: Filtro Epistemológico</div>
+            <div style="font-size: 0.84rem; font-weight: 700; margin-top: 0.2rem;">✓ Sin Falsa Certeza</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Las inferencias se etiquetan como estimaciones sujetas a incertidumbre.</div>
+          </div>
+          <div class="obs-metric-box">
+            <div class="obs-metric-label">Guardrail 4: Escalamiento HITL</div>
+            <div style="font-size: 0.84rem; font-weight: 700; margin-top: 0.2rem;">👤 Revisión Humana</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Recomendaciones críticas bloqueadas hasta aprobación de supervisor.</div>
+          </div>
+        </div>
+
+        <div class="grid-equal-2col">
+          <div>
+            <h3 style="margin-top:0;">Agentes Especializados (Escenario de Muestra)</h3>
+            <div id="agentsCardsContainer"></div>
+          </div>
+
+          <div>
+            <h3 style="margin-top:0;">Cola de Revisión Humana (Human-in-the-Loop)</h3>
+            <div id="hitlQueueContainer"></div>
+
+            <h3 style="margin-top:1.2rem;">Registro de Evidencia Trazable (Haz clic en un chip <code>[EV-*]</code>)</h3>
+            <div class="forecast-table-wrapper">
+              <table class="data-table" aria-label="Tabla de evidencias vinculadas a los agentes de IA">
+                <thead>
+                  <tr>
+                    <th>ID Evidencia</th>
+                    <th>Tipo</th>
+                    <th>Fuente y Estampa UTC</th>
+                    <th>Dato Crudo de Muestra</th>
+                  </tr>
+                </thead>
+                <tbody id="evidenceTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 9: FUENTES, METODOLOGÍA, PRIVACIDAD, LIMITACIONES Y CRITERIOS  -->
+    <!-- ===================================================================== -->
+    <section id="tab-fuentes" class="view-section" role="tabpanel">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2>Fuentes de Datos, Estado Real de Integración y Condiciones de Acceso</h2>
+            <div class="panel-subtitle">
+              Transparencia sobre qué fuentes se consultan en vivo desde el navegador (Open-Meteo, RainViewer) y cuáles corresponden a referencias institucionales con datos de muestra en este prototipo.
+            </div>
+          </div>
+          <a href="/docs/propuesta-tecnica.md" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+            📄 Ver Propuesta Técnica (.md)
+          </a>
+        </div>
+
+        <div class="forecast-table-wrapper">
+          <table class="data-table" aria-label="Estado y metadatos de las fuentes de datos meteorológicos">
+            <thead>
+              <tr>
+                <th>Fuente / Organismo</th>
+                <th>Rol en el Sistema</th>
+                <th>Frecuencia / TTL</th>
+                <th>Estampa de Referencia</th>
+                <th>Modo en esta Interfaz</th>
+                <th>Condiciones de Acceso y Alcance Real</th>
+                <th>Enlace Oficial</th>
+              </tr>
+            </thead>
+            <tbody id="sourcesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-equal-2col">
+        <div class="panel-card">
+          <h3>Metodología, Privacidad y Limitaciones Conocidas</h3>
+          <ul style="font-size: 0.86rem; color: var(--text-secondary); padding-left: 1.2rem;">
+            <li><strong>Integridad de Datos Visible:</strong> Los valores predefinidos en <code>chile-data.js</code> se identifican explícitamente como <em>Datos de muestra (Demostración)</em>. Al abrir la app (y cada 30 min) se actualizan en vivo la observación y el pronóstico horario/diario de todas las comunas desde <code>api.open-meteo.com</code>.</li>
+            <li><strong>Separación Epistemológica:</strong> Ninguna salida de modelo numérico se mezcla con observaciones ni alertas oficiales sin su etiqueta correspondiente.</li>
+            <li><strong>Privacidad por Diseño:</strong> La comuna activa, el modo de vista (Ciudadanía/Monitoreo), el tema visual y las suscripciones se guardan únicamente en el navegador (<code>localStorage</code>).</li>
+            <li><strong>Emergencias Oficiales:</strong> Para instrucciones oficiales de evacuación o alertas vigentes rige exclusivamente la información de <strong>SENAPRED</strong> y la <strong>Dirección Meteorológica de Chile (DMC)</strong>.</li>
+          </ul>
+        </div>
+
+        <div class="panel-card">
+          <h3>Matriz de Criterios de Aceptación (CA-01 a CA-09)</h3>
+          <div id="acceptanceCriteriaContainer" style="font-size: 0.84rem;"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer-bar">
+    <div>
+      <strong>ClimasFlood Chile</strong> · Plataforma de Meteorología y Anticipación de Riesgos Hidrometeorológicos (Datos de muestra + Conector Open-Meteo / RainViewer).
+    </div>
+    <div>
+      Para alertas oficiales vigentes consulte siempre <a href="https://senapred.cl/alertas/" target="_blank" rel="noopener noreferrer">SENAPRED</a> y <a href="https://www.meteochile.gob.cl/" target="_blank" rel="noopener noreferrer">Dirección Meteorológica de Chile</a>.
+    </div>
+  </footer>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
