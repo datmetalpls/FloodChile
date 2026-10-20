@@ -2,6 +2,8 @@
 
 Esta propuesta responde íntegramente a los requerimientos definidos en [prompt-app-meteorologia-chile.md](file:///Users/dmp/Desktop/proyectos/ClimasFlood/prompt-app-meteorologia-chile.md), estableciendo una base rigurosa, auditable y sin invención de APIs inexistentes para construir la plataforma nacional de monitoreo meteorológico, pronóstico y anticipación de riesgos hidrometeorológicos en Chile.
 
+> **Estado:** documento de arquitectura objetivo. Describe capacidades planeadas; no implica que el cliente actual consulte ensambles multimodelo, calcule percentiles o ejecute los servicios descritos.
+
 > [!IMPORTANT]
 > **Principio Rector de Epistemología de Datos:** La plataforma distingue de forma estricta e inequívoca a nivel de base de datos, API y visualización entre cuatro categorías de información:
 > 1. **Observación (`OBSERVATION`):** Medición instrumental real (estación meteorológica/fluviométrica o sensor satelital) con estampa de tiempo pasada.

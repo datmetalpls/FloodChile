@@ -13,7 +13,7 @@ export const MAP_LAYERS_META = {
     unit: 'mm/h',
     sourceName: 'Referencia DMC (t=0h) / Open-Meteo (t>0h)',
     sourceId: 'openmeteo-multi',
-    description: 'Tasa horaria de precipitación (mediana P50 y techo de incertidumbre P90).',
+    description: 'Pronóstico horario de precipitación y escenario superior estimado.',
     legend: [
       { label: '0 mm (Seco)', color: '#64748b', symbol: '○' },
       { label: '0.1 – 2.0 mm (Débil)', color: '#0ea5e9', symbol: '◔' },
@@ -132,8 +132,8 @@ export function getLocationValueForStep(loc, layerId, hourOffset) {
     );
 
   if (layerId === 'precipitacion') {
-    const val = hourOffset === 0 ? loc.observation.precip1hMm : stepObj.p50;
-    const p90 = hourOffset === 0 ? val : stepObj.p90;
+    const val = hourOffset === 0 ? loc.observation.precip1hMm : stepObj.forecastMm;
+    const upperScenario = hourOffset === 0 ? val : stepObj.upperScenarioMm;
     let color = '#64748b';
     let symbol = '○';
     if (val > 5.0) {
@@ -150,7 +150,7 @@ export function getLocationValueForStep(loc, layerId, hourOffset) {
       symbol = '◔';
     }
     return {
-      display: hourOffset === 0 ? `${val.toFixed(1)} mm/h` : `${val.toFixed(1)} mm (P90: ${p90.toFixed(1)})`,
+      display: hourOffset === 0 ? `${val.toFixed(1)} mm/h` : `${val.toFixed(1)} mm (escenario alto aprox.: ${upperScenario.toFixed(1)})`,
       shortDisplay: `${val.toFixed(1)} mm/h`,
       numeric: val,
       color,
@@ -209,7 +209,7 @@ export function getLocationValueForStep(loc, layerId, hourOffset) {
 
   if (layerId === 'nieve') {
     const iso = hourOffset === 0 ? loc.observation.freezingLevelM : stepObj.iso0;
-    const rain = hourOffset === 0 ? loc.observation.precip1hMm : stepObj.p50;
+    const rain = hourOffset === 0 ? loc.observation.precip1hMm : stepObj.forecastMm;
     let color = '#0d9488';
     let symbol = '▲';
     if (iso >= 2750 && rain >= 1.5) {
@@ -255,7 +255,7 @@ export function getLocationValueForStep(loc, layerId, hourOffset) {
   }
 
   if (layerId === 'tormentas') {
-    const rain = hourOffset === 0 ? loc.observation.precip1hMm : stepObj.p50;
+    const rain = hourOffset === 0 ? loc.observation.precip1hMm : stepObj.forecastMm;
     const isAndean = loc.elevationM > 450 || loc.basin.toLowerCase().includes('maipo') || loc.basin.toLowerCase().includes('cachapoal') || loc.basin.toLowerCase().includes('maule');
     let prob = 8;
     let cape = 180;
@@ -324,7 +324,7 @@ class ChileMapController {
     this.radarOpacity = 0.65;
     this.radarPlaying = false;
     this.radarTimerId = null;
-    this.basemapProvider = 'carto_voyager';
+    this.basemapProvider = 'osm_chile';
     this.satelliteOverlayMode = 'rainviewer';
     this.cartoBuilderEmbedUrl = '';
 
@@ -467,10 +467,9 @@ class ChileMapController {
               Mapa base:
             </label>
             <select id="basemapProviderSelect" style="font-size:0.75rem; padding:0.24rem 0.48rem;">
-              <option value="osm_standard" selected>OpenStreetMap Estándar (Cartografía Abierta)</option>
+              <option value="osm_chile" selected>OpenStreetMap Estándar</option>
               <option value="opentopomap">OpenTopoMap — Relieve y Curvas de Nivel Andinas (Abierto)</option>
               <option value="esri_satellite">ESRI World Imagery — Satelital de Alta Resolución</option>
-              <option value="positron_dark">Contraste Oscuro / Positron (Minimalista)</option>
             </select>
 
             <label for="satelliteOverlaySelect" style="font-size:0.74rem; font-weight:700; color:var(--text-secondary);">
@@ -693,24 +692,7 @@ class ChileMapController {
 
   updateLeafletThemeTiles() {
     if (!this.leafletMap || typeof window.L === 'undefined') return;
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    const isLight = currentTheme === 'light';
-
     const providers = {
-      carto_voyager: {
-        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-        subdomains: 'abcd',
-        attribution: '&copy; OpenStreetMap &copy; CARTO Voyager (Open Basemap)',
-        maxZoom: 19
-      },
-      carto_auto: {
-        url: isLight
-          ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-          : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        subdomains: 'abcd',
-        attribution: '&copy; OpenStreetMap &copy; CARTO Positron/DarkMatter',
-        maxZoom: 19
-      },
       opentopomap: {
         url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
         subdomains: ['a', 'b', 'c'],
@@ -724,14 +706,14 @@ class ChileMapController {
         maxZoom: 18
       },
       osm_chile: {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        subdomains: ['a', 'b', 'c'],
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        subdomains: [],
         attribution: '&copy; Colaboradores de OpenStreetMap',
         maxZoom: 19
       }
     };
 
-    const cfg = providers[this.basemapProvider] || providers.carto_voyager;
+    const cfg = providers[this.basemapProvider] || providers.osm_chile;
 
     if (this.leafletTileLayer) {
       this.leafletMap.removeLayer(this.leafletTileLayer);
@@ -789,8 +771,8 @@ class ChileMapController {
           const details = [
             p.region_nombre ? `Región: ${p.region_nombre}` : null,
             p.temp_actual_c !== undefined ? `Temp: ${p.temp_actual_c} °C` : null,
-            p.precip_48h_p50_mm !== undefined
-              ? `Lluvia 48h P50/P90: ${p.precip_48h_p50_mm} / ${p.precip_48h_p90_mm} mm`
+            p.precip_48h_forecast_mm !== undefined
+              ? `Lluvia 48 h: pronóstico ${p.precip_48h_forecast_mm} / escenario alto ${p.precip_48h_upper_scenario_mm} mm`
               : null,
             p.isoterma_0_m !== undefined ? `Isoterma 0°C: ${p.isoterma_0_m} m` : null,
             p.caudal_glofas_m3s !== undefined && p.caudal_glofas_m3s !== null
@@ -1155,7 +1137,7 @@ class ChileMapController {
     const stepObj =
       loc.hourlyRain48h.find((s) => s.hourOffset === this.hourOffset) || loc.hourlyRain48h[0];
     const iso0M = this.hourOffset === 0 ? loc.observation.freezingLevelM : stepObj.iso0;
-    const rainMmH = this.hourOffset === 0 ? loc.observation.precip1hMm : stepObj.p50;
+    const rainMmH = this.hourOffset === 0 ? loc.observation.precip1hMm : stepObj.forecastMm;
     const isHighRiskIso = iso0M >= 2750 && rainMmH >= 1.5;
 
     ctx.save();

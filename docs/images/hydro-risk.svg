@@ -18,7 +18,7 @@
       <stop offset="100%" stop-color="#10b981" stop-opacity="0.4"/>
     </linearGradient>
 
-    <!-- Uncertainty Band Gradient (P90 to P10 Envelope) -->
+    <!-- Shaded conceptual upper scenario area; not a calibrated probability band. -->
     <linearGradient id="p90Gradient" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.45"/>
       <stop offset="70%" stop-color="#38bdf8" stop-opacity="0.12"/>
@@ -62,11 +62,11 @@
     <circle cx="50" cy="32" r="6" fill="#f59e0b" fill-opacity="0.8"/>
     <circle cx="70" cy="32" r="6" fill="#10b981" fill-opacity="0.8"/>
 
-    <text x="96" y="37" fill="#f8fafc" font-family="-apple-system, sans-serif" font-weight="800" font-size="16">Física Hidrometeorológica · Ensambles Probabilísticos (P10–P50–P90) e Isoterma 0 °C</text>
+    <text x="96" y="37" fill="#f8fafc" font-family="-apple-system, sans-serif" font-weight="800" font-size="16">Física Hidrometeorológica · Escenarios Ilustrativos e Isoterma 0 °C</text>
 
     <!-- Badge -->
     <rect x="890" y="18" width="220" height="28" rx="6" fill="#10b981" fill-opacity="0.12" stroke="#10b981" stroke-opacity="0.4"/>
-    <text x="906" y="36" fill="#34d399" font-family="-apple-system, sans-serif" font-weight="700" font-size="11">✓ Invariante de Honestidad CA-02</text>
+    <text x="906" y="36" fill="#34d399" font-family="-apple-system, sans-serif" font-weight="700" font-size="11">Diseño conceptual · no son datos actuales</text>
   </g>
 
   <!-- LEFT CARD: Probabilistic Rainfall Uncertainty Envelope -->
@@ -74,7 +74,7 @@
     <rect width="520" height="460" rx="14" fill="url(#hydroGlass)" stroke="url(#hydroBorder)" stroke-width="1.2" filter="url(#hydroShadow)"/>
     <rect width="520" height="46" rx="14" fill="#1e293b" fill-opacity="0.6"/>
     
-    <text x="20" y="28" fill="#f8fafc" font-family="-apple-system, sans-serif" font-weight="800" font-size="13.5">Banda de Incertidumbre de Precipitación (48h)</text>
+    <text x="20" y="28" fill="#f8fafc" font-family="-apple-system, sans-serif" font-weight="800" font-size="13.5">Pronóstico y Escenarios Ilustrativos (48h)</text>
     <rect x="360" y="12" width="140" height="22" rx="5" fill="#0b132b" stroke="#334155"/>
     <text x="372" y="27" fill="#38bdf8" font-family="monospace" font-size="10.5">Cuenca del Río Maipo</text>
 
@@ -93,16 +93,16 @@
       <line x1="50" y1="250" x2="460" y2="250" stroke="#334155"/>
       <text x="16" y="254" fill="#64748b" font-family="monospace" font-size="10.5">0 mm</text>
 
-      <!-- P90 Uncertainty Envelope Shaded Area -->
+      <!-- Illustrative upper-scenario area -->
       <path d="M 60 250 Q 130 240 180 140 Q 230 35 280 80 Q 350 200 450 248 L 450 250 L 60 250 Z" fill="url(#p90Gradient)"/>
 
-      <!-- P90 Curve (Worst-case plausible storm) -->
+      <!-- Illustrative upper-scenario curve -->
       <path d="M 60 250 Q 130 240 180 140 Q 230 35 280 80 Q 350 200 450 248" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-dasharray="5,3" filter="url(#hydroGlow)"/>
 
-      <!-- P50 Curve (Expected Median) -->
+      <!-- Illustrative base forecast curve -->
       <path d="M 60 250 Q 130 245 180 180 Q 230 95 280 135 Q 350 220 450 250" fill="none" stroke="#10b981" stroke-width="3.2"/>
 
-      <!-- P10 Curve (Conservative Minimum) -->
+      <!-- Illustrative lower scenario curve -->
       <path d="M 60 250 Q 130 248 180 220 Q 230 160 280 190 Q 350 238 450 250" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="3,3"/>
 
       <!-- Peak Callout Marker at +14h -->
@@ -112,8 +112,8 @@
         <!-- Callout box -->
         <g transform="translate(10, -50)">
           <rect width="160" height="44" rx="6" fill="#0f172a" fill-opacity="0.95" stroke="#10b981" stroke-width="1.2"/>
-          <text x="10" y="18" fill="#34d399" font-family="-apple-system, sans-serif" font-weight="700" font-size="11">Pico Máximo (+14h)</text>
-          <text x="10" y="34" fill="#ffffff" font-family="monospace" font-weight="700" font-size="10.5">P50: 14.8 mm · P90: 22.4 mm</text>
+          <text x="10" y="18" fill="#34d399" font-family="-apple-system, sans-serif" font-weight="700" font-size="11">Pico ilustrativo (+14h)</text>
+          <text x="10" y="34" fill="#ffffff" font-family="monospace" font-weight="700" font-size="10.5">Base: 14.8 mm · Alto: 22.4 mm</text>
         </g>
       </g>
 
@@ -130,13 +130,13 @@
       <rect width="460" height="50" rx="8" fill="#0a101f" stroke="#1e293b"/>
       
       <line x1="20" y1="25" x2="50" y2="25" stroke="#38bdf8" stroke-width="2.2" stroke-dasharray="5,3"/>
-      <text x="58" y="29" fill="#38bdf8" font-family="-apple-system, sans-serif" font-weight="700" font-size="11">P90 (Peor plausible)</text>
+      <text x="58" y="29" fill="#38bdf8" font-family="-apple-system, sans-serif" font-weight="700" font-size="11">Escenario alto</text>
 
       <line x1="185" y1="25" x2="215" y2="25" stroke="#10b981" stroke-width="3.2"/>
-      <text x="223" y="29" fill="#34d399" font-family="-apple-system, sans-serif" font-weight="700" font-size="11">P50 (Mediana)</text>
+      <text x="223" y="29" fill="#34d399" font-family="-apple-system, sans-serif" font-weight="700" font-size="11">Pronóstico base</text>
 
       <line x1="330" y1="25" x2="360" y2="25" stroke="#94a3b8" stroke-width="2" stroke-dasharray="3,3"/>
-      <text x="368" y="29" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="11">P10 (Mínimo)</text>
+      <text x="368" y="29" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="11">Escenario bajo</text>
     </g>
   </g>
 
@@ -213,6 +213,6 @@
     <circle cx="34" cy="33" r="12" fill="#10b981" fill-opacity="0.15"/>
     <text x="29" y="38" fill="#34d399" font-family="sans-serif" font-weight="900" font-size="14">🛡</text>
     <text x="56" y="30" fill="#34d399" font-family="-apple-system, sans-serif" font-weight="800" font-size="12">Invariante de Honestidad Epistémica de FloodChile:</text>
-    <text x="56" y="48" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="11">Nunca se redondea la incertidumbre a una cifra engañosa. Se comunican las bandas P10–P50–P90 y se exige verificación humana (HITL) ante alertas de evacuación.</text>
+    <text x="56" y="48" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="11">Ilustración conceptual, no datos actuales ni bandas estadísticas. Para alertas oficiales, consultar fuentes institucionales; la supervisión humana es obligatoria.</text>
   </g>
 </svg>

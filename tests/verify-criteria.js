@@ -12,6 +12,7 @@ import {
 } from '../public/js/data/chile-data.js';
 import { MAP_LAYERS_META } from '../public/js/modules/map-engine.js';
 import { SATELLITE_FRAMES } from '../public/js/modules/satellite-viewer.js';
+import { auditSourceCatalog } from '../public/js/modules/source-audit.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,17 +42,17 @@ for (const frame of SATELLITE_FRAMES) {
 }
 console.log('✓ Secuencia de imágenes satelitales GOES-16 y metadatos de captura verificados.');
 
-// 4. CA-02: Verificar rangos de incertidumbre coherentes (P10 <= P50 <= P90) en pronósticos horarios y diarios
+// 4. CA-02: Verificar coherencia de los escenarios de muestra, sin tratarlos como percentiles
 for (const loc of CHILE_LOCATIONS) {
   for (const h of loc.hourlyRain48h) {
-    assert.ok(h.p90 >= h.p50, `Inconsistencia P90 < P50 en lluvia horaria de ${loc.name}`);
+    assert.ok(h.upperScenarioMm >= h.forecastMm, `Escenario superior menor que el pronóstico base en ${loc.name}`);
   }
   for (const d of loc.daily7d) {
-    assert.ok(d.tP10 <= d.tMin && d.tP90 >= d.tMax, `Inconsistencia de banda térmica en ${loc.name}`);
-    assert.ok(d.precipP90 >= d.precipP50, `Inconsistencia P90 < P50 en lluvia diaria de ${loc.name}`);
+    assert.ok(d.tempLowReferenceC <= d.tMin && d.tempHighReferenceC >= d.tMax, `Inconsistencia de banda térmica en ${loc.name}`);
+    assert.ok(d.precipUpperScenarioMm >= d.precipForecastMm, `Escenario superior menor que el pronóstico base en ${loc.name}`);
   }
 }
-console.log('✓ CA-02: Rangos de incertidumbre (P10–P50–P90) verificados en todas las comunas.');
+console.log('✓ CA-02: Coherencia de pronóstico base y escenarios superiores de muestra verificada.');
 
 // 5. CA-01: Verificar diferenciación explícita entre Alertas Oficiales y Estimaciones de la App en 4 niveles
 const validSeverities = new Set(['INFORMATIVA', 'PREVENTIVA', 'TEMPRANA', 'EXTREMA']);
@@ -73,13 +74,13 @@ for (const sc of SCENARIOS_DATA) {
 }
 console.log('✓ Sección 6: Escenarios plausibles con factores de respaldo y señales de cambio verificados.');
 
-// 7. CA-03: Verificar registro histórico de predicciones anteriores vs observaciones reales
+// 7. CA-03: Verificar que la estructura de demostración histórica esté disponible
 assert.ok(VERIFICATION_HISTORY.length >= 5, 'Debe mantener registro de predicciones anteriores');
 for (const ver of VERIFICATION_HISTORY) {
-  const diff = Math.abs(ver.predictedPrecipP50Mm - ver.observedPrecipMm);
+  const diff = Math.abs(ver.predictedPrecipMm - ver.observedPrecipMm);
   assert.ok(Math.abs(diff - ver.precipAbsErrorMm) < 0.15, `Error absoluto mal calculado en ${ver.id}`);
 }
-console.log('✓ CA-03: Registro de verificación histórica (Predicho vs. Observado) validado.');
+console.log('✓ CA-03: Datos sintéticos de demostración y consistencia aritmética verificados.');
 
 // 8. CA-08 y CA-09: Verificar trazabilidad de Agentes de IA y bloqueo HITL
 const evidenceMap = AI_AGENTS_DATA.evidenceRegistry;
@@ -99,6 +100,40 @@ for (const hitl of AI_AGENTS_DATA.hitlQueue) {
   }
 }
 console.log('✓ CA-08 y CA-09: Trazabilidad 100% de citas de Agentes IA y bloqueo HITL verificados.');
+
+// 8a. Auditor de fuentes: fechas vencidas contradicen ONLINE y requieren revisión.
+const sourceAudit = auditSourceCatalog([
+  { id: 'source-a', name: 'Fuente A', shortName: 'A', url: 'https://example.org', accessNotes: 'Catálogo', status: 'ONLINE', lastUpdatedUtc: '2026-10-19T00:00:00Z', ttlMinutes: 60 }
+], { now: Date.parse('2026-10-20T00:00:00Z') });
+assert.equal(sourceAudit.reviewRequired, true);
+assert.match(sourceAudit.findings[0].problems[1], /ONLINE/);
+console.log('✓ Auditor de fuentes: TTL vencido y estado ONLINE quedan pendientes de revisión humana.');
+
+const liveAudit = auditSourceCatalog([
+  { id: 'openmeteo-multi', name: 'Open-Meteo', shortName: 'Open-Meteo', url: 'https://example.org', accessNotes: 'API', status: 'ONLINE', lastUpdatedUtc: '2026-10-20T00:00:00Z', ttlMinutes: 180 }
+], {
+  now: Date.parse('2026-10-20T00:10:00Z'),
+  openMeteo: { syncedLocationCount: 2, totalLocationCount: 2, lastSuccessAtUtc: '2026-10-20T00:05:00Z' }
+});
+assert.equal(liveAudit.runtimeChecks[0].status, 'RESPUESTA_RECIENTE');
+assert.equal(liveAudit.reviewRequired, false);
+console.log('✓ Auditor de fuentes: la consulta reciente de Open-Meteo se valida con cobertura y TTL.');
+
+const partialLiveAudit = auditSourceCatalog([], {
+  now: Date.parse('2026-10-20T00:10:00Z'),
+  openMeteo: { syncedLocationCount: 1, totalLocationCount: 2, lastSuccessAtUtc: '2026-10-20T00:05:00Z' }
+});
+assert.equal(partialLiveAudit.runtimeChecks[0].status, 'COBERTURA_PARCIAL');
+assert.equal(partialLiveAudit.reviewRequired, true);
+console.log('✓ Auditor de fuentes: detecta cobertura incompleta de Open-Meteo.');
+
+// 8b. Un fallo de ingesta no debe convertirse en alerta oficial ni activación SAE.
+const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+assert.match(serverSource, /const merged = scrapedAlerts\.map/);
+assert.match(serverSource, /isSaeActivation: false/);
+assert.match(serverSource, /sourceAvailable,\s*alerts: result\.alerts/);
+assert.doesNotMatch(serverSource, /SENAPRED-SAE-2026-01|DMC-AVISO-A320-2026|SENAPRED-AMARILLA-2026-03/);
+console.log('✓ Ingesta: no convierte datos de contingencia en alertas oficiales ni activaciones SAE.');
 
 // 9. Verificar existencia de entregables documentales, PWA y mejoras P1–P3
 const docPath = path.join(__dirname, '..', 'docs', 'propuesta-tecnica.md');

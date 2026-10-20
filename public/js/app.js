@@ -32,9 +32,10 @@ import {
   stopAudioAlarm,
   isAudioAlarmPlaying
 } from './modules/audio-alarm.js';
+import { auditSourceCatalog } from './modules/source-audit.js';
 
 const STATE = {
-  themePref: 'apple', // 'apple' | 'retro' | 'light' | 'dark' | 'system'
+  themePref: 'light', // 'retro' | 'light' | 'dark' | 'system'
   viewMode: 'citizen', // 'citizen' | 'technical'
   activeNavGroup: 'mapa', // 'mapa' | 'pronostico' | 'alertas' | 'mas'
   activeTabId: 'tab-mapa',
@@ -57,6 +58,7 @@ const STATE = {
   alertOriginFilter: 'ALL',
   alertSeverityFilter: 'ALL',
   highlightedEvidenceId: null,
+  sourceAuditReport: null,
   notifications: [],
   liveSenapredAlerts: [],
   liveSenapredFetched: false,
@@ -130,13 +132,14 @@ function applyViewMode(mode) {
 }
 
 function initPreferencesFromStorage() {
-  let savedTheme = 'apple';
+  let savedTheme = 'light';
   let savedViewMode = 'citizen';
   try {
-    savedTheme = localStorage.getItem('climasflood_theme_v2') || 'apple';
+    savedTheme = localStorage.getItem('climasflood_theme_v2') || 'light';
+    if (savedTheme === 'apple') savedTheme = 'light';
     savedViewMode = localStorage.getItem('climasflood_view_mode') || 'citizen';
   } catch {
-    savedTheme = 'apple';
+    savedTheme = 'light';
     savedViewMode = 'citizen';
   }
   applyThemePreference(savedTheme);
@@ -155,6 +158,10 @@ function activateTab(tabId) {
   const group = TAB_TO_GROUP[tabId] || 'mapa';
   STATE.activeTabId = tabId;
   STATE.activeNavGroup = group;
+  const activeNavItem = document.querySelector(`.sidebar-nav-item[data-tab="${tabId}"]`);
+  if (activeNavItem?.closest('#sidebarMoreTools')) {
+    document.getElementById('sidebarMoreTools').open = true;
+  }
 
   document.querySelectorAll('.nav-group-btn').forEach((btn) => {
     const isGroup = btn.getAttribute('data-nav-group') === group;
@@ -276,18 +283,18 @@ function computeValidTimeForOffset(baseIsoUtc, offsetHours, tzOverride) {
 
 function buildFriendlyCitizenGuidance(loc) {
   const o = loc.observation;
-  const p50_48h = (loc.daily7d[0]?.precipP50 || 0) + (loc.daily7d[1]?.precipP50 || 0);
-  const p90_48h = (loc.daily7d[0]?.precipP90 || 0) + (loc.daily7d[1]?.precipP90 || 0);
+  const forecast48hMm = (loc.daily7d[0]?.precipForecastMm || 0) + (loc.daily7d[1]?.precipForecastMm || 0);
+  const upperScenario48hMm = (loc.daily7d[0]?.precipUpperScenarioMm || 0) + (loc.daily7d[1]?.precipUpperScenarioMm || 0);
   const sampleNote = o.isLiveSynced
-    ? 'Pronóstico sincronizado con Open-Meteo.'
+    ? 'Pronóstico base de Open-Meteo; el escenario alto es una heurística, no un percentil.'
     : 'Escenario de demostración (datos de muestra).';
 
   if (STATE.viewMode === 'technical') {
-    return `<strong>Diagnóstico Técnico (${loc.name}):</strong> ${loc.keyPhenomenon} Acumulado 48h proyectado: <strong>${p50_48h.toFixed(1)} mm (P50)</strong> a <strong>${p90_48h.toFixed(1)} mm (P90)</strong> en cuenca <em>${loc.basin}</em>. <em>(${sampleNote})</em>`;
+    return `<strong>Resumen técnico (${loc.name}):</strong> ${loc.keyPhenomenon} Lluvia 48 h: <strong>${forecast48hMm.toFixed(1)} mm de pronóstico base</strong>; escenario superior de referencia: <strong>${upperScenario48hMm.toFixed(1)} mm</strong> en cuenca <em>${loc.basin}</em>. <em>(${sampleNote})</em>`;
   }
 
   if (loc.summaryRisk === 'EXTREMA') {
-    return `<strong>¿Qué hacer a continuación?</strong> En este escenario se proyectan lluvias intensas (${p50_48h.toFixed(1)} a ${p90_48h.toFixed(1)} mm en 48 h) con cota de nieve alta (${o.freezingLevelM} m). Evita acercarte a riberas, quebradas y pasos bajo nivel de la cuenca <em>${loc.basin}</em>. <em>(${sampleNote})</em>`;
+    return `<strong>¿Qué hacer a continuación?</strong> El pronóstico base estima ${forecast48hMm.toFixed(1)} mm en 48 h; el escenario alto de referencia llega a ${upperScenario48hMm.toFixed(1)} mm, con cota de congelación en ${o.freezingLevelM} m. Evita acercarte a riberas, quebradas y pasos bajo nivel de la cuenca <em>${loc.basin}</em>. <em>(${sampleNote})</em>`;
   }
   if (loc.summaryRisk === 'TEMPRANA') {
     return `<strong>¿Qué hacer a continuación?</strong> ${loc.keyPhenomenon} Revisa canaletas, evita sectores anegables y precaución ante rachas de ${o.windGustKmh} km/h. <em>(${sampleNote})</em>`;
@@ -345,11 +352,12 @@ function updateClockAndHeaderStatus() {
   const condBanner = document.getElementById('detailConditionBanner');
   const heroTemp = document.getElementById('heroCurrentTemp');
   const heroPrecip48h = document.getElementById('heroPrecip48h');
+  const heroPrecipLabel = document.getElementById('heroPrecipLabel');
   const heroIsoLevel = document.getElementById('heroIsoLevel');
   const heroGuidance = document.getElementById('heroHumanSummary');
 
-  const p50_48h = (loc.daily7d[0]?.precipP50 || 0) + (loc.daily7d[1]?.precipP50 || 0);
-  const p90_48h = (loc.daily7d[0]?.precipP90 || 0) + (loc.daily7d[1]?.precipP90 || 0);
+  const forecast48hMm = (loc.daily7d[0]?.precipForecastMm || 0) + (loc.daily7d[1]?.precipForecastMm || 0);
+  const upperScenario48hMm = (loc.daily7d[0]?.precipUpperScenarioMm || 0) + (loc.daily7d[1]?.precipUpperScenarioMm || 0);
 
   if (kpiName) kpiName.textContent = `${loc.name} (${loc.regionName})`;
   if (kpiMeta) {
@@ -367,7 +375,12 @@ function updateClockAndHeaderStatus() {
     heroTemp.textContent = `${loc.observation.tempC.toFixed(1)} °C · ${loc.observation.precip1hMm.toFixed(1)} mm/h`;
   }
   if (heroPrecip48h) {
-    heroPrecip48h.textContent = `${p50_48h.toFixed(1)} – ${p90_48h.toFixed(1)} mm`;
+    heroPrecip48h.textContent = `${forecast48hMm.toFixed(1)} / ${upperScenario48hMm.toFixed(1)} mm`;
+  }
+  if (heroPrecipLabel) {
+    heroPrecipLabel.textContent = loc.observation.isLiveSynced
+      ? 'Pronóstico base / escenario alto aprox. · no percentiles'
+      : 'Valores ilustrativos · datos de demostración';
   }
   if (heroIsoLevel) {
     heroIsoLevel.textContent = `${loc.observation.freezingLevelM} m s.n.m.`;
@@ -383,8 +396,8 @@ function updateClockAndHeaderStatus() {
     heroHourlyScrubber.innerHTML = nextHours
       .map((h, i) => {
         const label = i === 0 ? 'Ahora' : `+${h.hourOffset}h`;
-        const rain = (h.p50 || 0).toFixed(1);
-        const icon = (h.p50 || 0) > 1.5 ? '🌧' : (h.p50 || 0) > 0 ? '🌦' : '⛅';
+        const rain = (h.forecastMm || 0).toFixed(1);
+        const icon = (h.forecastMm || 0) > 1.5 ? '🌧' : (h.forecastMm || 0) > 0 ? '🌦' : '⛅';
         return `
           <div class="hourly-scrub-pill ${i === 0 ? 'active' : ''}">
             <span class="scrub-hour">${label}</span>
@@ -681,36 +694,22 @@ function renderMapAndDetailView() {
     keyPhenEl.innerHTML = `<strong>Foco local:</strong> ${loc.keyPhenomenon}`;
   }
   if (miniFcst) {
+    const points = loc.hourlyRain48h || [];
+    const maxRain = Math.max(1, ...points.map((point) => point.upperScenarioMm));
     miniFcst.innerHTML = `
-      <div class="forecast-table-wrapper">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Día</th>
-              <th>Condición</th>
-              <th>Temp. (P10–P90)</th>
-              <th>Lluvia P50 (P90)</th>
-              <th>Iso 0 °C</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${loc.daily7d
-              .slice(0, 3)
-              .map(
-                (d) => `
-              <tr>
-                <td><strong>${d.day}</strong></td>
-                <td>${d.cond}</td>
-                <td>${d.tMin}°/${d.tMax}°C <span class="uncertainty-range">${d.tP10}°..${d.tP90}°</span></td>
-                <td><strong>${d.precipP50.toFixed(1)} mm</strong> <span class="uncertainty-range">≤${d.precipP90.toFixed(1)}</span></td>
-                <td>${d.iso0M} m</td>
-              </tr>
-            `
-              )
-              .join('')}
-          </tbody>
-        </table>
-      </div>
+      <figure class="mini-rain-figure">
+        <div class="mini-rain-bars" role="img" aria-label="Pronóstico de lluvia cada tres a seis horas durante las próximas 48 horas">
+          ${points.map((point) => `
+            <span class="mini-rain-column" title="${point.hourOffset === 0 ? 'Ahora' : `Más ${point.hourOffset} horas`}: pronóstico ${point.forecastMm} mm; escenario superior ${point.upperScenarioMm} mm">
+              <span class="mini-rain-upper" style="height:${Math.max(2, (point.upperScenarioMm / maxRain) * 100)}%"></span>
+              <span class="mini-rain-base" style="height:${Math.max(2, (point.forecastMm / maxRain) * 100)}%"></span>
+            </span>
+          `).join('')}
+        </div>
+        <div class="mini-rain-axis" aria-hidden="true">
+          ${points.map((point) => `<span>${[0, 12, 24, 36, 48].includes(point.hourOffset) ? (point.hourOffset ? `+${point.hourOffset}h` : 'Ahora') : ''}</span>`).join('')}
+        </div>
+      </figure>
     `;
   }
 
@@ -720,13 +719,13 @@ function renderMapAndDetailView() {
       (a) => a.communesIds.includes(loc.id) || a.regions.includes(loc.regionCode)
     );
     const o = loc.observation;
-    const p50_48h = (loc.daily7d[0]?.precipP50 || 0) + (loc.daily7d[1]?.precipP50 || 0);
-    const p90_48h = (loc.daily7d[0]?.precipP90 || 0) + (loc.daily7d[1]?.precipP90 || 0);
+    const forecast48hMm = (loc.daily7d[0]?.precipForecastMm || 0) + (loc.daily7d[1]?.precipForecastMm || 0);
+    const upperScenario48hMm = (loc.daily7d[0]?.precipUpperScenarioMm || 0) + (loc.daily7d[1]?.precipUpperScenarioMm || 0);
     const liveSignals = [];
-    if (p50_48h >= 15 || p90_48h >= 30) {
-      liveSignals.push(`Precipitación 48h proyectada: ${p50_48h.toFixed(1)}–${p90_48h.toFixed(1)} mm`);
+    if (forecast48hMm >= 15) {
+      liveSignals.push(`Pronóstico de lluvia 48 h: ${forecast48hMm.toFixed(1)} mm; escenario superior de referencia: ${upperScenario48hMm.toFixed(1)} mm`);
     }
-    if (o.freezingLevelM >= 2700 && p50_48h >= 5) {
+    if (o.freezingLevelM >= 2700 && forecast48hMm >= 5) {
       liveSignals.push(`Isoterma 0 °C elevada (${o.freezingLevelM} m s.n.m.) con lluvia prevista`);
     }
     if (o.windGustKmh >= 45) {
@@ -750,7 +749,7 @@ function renderMapAndDetailView() {
           ${
             liveSignals.length
               ? `<strong>Señales detectadas en ${loc.name}:</strong> ${liveSignals.join(' · ')}.`
-              : `Sin umbrales hidrometeorológicos críticos superados en las próximas 48 h (${p50_48h.toFixed(1)} mm P50, racha ${o.windGustKmh} km/h).`
+              : `Sin umbrales hidrometeorológicos críticos superados en las próximas 48 h (${forecast48hMm.toFixed(1)} mm de pronóstico base, racha ${o.windGustKmh} km/h).`
           }
         </div>
         <div style="display:flex; gap:0.6rem; flex-wrap:wrap; font-size:0.75rem;">
@@ -881,7 +880,7 @@ function renderForecast7dAndNationalSection() {
           : 'Datos de muestra predefinidos en chile-data.js (sin conexión a Open-Meteo o actualizando)'
       }</span>
       <span>•</span>
-      <span><strong>Incertidumbre:</strong> Banda P10–P90 en temperatura y mediana P50 a techo P90 en precipitación.</span>
+      <span><strong>Lectura:</strong> temperatura mínima/máxima del proveedor; lluvia base y escenario superior heurístico (no percentiles).</span>
     `;
   }
 
@@ -894,11 +893,10 @@ function renderForecast7dAndNationalSection() {
           <td>${d.cond}</td>
           <td>
             <strong>${d.tMin}°C / ${d.tMax}°C</strong>
-            <span class="uncertainty-range">P10–P90: ${d.tP10}° a ${d.tP90}°C</span>
           </td>
           <td>
-            <strong>${d.precipP50.toFixed(1)} mm</strong>
-            <span class="uncertainty-range">0 a ${d.precipP90.toFixed(1)} mm</span>
+            <strong>${d.precipForecastMm.toFixed(1)} mm</strong>
+            <span class="uncertainty-range">Esc. alto aprox.: ${d.precipUpperScenarioMm.toFixed(1)} mm</span>
           </td>
           <td>${d.probPct}%</td>
           <td><strong>${d.iso0M} m s.n.m.</strong></td>
@@ -914,8 +912,8 @@ function renderForecast7dAndNationalSection() {
   if (natBody) {
     natBody.innerHTML = CHILE_LOCATIONS.map((item) => {
       const sev = SEVERITY_META[item.summaryRisk] || SEVERITY_META.INFORMATIVA;
-      const p50_48h = (item.daily7d[0].precipP50 + item.daily7d[1].precipP50).toFixed(1);
-      const p90_48h = (item.daily7d[0].precipP90 + item.daily7d[1].precipP90).toFixed(1);
+      const forecast48hMm = (item.daily7d[0].precipForecastMm + item.daily7d[1].precipForecastMm).toFixed(1);
+      const upperScenario48hMm = (item.daily7d[0].precipUpperScenarioMm + item.daily7d[1].precipUpperScenarioMm).toFixed(1);
       return `
         <tr>
           <td>${item.macrozone}</td>
@@ -926,7 +924,7 @@ function renderForecast7dAndNationalSection() {
           }</td>
           <td>${item.observation.tempC.toFixed(1)} °C</td>
           <td>${item.observation.precip24hMm.toFixed(1)} mm</td>
-          <td><strong>${p50_48h} mm</strong> <span class="uncertainty-range">P90: ${p90_48h} mm</span></td>
+          <td><strong>${forecast48hMm} mm</strong> <span class="uncertainty-range">Esc. alto: ${upperScenario48hMm} mm</span></td>
           <td>${item.observation.freezingLevelM} m</td>
           <td>${item.observation.windGustKmh} km/h (${item.observation.windDir})</td>
           <td><span class="severity-pill ${sev.css}">${sev.icon} ${sev.label}</span></td>
@@ -966,8 +964,8 @@ function renderRainfallSection() {
   renderHourlyRainChartSVG(chartContainer, loc);
 
   if (episodesContainer) {
-    const sumP50 = loc.daily7d.slice(0, 2).reduce((acc, d) => acc + d.precipP50, 0);
-    const sumP90 = loc.daily7d.slice(0, 2).reduce((acc, d) => acc + d.precipP90, 0);
+    const sumForecast = loc.daily7d.slice(0, 2).reduce((acc, d) => acc + d.precipForecastMm, 0);
+    const sumUpperScenario = loc.daily7d.slice(0, 2).reduce((acc, d) => acc + d.precipUpperScenarioMm, 0);
     const maxIso = Math.max(...loc.hourlyRain48h.map((h) => h.iso0));
     const minIso = Math.min(...loc.hourlyRain48h.map((h) => h.iso0));
     const maxSnow = loc.daily7d.slice(0, 2).reduce((acc, d) => acc + d.snowCm, 0);
@@ -975,17 +973,17 @@ function renderRainfallSection() {
     episodesContainer.innerHTML = `
       <div class="alert-card sev-border-${loc.summaryRisk}">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-          <strong>Acumulado Estimado en 48 Horas (Banda P50–P90)</strong>
+          <strong>Lluvia en 48 horas</strong>
           <span class="epistemic-badge badge-pronostico">${
             loc.observation.isLiveSynced ? 'Open-Meteo' : 'Datos de muestra'
           }</span>
         </div>
         <div style="font-size:1.2rem; font-weight:800; color:var(--accent-text); margin:0.25rem 0; font-family:var(--font-mono);">
-          Mediana (P50): ${sumP50.toFixed(1)} mm · Techo Húmedo (P90): ${sumP90.toFixed(1)} mm
+          Pronóstico base: ${sumForecast.toFixed(1)} mm · Escenario superior: ${sumUpperScenario.toFixed(1)} mm
         </div>
         <p style="margin:0.35rem 0 0; font-size:0.84rem; color:var(--text-secondary);">
           <strong>Cuenca de referencia:</strong> <em>${loc.basin}</em>.
-          Los montos expresan un intervalo de probabilidad y no una cifra única determinista.
+          ${loc.observation.isLiveSynced ? 'El escenario superior se obtiene con una regla fija; no es percentil ni intervalo calibrado.' : 'Valores de demostración; no representan un pronóstico operativo.'}
         </p>
       </div>
 
@@ -999,7 +997,7 @@ function renderRainfallSection() {
         </div>
         <p style="margin:0.35rem 0 0; font-size:0.84rem; color:var(--text-secondary);">
           ${
-            maxIso >= 2750 && sumP50 >= 15
+            maxIso >= 2750 && sumForecast >= 15
               ? '⚠ Atención en escenario: Cota de isoterma 0 °C sobre 2.750 m s.n.m. con precipitación activa incrementa el área pluvial en precordillera.'
               : 'Cota de congelación dentro de rangos habituales para la cuenca; nieve restringida a sectores cordilleranos altos.'
           }
@@ -1019,9 +1017,13 @@ export async function loadLiveSenapredAlerts(force = false) {
       STATE.liveSenapredFetched = true;
 
       const statusText = document.getElementById('senapredLiveStatusText');
+      const statusDot = document.getElementById('senapredStatusDot');
       if (statusText) {
-        statusText.innerHTML = `🟢 Ingesta activa: <strong>${res.alerts.length} alertas oficiales</strong> sincronizadas (SENAPRED / DMC / SAE)`;
+        statusText.textContent = res.sourceAvailable
+          ? `Portal SENAPRED consultado: ${res.alerts.length} enlaces encontrados. El contenido requiere verificación en la fuente.`
+          : 'Portal SENAPRED no disponible; se muestran registros de demostración por separado.';
       }
+      statusDot?.classList.toggle('online', res.sourceAvailable);
 
       // Sincronizar directamente con el sistema de Agentes de IA (Detección directa SAE)
       const saeAlert = res.alerts.find((a) => a.isSaeActivation);
@@ -1192,13 +1194,13 @@ function renderAlertsSection() {
               </span>
               ${
                 a.isLiveScraped
-                  ? '<span class="epistemic-badge badge-observacion">🟢 Transmisión Oficial en Vivo</span>'
+                  ? '<span class="epistemic-badge badge-observacion">Enlace encontrado en portal oficial</span>'
                   : '<span class="epistemic-badge badge-estimacion">🧪 Registro de Demostración</span>'
               }
               <span class="epistemic-badge badge-pronostico">Confianza: ${a.confidenceLevel}</span>
             </div>
             <span style="font-size:0.76rem; color:var(--text-muted); font-family:var(--font-mono);">
-              ID: ${a.id} · Ref: ${formatUtcInChileTz(a.issuedAtUtc)}
+              ID: ${a.id} · ${a.isLiveScraped ? 'Publicación: ' : 'Ref: '}${formatUtcInChileTz(a.issuedAtUtc)}
             </span>
           </div>
 
@@ -1464,7 +1466,7 @@ function renderPredictiveAndVerificationSection() {
   const verTableBody = document.getElementById('verificationTableBody');
 
   if (titleEl && loc) {
-    titleEl.textContent = `Comparación Multimodelo (ECMWF · GFS · ICON) — ${loc.name}`;
+    titleEl.textContent = `Comparación ilustrativa de modelos — ${loc.name}`;
   }
 
   if (modelContainer && loc) {
@@ -1488,19 +1490,19 @@ function renderPredictiveAndVerificationSection() {
   if (verMetrics) {
     verMetrics.innerHTML = `
       <div class="obs-metric-box">
-        <div class="obs-metric-label">MAE Precipitación</div>
+        <div class="obs-metric-label">MAE de muestra · lluvia</div>
         <div class="obs-metric-val">±${avgRainErr.toFixed(1)} mm</div>
-        <div class="obs-metric-sub">Error medio absoluto</div>
+        <div class="obs-metric-sub">Dato sintético, no validado</div>
       </div>
       <div class="obs-metric-box">
-        <div class="obs-metric-label">MAE Temp. Máx</div>
+        <div class="obs-metric-label">MAE de muestra · temp. máx.</div>
         <div class="obs-metric-val">±${avgTempErr.toFixed(1)} °C</div>
-        <div class="obs-metric-sub">Error medio 24–72h</div>
+        <div class="obs-metric-sub">Dato sintético, no validado</div>
       </div>
       <div class="obs-metric-box">
-        <div class="obs-metric-label">Cobertura P10–P90</div>
+        <div class="obs-metric-label">Dentro del rango de muestra</div>
         <div class="obs-metric-val" style="color:var(--tag-obs-text);">${bandCoverage.toFixed(0)}%</div>
-        <div class="obs-metric-sub">Acierto dentro de banda</div>
+        <div class="obs-metric-sub">Cobertura de datos sintéticos</div>
       </div>
     `;
   }
@@ -1514,21 +1516,21 @@ function renderPredictiveAndVerificationSection() {
             <span class="verif-lead-pill">-${v.leadTimeHours}h (${v.targetDate})</span>
           </div>
           <span class="eval-status-badge ${v.withinUncertaintyBand ? 'in-band' : 'out-band'}">
-            ${v.withinUncertaintyBand ? '✓ En Rango' : '✕ Fuera'}
+            ${v.withinUncertaintyBand ? '✓ Muestra dentro del rango' : '✕ Muestra fuera del rango'}
           </span>
         </div>
         <div class="verif-card-grid">
           <div class="verif-stat-box">
-            <span class="verif-stat-label">Lluvia Pred. vs Real</span>
+            <span class="verif-stat-label">Lluvia de muestra: predicción → referencia</span>
             <div class="verif-stat-val">
-              <span>${v.predictedPrecipP50Mm.toFixed(1)}</span>
+              <span>${v.predictedPrecipMm.toFixed(1)}</span>
               <span class="verif-arrow">→</span>
               <strong>${v.observedPrecipMm.toFixed(1)} mm</strong>
             </div>
             <span class="verif-delta-sub">Error: ±${v.precipAbsErrorMm.toFixed(1)} mm</span>
           </div>
           <div class="verif-stat-box">
-            <span class="verif-stat-label">Temp. Pred. vs Real</span>
+            <span class="verif-stat-label">Temperatura de muestra: predicción → referencia</span>
             <div class="verif-stat-val">
               <span>${v.predictedTempMaxC}°</span>
               <span class="verif-arrow">→</span>
@@ -1548,7 +1550,7 @@ function renderPredictiveAndVerificationSection() {
         <tr>
           <td><strong>${v.locationName}</strong></td>
           <td style="white-space:nowrap;">${v.targetDate} <span class="lead-time-pill">-${v.leadTimeHours}h</span></td>
-          <td>${Number(v.predictedPrecipP50Mm || 0).toFixed(1)} mm <span class="uncertainty-range">[${v.predictedPrecipRangeMm || ''}]</span></td>
+          <td>${Number(v.predictedPrecipMm || 0).toFixed(1)} mm <span class="uncertainty-range">[${v.predictedPrecipRangeMm || ''}]</span></td>
           <td><strong>${Number(v.observedPrecipMm || 0).toFixed(1)} mm</strong></td>
           <td><span class="mono-err">±${Number(v.precipAbsErrorMm || 0).toFixed(1)} mm</span></td>
           <td>${v.predictedTempMaxC}° / <strong>${v.observedTempMaxC}°C</strong></td>
@@ -1594,10 +1596,52 @@ function saveHitlDecision(hitlId, decision) {
   }
 }
 
+function renderSourceAuditReport() {
+  const container = document.getElementById('sourceAuditReport');
+  if (!container || !STATE.sourceAuditReport) return;
+
+  const report = STATE.sourceAuditReport;
+  container.replaceChildren();
+  const summary = document.createElement('p');
+  summary.textContent = `Revisión local · ${report.sourceCount} fuentes · ${report.findings.length} con observaciones · ${report.reviewRequired ? 'pendiente de revisión humana' : 'sin observaciones de catálogo'} · ${formatUtcInChileTz(report.checkedAtUtc)}`;
+  container.append(summary);
+
+  for (const check of report.runtimeChecks) {
+    const runtime = document.createElement('p');
+    runtime.textContent = `${check.name}: ${check.status} · ${check.detail}`;
+    container.append(runtime);
+  }
+
+  if (!report.findings.length) return;
+  const list = document.createElement('ul');
+  for (const finding of report.findings) {
+    const item = document.createElement('li');
+    const title = document.createElement('strong');
+    title.textContent = finding.name;
+    item.append(title);
+    for (const problem of finding.problems) {
+      const detail = document.createElement('div');
+      detail.textContent = problem;
+      item.append(detail);
+    }
+    if (finding.url) {
+      const link = document.createElement('a');
+      link.href = finding.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = ' Abrir fuente';
+      item.append(link);
+    }
+    list.append(item);
+  }
+  container.append(list);
+}
+
 function renderAgentsSection() {
   const agentsContainer = document.getElementById('agentsCardsContainer');
   const hitlContainer = document.getElementById('hitlQueueContainer');
   const evidenceBody = document.getElementById('evidenceTableBody');
+  renderSourceAuditReport();
 
   // Sincronizar estado HITL con localStorage para persistir entre recargas (F5)
   const storedDecisions = getStoredHitlDecisions();
@@ -1916,7 +1960,7 @@ function renderSourcesAndCriteriaSection() {
   if (criteriaBox) {
     const criteria = [
       { code: 'CA-01', title: 'Separación estricta', desc: 'Etiquetas para Observación, Pronóstico, Estimación y Alerta Oficial.' },
-      { code: 'CA-02', title: 'Bandas de incertidumbre', desc: 'Banda P10–P50–P90 obligatoria; sin falsa certeza.' },
+      { code: 'CA-02', title: 'Consistencia de escenarios', desc: 'Pronóstico base y escenario superior de muestra se mantienen ordenados; no se presentan como percentiles.' },
       { code: 'CA-03', title: 'Verificación histórica', desc: 'Predicho vs Observado con MAE y cobertura de banda.' },
       { code: 'CA-04', title: 'Metadatos y hora local', desc: 'Procedencia, enlaces directos y hora de Chile (UTC-3/UTC-5).' },
       { code: 'CA-05', title: 'Detección de fuente vencida', desc: 'Aviso visual explícito al superar TTL (>45 min).' },
@@ -1961,6 +2005,25 @@ function refreshAllViews() {
 }
 
 function setupEventListeners() {
+  document.getElementById('btnRunSourceAudit')?.addEventListener('click', () => {
+    const liveLocations = CHILE_LOCATIONS.filter(
+      (location) => location.observation.isLiveSynced && location.observation.sourceId === 'openmeteo-multi'
+    );
+    const lastSuccessAt = liveLocations
+      .map((location) => location.observation.observedAtUtc)
+      .filter(Boolean)
+      .sort()
+      .at(-1) || null;
+    STATE.sourceAuditReport = auditSourceCatalog(DATA_SOURCES, {
+      openMeteo: {
+        syncedLocationCount: liveLocations.length,
+        totalLocationCount: CHILE_LOCATIONS.length,
+        lastSuccessAtUtc: lastSuccessAt
+      }
+    });
+    renderSourceAuditReport();
+  });
+
   // Conmutador de Tema (Claro / Oscuro / Automático)
   document.querySelectorAll('.theme-toggle button').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -2335,16 +2398,17 @@ function setupEventListeners() {
   if (btnTestNotif) {
     btnTestNotif.addEventListener('click', async () => {
       const loc = getSelectedLocation();
+      const forecast48hMm = loc.daily7d.slice(0, 2).reduce((sum, day) => sum + day.precipForecastMm, 0);
       const banner = document.getElementById('staleWarningBanner');
       const text = document.getElementById('staleWarningText');
       if (banner && text) {
         banner.classList.remove('hidden');
-        text.innerHTML = `🔔 <strong>Notificación Web Push Nativa para ${loc.name}:</strong> Nivel ${loc.summaryRisk} — ${loc.keyPhenomenon} (Lluvia 48h: ${loc.precipP50Mm} mm).`;
+        text.innerHTML = `🔔 <strong>Notificación Web Push de prueba para ${loc.name}:</strong> Nivel ${loc.summaryRisk} — ${loc.keyPhenomenon} (pronóstico base 48 h: ${forecast48hMm.toFixed(1)} mm).`;
       }
 
       await triggerNativeWebPushNotification({
         title: `FloodChile · Alerta: ${loc.name}`,
-        body: `Riesgo ${loc.summaryRisk} (${loc.keyPhenomenon}). Lluvia P50: ${loc.precipP50Mm} mm · Isoterma 0 °C: ${loc.freezingLevelM} m.`,
+        body: `Escenario de demostración: nivel ${loc.summaryRisk} (${loc.keyPhenomenon}). Pronóstico base de lluvia 48 h: ${forecast48hMm.toFixed(1)} mm · Isoterma 0 °C: ${loc.freezingLevelM} m.`,
         tag: `push-commune-${loc.id}`
       });
 

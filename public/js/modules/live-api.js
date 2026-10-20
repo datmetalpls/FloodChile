@@ -189,13 +189,15 @@ export async function fetchLiveOpenMeteoForLocation(location) {
       location.hourlyRain48h = steps
         .filter((idx) => idx < data.hourly.time.length)
         .map((idx) => {
-          const p50 = Number((data.hourly.precipitation?.[idx] ?? 0).toFixed(1));
+          const forecastMm = Number((data.hourly.precipitation?.[idx] ?? 0).toFixed(1));
           const prob = data.hourly.precipitation_probability?.[idx] ?? 20;
-          const p90 = Number((p50 * 1.65 + (prob > 50 ? 1.2 : 0.2)).toFixed(1));
+          // Regla de presentación; no es un cuantíl ni está calibrada.
+          const upperScenarioMm = Number((forecastMm * 1.65 + (prob > 50 ? 1.2 : 0.2)).toFixed(1));
           return {
             hourOffset: idx,
-            p50,
-            p90,
+            forecastMm,
+            upperScenarioMm,
+            probabilityPct: prob,
             iso0: Math.round(data.hourly.freezing_level_height?.[idx] ?? location.observation.freezingLevelM),
             wind: Math.round(data.hourly.wind_speed_10m?.[idx] ?? location.observation.windKmh),
             temp: Number((data.hourly.temperature_2m?.[idx] ?? location.observation.tempC).toFixed(1))
@@ -207,19 +209,18 @@ export async function fetchLiveOpenMeteoForLocation(location) {
       location.daily7d = data.daily.time.slice(0, 7).map((dateStr, idx) => {
         const tMin = Math.round(data.daily.temperature_2m_min?.[idx] ?? 8);
         const tMax = Math.round(data.daily.temperature_2m_max?.[idx] ?? 18);
-        const precipP50 = Number((data.daily.precipitation_sum?.[idx] ?? 0).toFixed(1));
+        const precipForecastMm = Number((data.daily.precipitation_sum?.[idx] ?? 0).toFixed(1));
         const probPct = Math.round(data.daily.precipitation_probability_max?.[idx] ?? 10);
-        const precipP90 = Number((precipP50 * 1.55 + (probPct >= 40 ? 2.0 : 0.3)).toFixed(1));
+        // Regla de presentación; no es un cuantíl ni está calibrada.
+        const precipUpperScenarioMm = Number((precipForecastMm * 1.55 + (probPct >= 40 ? 2.0 : 0.3)).toFixed(1));
         const hourIdx = Math.min(idx * 24 + 12, (data.hourly?.freezing_level_height?.length || 1) - 1);
         const iso0M = Math.round(data.hourly?.freezing_level_height?.[hourIdx] ?? location.observation.freezingLevelM);
         return {
           day: formatShortDateEs(dateStr),
           tMin,
           tMax,
-          tP10: tMin - (idx > 2 ? 2 : 1),
-          tP90: tMax + (idx > 2 ? 2 : 1),
-          precipP50,
-          precipP90,
+          precipForecastMm,
+          precipUpperScenarioMm,
           probPct,
           windMax: Math.round(data.daily.wind_gusts_10m_max?.[idx] ?? 25),
           snowCm: Number((data.daily.snowfall_sum?.[idx] ?? 0).toFixed(1)),
@@ -324,11 +325,11 @@ export function buildCartoBuilderGeoJsonClient(locations, alerts = []) {
     type: 'FeatureCollection',
     name: 'climasflood_chile_cartobuilder',
     features: locations.map((loc) => {
-      const p50_48h = Number(
-        ((loc.daily7d[0]?.precipP50 || 0) + (loc.daily7d[1]?.precipP50 || 0)).toFixed(1)
+      const forecast48hMm = Number(
+        ((loc.daily7d[0]?.precipForecastMm || 0) + (loc.daily7d[1]?.precipForecastMm || 0)).toFixed(1)
       );
-      const p90_48h = Number(
-        ((loc.daily7d[0]?.precipP90 || 0) + (loc.daily7d[1]?.precipP90 || 0)).toFixed(1)
+      const upperScenario48hMm = Number(
+        ((loc.daily7d[0]?.precipUpperScenarioMm || 0) + (loc.daily7d[1]?.precipUpperScenarioMm || 0)).toFixed(1)
       );
       const matchingAlerts = alerts.filter(
         (a) => a.communesIds.includes(loc.id) || a.regions.includes(loc.regionCode)
@@ -353,8 +354,8 @@ export function buildCartoBuilderGeoJsonClient(locations, alerts = []) {
           humedad_pct: loc.observation.humidityPct,
           precip_1h_mm: loc.observation.precip1hMm,
           precip_24h_mm: loc.observation.precip24hMm,
-          precip_48h_p50_mm: p50_48h,
-          precip_48h_p90_mm: p90_48h,
+          precip_48h_forecast_mm: forecast48hMm,
+          precip_48h_upper_scenario_mm: upperScenario48hMm,
           isoterma_0_m: loc.observation.freezingLevelM,
           viento_kmh: loc.observation.windKmh,
           racha_kmh: loc.observation.windGustKmh,
@@ -373,8 +374,8 @@ export function buildCartoBuilderGeoJsonClient(locations, alerts = []) {
 
 /**
  * Conecta con el endpoint /api/senapred/alertas-live del backend
- * que ingesta en tiempo real alertas de SENAPRED, activaciones SAE (Cell Broadcast)
- * y avisos oficiales de la DMC.
+ * que consulta enlaces publicados en el portal de SENAPRED. No valida vigencia,
+ * contenido ni activaciones SAE.
  */
 export async function fetchLiveSenapredAlerts() {
   const controller = new AbortController();
@@ -389,6 +390,7 @@ export async function fetchLiveSenapredAlerts() {
       count: data.count || 0,
       saeActiveCount: data.saeActiveCount || 0,
       cached: data.cached || false,
+      sourceAvailable: data.sourceAvailable === true,
       alerts: data.alerts || []
     };
   } catch {

@@ -1,7 +1,7 @@
 {
   "name": "ClimasFlood Chile — Meteorología Nacional y Riesgo Hidrometeorológico",
   "short_name": "ClimasFlood CL",
-  "description": "Plataforma nacional de meteorología para Chile con pronóstico multimodelo (P10-P50-P90), isoterma 0 °C, caudal GloFAS, oleaje costero y trazabilidad de alertas.",
+  "description": "Plataforma nacional de meteorología para Chile con pronóstico externo y escenarios de referencia, isoterma 0 °C, caudal GloFAS, oleaje costero y trazabilidad de alertas.",
   "lang": "es-CL",
   "start_url": "/",
   "display": "standalone",

@@ -4,7 +4,7 @@
  *
  * Distingue estrictamente:
  * - OBSERVACION (Medición instrumental/satelital)
- * - PRONOSTICO_NUMERICO (ECMWF IFS, NOAA GFS, DWD ICON con percentiles P10/P50/P90)
+ * - PRONOSTICO_NUMERICO (escenarios locales de demostración; no son percentiles operativos)
  * - ESTIMACION_ESCENARIO (Inferencia hidrometeorológica sujeta a condiciones)
  * - ALERTA_OFICIAL vs ESTIMACION_APP (Separación explícita de origen)
  */
@@ -40,17 +40,17 @@ export const DATA_SOURCES = [
   },
   {
     id: 'openmeteo-multi',
-    name: 'Open-Meteo Multi-Model NWP (ECMWF IFS 9km + NOAA GFS + DWD ICON)',
-    shortName: 'Open-Meteo (ECMWF/GFS/ICON)',
+    name: 'Open-Meteo Forecast API (modelo seleccionado por el proveedor)',
+    shortName: 'Open-Meteo Forecast',
     category: 'NWP_MODEL',
-    role: 'Pronósticos numéricos horarios y diarios por coordenada comunal, isoterma 0 °C y dispersión multimodelo',
+    role: 'Pronóstico horario y diario por coordenada, con probabilidad de precipitación e isoterma 0 °C',
     url: 'https://open-meteo.com/en/docs',
     apiDocUrl: 'https://api.open-meteo.com/v1/forecast',
     updateFrequencyMinutes: 60,
     ttlMinutes: 180,
     lastUpdatedUtc: '2026-10-19T15:05:00Z',
     status: 'ONLINE',
-    accessNotes: 'API pública abierta y verificable en vivo desde el navegador sin API key.'
+    accessNotes: 'API pública consultada en vivo desde el navegador sin API key; la llamada no solicita un ensamble ni compara modelos.'
   },
   {
     id: 'noaa-goes16-gibs',
@@ -129,25 +129,25 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'INFORMATIVA',
     keyPhenomenon: 'Estabilidad costera; incremento de viento en precordillera andina (Putre/Visviri) por la tarde.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 0, p90: 0, iso0: 4650, wind: 16, temp: 20.8 },
-      { hourOffset: 3, p50: 0, p90: 0, iso0: 4700, wind: 20, temp: 22.1 },
-      { hourOffset: 6, p50: 0, p90: 0.2, iso0: 4680, wind: 18, temp: 19.4 },
-      { hourOffset: 12, p50: 0, p90: 0, iso0: 4600, wind: 12, temp: 16.5 },
-      { hourOffset: 18, p50: 0, p90: 0, iso0: 4620, wind: 15, temp: 18.2 },
-      { hourOffset: 24, p50: 0, p90: 0.3, iso0: 4700, wind: 19, temp: 21.0 },
-      { hourOffset: 30, p50: 0, p90: 0.4, iso0: 4690, wind: 21, temp: 21.8 },
-      { hourOffset: 36, p50: 0, p90: 0, iso0: 4610, wind: 14, temp: 17.0 },
-      { hourOffset: 42, p50: 0, p90: 0, iso0: 4600, wind: 13, temp: 16.2 },
-      { hourOffset: 48, p50: 0, p90: 0.2, iso0: 4660, wind: 17, temp: 20.6 }
+      { hourOffset: 0, forecastMm: 0, upperScenarioMm: 0, iso0: 4650, wind: 16, temp: 20.8 },
+      { hourOffset: 3, forecastMm: 0, upperScenarioMm: 0, iso0: 4700, wind: 20, temp: 22.1 },
+      { hourOffset: 6, forecastMm: 0, upperScenarioMm: 0.2, iso0: 4680, wind: 18, temp: 19.4 },
+      { hourOffset: 12, forecastMm: 0, upperScenarioMm: 0, iso0: 4600, wind: 12, temp: 16.5 },
+      { hourOffset: 18, forecastMm: 0, upperScenarioMm: 0, iso0: 4620, wind: 15, temp: 18.2 },
+      { hourOffset: 24, forecastMm: 0, upperScenarioMm: 0.3, iso0: 4700, wind: 19, temp: 21.0 },
+      { hourOffset: 30, forecastMm: 0, upperScenarioMm: 0.4, iso0: 4690, wind: 21, temp: 21.8 },
+      { hourOffset: 36, forecastMm: 0, upperScenarioMm: 0, iso0: 4610, wind: 14, temp: 17.0 },
+      { hourOffset: 42, forecastMm: 0, upperScenarioMm: 0, iso0: 4600, wind: 13, temp: 16.2 },
+      { hourOffset: 48, forecastMm: 0, upperScenarioMm: 0.2, iso0: 4660, wind: 17, temp: 20.6 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 16, tMax: 22, tP10: 15, tP90: 23, precipP50: 0.0, precipP90: 0.2, probPct: 5, windMax: 24, snowCm: 0, iso0M: 4650, cloudPct: 45, cond: 'Parcial' },
-      { day: 'Mar 20 Oct', tMin: 16, tMax: 22, tP10: 15, tP90: 23, precipP50: 0.0, precipP90: 0.4, probPct: 10, windMax: 26, snowCm: 0, iso0M: 4700, cloudPct: 40, cond: 'Despejado a parcial' },
-      { day: 'Mié 21 Oct', tMin: 17, tMax: 23, tP10: 15, tP90: 24, precipP50: 0.0, precipP90: 0.5, probPct: 10, windMax: 25, snowCm: 0, iso0M: 4680, cloudPct: 35, cond: 'Soleado' },
-      { day: 'Jue 22 Oct', tMin: 16, tMax: 22, tP10: 15, tP90: 24, precipP50: 0.0, precipP90: 0.5, probPct: 10, windMax: 28, snowCm: 0, iso0M: 4600, cloudPct: 50, cond: 'Nubosidad matinal' },
-      { day: 'Vie 23 Oct', tMin: 16, tMax: 22, tP10: 14, tP90: 23, precipP50: 0.0, precipP90: 0.8, probPct: 15, windMax: 30, snowCm: 0, iso0M: 4550, cloudPct: 55, cond: 'Parcial costero' },
-      { day: 'Sáb 24 Oct', tMin: 17, tMax: 23, tP10: 15, tP90: 25, precipP50: 0.0, precipP90: 0.6, probPct: 10, windMax: 26, snowCm: 0, iso0M: 4620, cloudPct: 40, cond: 'Despejado' },
-      { day: 'Dom 25 Oct', tMin: 17, tMax: 23, tP10: 15, tP90: 25, precipP50: 0.0, precipP90: 0.5, probPct: 10, windMax: 24, snowCm: 0, iso0M: 4650, cloudPct: 35, cond: 'Soleado' }
+      { day: 'Lun 19 Oct', tMin: 16, tMax: 22, tempLowReferenceC: 15, tempHighReferenceC: 23, precipForecastMm: 0.0, precipUpperScenarioMm: 0.2, probPct: 5, windMax: 24, snowCm: 0, iso0M: 4650, cloudPct: 45, cond: 'Parcial' },
+      { day: 'Mar 20 Oct', tMin: 16, tMax: 22, tempLowReferenceC: 15, tempHighReferenceC: 23, precipForecastMm: 0.0, precipUpperScenarioMm: 0.4, probPct: 10, windMax: 26, snowCm: 0, iso0M: 4700, cloudPct: 40, cond: 'Despejado a parcial' },
+      { day: 'Mié 21 Oct', tMin: 17, tMax: 23, tempLowReferenceC: 15, tempHighReferenceC: 24, precipForecastMm: 0.0, precipUpperScenarioMm: 0.5, probPct: 10, windMax: 25, snowCm: 0, iso0M: 4680, cloudPct: 35, cond: 'Soleado' },
+      { day: 'Jue 22 Oct', tMin: 16, tMax: 22, tempLowReferenceC: 15, tempHighReferenceC: 24, precipForecastMm: 0.0, precipUpperScenarioMm: 0.5, probPct: 10, windMax: 28, snowCm: 0, iso0M: 4600, cloudPct: 50, cond: 'Nubosidad matinal' },
+      { day: 'Vie 23 Oct', tMin: 16, tMax: 22, tempLowReferenceC: 14, tempHighReferenceC: 23, precipForecastMm: 0.0, precipUpperScenarioMm: 0.8, probPct: 15, windMax: 30, snowCm: 0, iso0M: 4550, cloudPct: 55, cond: 'Parcial costero' },
+      { day: 'Sáb 24 Oct', tMin: 17, tMax: 23, tempLowReferenceC: 15, tempHighReferenceC: 25, precipForecastMm: 0.0, precipUpperScenarioMm: 0.6, probPct: 10, windMax: 26, snowCm: 0, iso0M: 4620, cloudPct: 40, cond: 'Despejado' },
+      { day: 'Dom 25 Oct', tMin: 17, tMax: 23, tempLowReferenceC: 15, tempHighReferenceC: 25, precipForecastMm: 0.0, precipUpperScenarioMm: 0.5, probPct: 10, windMax: 24, snowCm: 0, iso0M: 4650, cloudPct: 35, cond: 'Soleado' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 0.0, tempMaxAvg: 22.3, iso0Min: 4600, windPeak: 26 },
@@ -188,24 +188,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'INFORMATIVA',
     keyPhenomenon: 'Marejadas del suroeste de intensidad moderada en borde costero expuesto.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 0, p90: 0, iso0: 4520, wind: 18, temp: 19.6 },
-      { hourOffset: 6, p50: 0, p90: 0, iso0: 4550, wind: 22, temp: 20.8 },
-      { hourOffset: 12, p50: 0, p90: 0, iso0: 4480, wind: 14, temp: 16.0 },
-      { hourOffset: 18, p50: 0, p90: 0, iso0: 4500, wind: 16, temp: 17.4 },
-      { hourOffset: 24, p50: 0, p90: 0, iso0: 4540, wind: 20, temp: 20.2 },
-      { hourOffset: 30, p50: 0, p90: 0, iso0: 4530, wind: 23, temp: 21.0 },
-      { hourOffset: 36, p50: 0, p90: 0, iso0: 4490, wind: 15, temp: 16.4 },
-      { hourOffset: 42, p50: 0, p90: 0, iso0: 4470, wind: 14, temp: 15.8 },
-      { hourOffset: 48, p50: 0, p90: 0, iso0: 4510, wind: 19, temp: 19.9 }
+      { hourOffset: 0, forecastMm: 0, upperScenarioMm: 0, iso0: 4520, wind: 18, temp: 19.6 },
+      { hourOffset: 6, forecastMm: 0, upperScenarioMm: 0, iso0: 4550, wind: 22, temp: 20.8 },
+      { hourOffset: 12, forecastMm: 0, upperScenarioMm: 0, iso0: 4480, wind: 14, temp: 16.0 },
+      { hourOffset: 18, forecastMm: 0, upperScenarioMm: 0, iso0: 4500, wind: 16, temp: 17.4 },
+      { hourOffset: 24, forecastMm: 0, upperScenarioMm: 0, iso0: 4540, wind: 20, temp: 20.2 },
+      { hourOffset: 30, forecastMm: 0, upperScenarioMm: 0, iso0: 4530, wind: 23, temp: 21.0 },
+      { hourOffset: 36, forecastMm: 0, upperScenarioMm: 0, iso0: 4490, wind: 15, temp: 16.4 },
+      { hourOffset: 42, forecastMm: 0, upperScenarioMm: 0, iso0: 4470, wind: 14, temp: 15.8 },
+      { hourOffset: 48, forecastMm: 0, upperScenarioMm: 0, iso0: 4510, wind: 19, temp: 19.9 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 15, tMax: 21, tP10: 14, tP90: 22, precipP50: 0.0, precipP90: 0.0, probPct: 0, windMax: 28, snowCm: 0, iso0M: 4520, cloudPct: 35, cond: 'Despejado' },
-      { day: 'Mar 20 Oct', tMin: 15, tMax: 21, tP10: 14, tP90: 22, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 30, snowCm: 0, iso0M: 4540, cloudPct: 30, cond: 'Despejado' },
-      { day: 'Mié 21 Oct', tMin: 16, tMax: 22, tP10: 15, tP90: 23, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 27, snowCm: 0, iso0M: 4500, cloudPct: 40, cond: 'Parcial matinal' },
-      { day: 'Jue 22 Oct', tMin: 15, tMax: 21, tP10: 14, tP90: 22, precipP50: 0.0, precipP90: 0.1, probPct: 5, windMax: 29, snowCm: 0, iso0M: 4480, cloudPct: 45, cond: 'Parcial' },
-      { day: 'Vie 23 Oct', tMin: 15, tMax: 21, tP10: 14, tP90: 22, precipP50: 0.0, precipP90: 0.1, probPct: 5, windMax: 31, snowCm: 0, iso0M: 4460, cloudPct: 40, cond: 'Soleado' },
-      { day: 'Sáb 24 Oct', tMin: 16, tMax: 22, tP10: 15, tP90: 23, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 26, snowCm: 0, iso0M: 4500, cloudPct: 25, cond: 'Soleado' },
-      { day: 'Dom 25 Oct', tMin: 16, tMax: 22, tP10: 15, tP90: 23, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 25, snowCm: 0, iso0M: 4550, cloudPct: 20, cond: 'Soleado' }
+      { day: 'Lun 19 Oct', tMin: 15, tMax: 21, tempLowReferenceC: 14, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 0, windMax: 28, snowCm: 0, iso0M: 4520, cloudPct: 35, cond: 'Despejado' },
+      { day: 'Mar 20 Oct', tMin: 15, tMax: 21, tempLowReferenceC: 14, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 30, snowCm: 0, iso0M: 4540, cloudPct: 30, cond: 'Despejado' },
+      { day: 'Mié 21 Oct', tMin: 16, tMax: 22, tempLowReferenceC: 15, tempHighReferenceC: 23, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 27, snowCm: 0, iso0M: 4500, cloudPct: 40, cond: 'Parcial matinal' },
+      { day: 'Jue 22 Oct', tMin: 15, tMax: 21, tempLowReferenceC: 14, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.1, probPct: 5, windMax: 29, snowCm: 0, iso0M: 4480, cloudPct: 45, cond: 'Parcial' },
+      { day: 'Vie 23 Oct', tMin: 15, tMax: 21, tempLowReferenceC: 14, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.1, probPct: 5, windMax: 31, snowCm: 0, iso0M: 4460, cloudPct: 40, cond: 'Soleado' },
+      { day: 'Sáb 24 Oct', tMin: 16, tMax: 22, tempLowReferenceC: 15, tempHighReferenceC: 23, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 26, snowCm: 0, iso0M: 4500, cloudPct: 25, cond: 'Soleado' },
+      { day: 'Dom 25 Oct', tMin: 16, tMax: 22, tempLowReferenceC: 15, tempHighReferenceC: 23, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 25, snowCm: 0, iso0M: 4550, cloudPct: 20, cond: 'Soleado' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 0.0, tempMaxAvg: 21.3, iso0Min: 4480, windPeak: 30 },
@@ -246,24 +246,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'PREVENTIVA',
     keyPhenomenon: 'Rachas de viento de 60-80 km/h en cordillera y precordillera (Calama / Ollagüe) por corriente en chorro subtropical.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 0, p90: 0, iso0: 4320, wind: 24, temp: 18.4 },
-      { hourOffset: 6, p50: 0, p90: 0, iso0: 4300, wind: 34, temp: 19.8 },
-      { hourOffset: 12, p50: 0, p90: 0, iso0: 4210, wind: 22, temp: 14.9 },
-      { hourOffset: 18, p50: 0, p90: 0, iso0: 4180, wind: 26, temp: 16.1 },
-      { hourOffset: 24, p50: 0, p90: 0, iso0: 4250, wind: 38, temp: 19.2 },
-      { hourOffset: 30, p50: 0, p90: 0, iso0: 4220, wind: 42, temp: 19.6 },
-      { hourOffset: 36, p50: 0, p90: 0, iso0: 4150, wind: 25, temp: 15.0 },
-      { hourOffset: 42, p50: 0, p90: 0, iso0: 4140, wind: 21, temp: 14.4 },
-      { hourOffset: 48, p50: 0, p90: 0, iso0: 4260, wind: 32, temp: 18.9 }
+      { hourOffset: 0, forecastMm: 0, upperScenarioMm: 0, iso0: 4320, wind: 24, temp: 18.4 },
+      { hourOffset: 6, forecastMm: 0, upperScenarioMm: 0, iso0: 4300, wind: 34, temp: 19.8 },
+      { hourOffset: 12, forecastMm: 0, upperScenarioMm: 0, iso0: 4210, wind: 22, temp: 14.9 },
+      { hourOffset: 18, forecastMm: 0, upperScenarioMm: 0, iso0: 4180, wind: 26, temp: 16.1 },
+      { hourOffset: 24, forecastMm: 0, upperScenarioMm: 0, iso0: 4250, wind: 38, temp: 19.2 },
+      { hourOffset: 30, forecastMm: 0, upperScenarioMm: 0, iso0: 4220, wind: 42, temp: 19.6 },
+      { hourOffset: 36, forecastMm: 0, upperScenarioMm: 0, iso0: 4150, wind: 25, temp: 15.0 },
+      { hourOffset: 42, forecastMm: 0, upperScenarioMm: 0, iso0: 4140, wind: 21, temp: 14.4 },
+      { hourOffset: 48, forecastMm: 0, upperScenarioMm: 0, iso0: 4260, wind: 32, temp: 18.9 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 14, tMax: 20, tP10: 13, tP90: 21, precipP50: 0.0, precipP90: 0.0, probPct: 0, windMax: 41, snowCm: 0, iso0M: 4320, cloudPct: 30, cond: 'Viento moderado' },
-      { day: 'Mar 20 Oct', tMin: 14, tMax: 20, tP10: 13, tP90: 21, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 48, snowCm: 0, iso0M: 4220, cloudPct: 25, cond: 'Ventoso en interior' },
-      { day: 'Mié 21 Oct', tMin: 14, tMax: 19, tP10: 13, tP90: 21, precipP50: 0.0, precipP90: 0.2, probPct: 5, windMax: 52, snowCm: 0, iso0M: 4150, cloudPct: 35, cond: 'Viento y polvo interior' },
-      { day: 'Jue 22 Oct', tMin: 14, tMax: 20, tP10: 13, tP90: 21, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 38, snowCm: 0, iso0M: 4280, cloudPct: 30, cond: 'Despejado' },
-      { day: 'Vie 23 Oct', tMin: 15, tMax: 20, tP10: 13, tP90: 22, precipP50: 0.0, precipP90: 0.0, probPct: 0, windMax: 34, snowCm: 0, iso0M: 4350, cloudPct: 25, cond: 'Soleado' },
-      { day: 'Sáb 24 Oct', tMin: 15, tMax: 21, tP10: 14, tP90: 22, precipP50: 0.0, precipP90: 0.0, probPct: 0, windMax: 30, snowCm: 0, iso0M: 4400, cloudPct: 20, cond: 'Soleado' },
-      { day: 'Dom 25 Oct', tMin: 15, tMax: 21, tP10: 14, tP90: 22, precipP50: 0.0, precipP90: 0.0, probPct: 0, windMax: 28, snowCm: 0, iso0M: 4420, cloudPct: 20, cond: 'Soleado' }
+      { day: 'Lun 19 Oct', tMin: 14, tMax: 20, tempLowReferenceC: 13, tempHighReferenceC: 21, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 0, windMax: 41, snowCm: 0, iso0M: 4320, cloudPct: 30, cond: 'Viento moderado' },
+      { day: 'Mar 20 Oct', tMin: 14, tMax: 20, tempLowReferenceC: 13, tempHighReferenceC: 21, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 48, snowCm: 0, iso0M: 4220, cloudPct: 25, cond: 'Ventoso en interior' },
+      { day: 'Mié 21 Oct', tMin: 14, tMax: 19, tempLowReferenceC: 13, tempHighReferenceC: 21, precipForecastMm: 0.0, precipUpperScenarioMm: 0.2, probPct: 5, windMax: 52, snowCm: 0, iso0M: 4150, cloudPct: 35, cond: 'Viento y polvo interior' },
+      { day: 'Jue 22 Oct', tMin: 14, tMax: 20, tempLowReferenceC: 13, tempHighReferenceC: 21, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 38, snowCm: 0, iso0M: 4280, cloudPct: 30, cond: 'Despejado' },
+      { day: 'Vie 23 Oct', tMin: 15, tMax: 20, tempLowReferenceC: 13, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 0, windMax: 34, snowCm: 0, iso0M: 4350, cloudPct: 25, cond: 'Soleado' },
+      { day: 'Sáb 24 Oct', tMin: 15, tMax: 21, tempLowReferenceC: 14, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 0, windMax: 30, snowCm: 0, iso0M: 4400, cloudPct: 20, cond: 'Soleado' },
+      { day: 'Dom 25 Oct', tMin: 15, tMax: 21, tempLowReferenceC: 14, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 0, windMax: 28, snowCm: 0, iso0M: 4420, cloudPct: 20, cond: 'Soleado' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 0.0, tempMaxAvg: 19.8, iso0Min: 4150, windPeak: 52 },
@@ -304,24 +304,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'INFORMATIVA',
     keyPhenomenon: 'Aumento de nubosidad alta y viento cordillerano sobre 3.500 m s.n.m.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 0, p90: 0, iso0: 4050, wind: 15, temp: 23.4 },
-      { hourOffset: 6, p50: 0, p90: 0, iso0: 4010, wind: 22, temp: 25.8 },
-      { hourOffset: 12, p50: 0, p90: 0, iso0: 3920, wind: 10, temp: 12.6 },
-      { hourOffset: 18, p50: 0, p90: 0.2, iso0: 3880, wind: 12, temp: 15.1 },
-      { hourOffset: 24, p50: 0, p90: 0.5, iso0: 3850, wind: 20, temp: 24.1 },
-      { hourOffset: 30, p50: 0, p90: 0.8, iso0: 3800, wind: 24, temp: 24.9 },
-      { hourOffset: 36, p50: 0, p90: 0.3, iso0: 3780, wind: 11, temp: 12.2 },
-      { hourOffset: 42, p50: 0, p90: 0, iso0: 3820, wind: 10, temp: 11.8 },
-      { hourOffset: 48, p50: 0, p90: 0, iso0: 3910, wind: 18, temp: 23.7 }
+      { hourOffset: 0, forecastMm: 0, upperScenarioMm: 0, iso0: 4050, wind: 15, temp: 23.4 },
+      { hourOffset: 6, forecastMm: 0, upperScenarioMm: 0, iso0: 4010, wind: 22, temp: 25.8 },
+      { hourOffset: 12, forecastMm: 0, upperScenarioMm: 0, iso0: 3920, wind: 10, temp: 12.6 },
+      { hourOffset: 18, forecastMm: 0, upperScenarioMm: 0.2, iso0: 3880, wind: 12, temp: 15.1 },
+      { hourOffset: 24, forecastMm: 0, upperScenarioMm: 0.5, iso0: 3850, wind: 20, temp: 24.1 },
+      { hourOffset: 30, forecastMm: 0, upperScenarioMm: 0.8, iso0: 3800, wind: 24, temp: 24.9 },
+      { hourOffset: 36, forecastMm: 0, upperScenarioMm: 0.3, iso0: 3780, wind: 11, temp: 12.2 },
+      { hourOffset: 42, forecastMm: 0, upperScenarioMm: 0, iso0: 3820, wind: 10, temp: 11.8 },
+      { hourOffset: 48, forecastMm: 0, upperScenarioMm: 0, iso0: 3910, wind: 18, temp: 23.7 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 11, tMax: 26, tP10: 10, tP90: 28, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 25, snowCm: 0, iso0M: 4050, cloudPct: 20, cond: 'Soleado' },
-      { day: 'Mar 20 Oct', tMin: 11, tMax: 25, tP10: 10, tP90: 27, precipP50: 0.0, precipP90: 0.8, probPct: 10, windMax: 28, snowCm: 0, iso0M: 3850, cloudPct: 40, cond: 'Nubosidad alta' },
-      { day: 'Mié 21 Oct', tMin: 10, tMax: 24, tP10: 9, tP90: 26, precipP50: 0.0, precipP90: 1.2, probPct: 15, windMax: 30, snowCm: 0, iso0M: 3780, cloudPct: 45, cond: 'Parcial' },
-      { day: 'Jue 22 Oct', tMin: 11, tMax: 26, tP10: 10, tP90: 28, precipP50: 0.0, precipP90: 0.2, probPct: 5, windMax: 24, snowCm: 0, iso0M: 3950, cloudPct: 25, cond: 'Despejado' },
-      { day: 'Vie 23 Oct', tMin: 12, tMax: 27, tP10: 11, tP90: 29, precipP50: 0.0, precipP90: 0.0, probPct: 0, windMax: 22, snowCm: 0, iso0M: 4100, cloudPct: 15, cond: 'Soleado' },
-      { day: 'Sáb 24 Oct', tMin: 12, tMax: 28, tP10: 11, tP90: 30, precipP50: 0.0, precipP90: 0.0, probPct: 0, windMax: 22, snowCm: 0, iso0M: 4150, cloudPct: 10, cond: 'Soleado' },
-      { day: 'Dom 25 Oct', tMin: 12, tMax: 27, tP10: 11, tP90: 29, precipP50: 0.0, precipP90: 0.0, probPct: 0, windMax: 23, snowCm: 0, iso0M: 4120, cloudPct: 15, cond: 'Soleado' }
+      { day: 'Lun 19 Oct', tMin: 11, tMax: 26, tempLowReferenceC: 10, tempHighReferenceC: 28, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 25, snowCm: 0, iso0M: 4050, cloudPct: 20, cond: 'Soleado' },
+      { day: 'Mar 20 Oct', tMin: 11, tMax: 25, tempLowReferenceC: 10, tempHighReferenceC: 27, precipForecastMm: 0.0, precipUpperScenarioMm: 0.8, probPct: 10, windMax: 28, snowCm: 0, iso0M: 3850, cloudPct: 40, cond: 'Nubosidad alta' },
+      { day: 'Mié 21 Oct', tMin: 10, tMax: 24, tempLowReferenceC: 9, tempHighReferenceC: 26, precipForecastMm: 0.0, precipUpperScenarioMm: 1.2, probPct: 15, windMax: 30, snowCm: 0, iso0M: 3780, cloudPct: 45, cond: 'Parcial' },
+      { day: 'Jue 22 Oct', tMin: 11, tMax: 26, tempLowReferenceC: 10, tempHighReferenceC: 28, precipForecastMm: 0.0, precipUpperScenarioMm: 0.2, probPct: 5, windMax: 24, snowCm: 0, iso0M: 3950, cloudPct: 25, cond: 'Despejado' },
+      { day: 'Vie 23 Oct', tMin: 12, tMax: 27, tempLowReferenceC: 11, tempHighReferenceC: 29, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 0, windMax: 22, snowCm: 0, iso0M: 4100, cloudPct: 15, cond: 'Soleado' },
+      { day: 'Sáb 24 Oct', tMin: 12, tMax: 28, tempLowReferenceC: 11, tempHighReferenceC: 30, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 0, windMax: 22, snowCm: 0, iso0M: 4150, cloudPct: 10, cond: 'Soleado' },
+      { day: 'Dom 25 Oct', tMin: 12, tMax: 27, tempLowReferenceC: 11, tempHighReferenceC: 29, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 0, windMax: 23, snowCm: 0, iso0M: 4120, cloudPct: 15, cond: 'Soleado' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 0.0, tempMaxAvg: 25.0, iso0Min: 3780, windPeak: 30 },
@@ -362,24 +362,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'PREVENTIVA',
     keyPhenomenon: 'Probabilidad de chubascos débiles en precordillera de Elqui y Limarí más marejadas del WNW.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 0.0, p90: 0.3, iso0: 3580, wind: 19, temp: 16.2 },
-      { hourOffset: 6, p50: 0.2, p90: 1.1, iso0: 3450, wind: 24, temp: 17.1 },
-      { hourOffset: 12, p50: 0.8, p90: 2.8, iso0: 3300, wind: 22, temp: 13.0 },
-      { hourOffset: 18, p50: 1.4, p90: 4.5, iso0: 3180, wind: 26, temp: 13.8 },
-      { hourOffset: 24, p50: 0.6, p90: 2.2, iso0: 3220, wind: 21, temp: 16.4 },
-      { hourOffset: 30, p50: 0.1, p90: 0.8, iso0: 3350, wind: 18, temp: 17.0 },
-      { hourOffset: 36, p50: 0.0, p90: 0.3, iso0: 3400, wind: 14, temp: 12.1 },
-      { hourOffset: 42, p50: 0.0, p90: 0.0, iso0: 3480, wind: 13, temp: 11.6 },
-      { hourOffset: 48, p50: 0.0, p90: 0.0, iso0: 3550, wind: 17, temp: 17.5 }
+      { hourOffset: 0, forecastMm: 0.0, upperScenarioMm: 0.3, iso0: 3580, wind: 19, temp: 16.2 },
+      { hourOffset: 6, forecastMm: 0.2, upperScenarioMm: 1.1, iso0: 3450, wind: 24, temp: 17.1 },
+      { hourOffset: 12, forecastMm: 0.8, upperScenarioMm: 2.8, iso0: 3300, wind: 22, temp: 13.0 },
+      { hourOffset: 18, forecastMm: 1.4, upperScenarioMm: 4.5, iso0: 3180, wind: 26, temp: 13.8 },
+      { hourOffset: 24, forecastMm: 0.6, upperScenarioMm: 2.2, iso0: 3220, wind: 21, temp: 16.4 },
+      { hourOffset: 30, forecastMm: 0.1, upperScenarioMm: 0.8, iso0: 3350, wind: 18, temp: 17.0 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.3, iso0: 3400, wind: 14, temp: 12.1 },
+      { hourOffset: 42, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 3480, wind: 13, temp: 11.6 },
+      { hourOffset: 48, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 3550, wind: 17, temp: 17.5 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 12, tMax: 17, tP10: 11, tP90: 19, precipP50: 0.5, precipP90: 2.1, probPct: 35, windMax: 31, snowCm: 0, iso0M: 3580, cloudPct: 80, cond: 'Nublado y llovizna' },
-      { day: 'Mar 20 Oct', tMin: 11, tMax: 16, tP10: 10, tP90: 18, precipP50: 2.8, precipP90: 8.5, probPct: 55, windMax: 36, snowCm: 4, iso0M: 3180, cloudPct: 85, cond: 'Chubascos débiles' },
-      { day: 'Mié 21 Oct', tMin: 10, tMax: 18, tP10: 9, tP90: 20, precipP50: 0.2, precipP90: 1.4, probPct: 20, windMax: 28, snowCm: 1, iso0M: 3400, cloudPct: 55, cond: 'Nubosidad parcial' },
-      { day: 'Jue 22 Oct', tMin: 10, tMax: 19, tP10: 9, tP90: 21, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 24, snowCm: 0, iso0M: 3650, cloudPct: 35, cond: 'Despejado tarde' },
-      { day: 'Vie 23 Oct', tMin: 11, tMax: 20, tP10: 10, tP90: 22, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 22, snowCm: 0, iso0M: 3800, cloudPct: 30, cond: 'Soleado' },
-      { day: 'Sáb 24 Oct', tMin: 11, tMax: 20, tP10: 10, tP90: 22, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 23, snowCm: 0, iso0M: 3850, cloudPct: 35, cond: 'Parcial matinal' },
-      { day: 'Dom 25 Oct', tMin: 12, tMax: 19, tP10: 10, tP90: 21, precipP50: 0.0, precipP90: 0.3, probPct: 10, windMax: 25, snowCm: 0, iso0M: 3780, cloudPct: 45, cond: 'Parcial' }
+      { day: 'Lun 19 Oct', tMin: 12, tMax: 17, tempLowReferenceC: 11, tempHighReferenceC: 19, precipForecastMm: 0.5, precipUpperScenarioMm: 2.1, probPct: 35, windMax: 31, snowCm: 0, iso0M: 3580, cloudPct: 80, cond: 'Nublado y llovizna' },
+      { day: 'Mar 20 Oct', tMin: 11, tMax: 16, tempLowReferenceC: 10, tempHighReferenceC: 18, precipForecastMm: 2.8, precipUpperScenarioMm: 8.5, probPct: 55, windMax: 36, snowCm: 4, iso0M: 3180, cloudPct: 85, cond: 'Chubascos débiles' },
+      { day: 'Mié 21 Oct', tMin: 10, tMax: 18, tempLowReferenceC: 9, tempHighReferenceC: 20, precipForecastMm: 0.2, precipUpperScenarioMm: 1.4, probPct: 20, windMax: 28, snowCm: 1, iso0M: 3400, cloudPct: 55, cond: 'Nubosidad parcial' },
+      { day: 'Jue 22 Oct', tMin: 10, tMax: 19, tempLowReferenceC: 9, tempHighReferenceC: 21, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 24, snowCm: 0, iso0M: 3650, cloudPct: 35, cond: 'Despejado tarde' },
+      { day: 'Vie 23 Oct', tMin: 11, tMax: 20, tempLowReferenceC: 10, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 22, snowCm: 0, iso0M: 3800, cloudPct: 30, cond: 'Soleado' },
+      { day: 'Sáb 24 Oct', tMin: 11, tMax: 20, tempLowReferenceC: 10, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 23, snowCm: 0, iso0M: 3850, cloudPct: 35, cond: 'Parcial matinal' },
+      { day: 'Dom 25 Oct', tMin: 12, tMax: 19, tempLowReferenceC: 10, tempHighReferenceC: 21, precipForecastMm: 0.0, precipUpperScenarioMm: 0.3, probPct: 10, windMax: 25, snowCm: 0, iso0M: 3780, cloudPct: 45, cond: 'Parcial' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 3.5, tempMaxAvg: 17.0, iso0Min: 3180, windPeak: 36 },
@@ -420,25 +420,25 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'TEMPRANA',
     keyPhenomenon: 'Sistema frontal activo con transporte de vapor (río atmosférico débil a moderado), rachas costeras de hasta 65 km/h y marejadas.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 1.6, p90: 3.2, iso0: 2950, wind: 38, temp: 14.8 },
-      { hourOffset: 3, p50: 3.8, p90: 7.4, iso0: 2880, wind: 46, temp: 14.2 },
-      { hourOffset: 6, p50: 6.2, p90: 11.5, iso0: 2790, wind: 52, temp: 13.6 },
-      { hourOffset: 9, p50: 5.1, p90: 9.8, iso0: 2650, wind: 44, temp: 12.9 },
-      { hourOffset: 12, p50: 2.9, p90: 6.0, iso0: 2480, wind: 35, temp: 11.8 },
-      { hourOffset: 18, p50: 1.2, p90: 3.1, iso0: 2350, wind: 28, temp: 11.4 },
-      { hourOffset: 24, p50: 0.4, p90: 1.5, iso0: 2300, wind: 22, temp: 14.5 },
-      { hourOffset: 30, p50: 0.0, p90: 0.6, iso0: 2420, wind: 19, temp: 15.1 },
-      { hourOffset: 36, p50: 0.0, p90: 0.2, iso0: 2550, wind: 15, temp: 10.6 },
-      { hourOffset: 48, p50: 0.0, p90: 0.0, iso0: 2850, wind: 18, temp: 16.8 }
+      { hourOffset: 0, forecastMm: 1.6, upperScenarioMm: 3.2, iso0: 2950, wind: 38, temp: 14.8 },
+      { hourOffset: 3, forecastMm: 3.8, upperScenarioMm: 7.4, iso0: 2880, wind: 46, temp: 14.2 },
+      { hourOffset: 6, forecastMm: 6.2, upperScenarioMm: 11.5, iso0: 2790, wind: 52, temp: 13.6 },
+      { hourOffset: 9, forecastMm: 5.1, upperScenarioMm: 9.8, iso0: 2650, wind: 44, temp: 12.9 },
+      { hourOffset: 12, forecastMm: 2.9, upperScenarioMm: 6.0, iso0: 2480, wind: 35, temp: 11.8 },
+      { hourOffset: 18, forecastMm: 1.2, upperScenarioMm: 3.1, iso0: 2350, wind: 28, temp: 11.4 },
+      { hourOffset: 24, forecastMm: 0.4, upperScenarioMm: 1.5, iso0: 2300, wind: 22, temp: 14.5 },
+      { hourOffset: 30, forecastMm: 0.0, upperScenarioMm: 0.6, iso0: 2420, wind: 19, temp: 15.1 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.2, iso0: 2550, wind: 15, temp: 10.6 },
+      { hourOffset: 48, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 2850, wind: 18, temp: 16.8 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 11, tMax: 15, tP10: 10, tP90: 16, precipP50: 24.5, precipP90: 42.0, probPct: 90, windMax: 62, snowCm: 12, iso0M: 2880, cloudPct: 95, cond: 'Lluvia y viento costero' },
-      { day: 'Mar 20 Oct', tMin: 10, tMax: 15, tP10: 9, tP90: 17, precipP50: 11.2, precipP90: 21.5, probPct: 75, windMax: 45, snowCm: 18, iso0M: 2350, cloudPct: 80, cond: 'Chubascos postfrontales' },
-      { day: 'Mié 21 Oct', tMin: 8, tMax: 16, tP10: 7, tP90: 18, precipP50: 0.5, precipP90: 2.4, probPct: 20, windMax: 26, snowCm: 2, iso0M: 2550, cloudPct: 45, cond: 'Parcial y frío matinal' },
-      { day: 'Jue 22 Oct', tMin: 9, tMax: 18, tP10: 8, tP90: 20, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 24, snowCm: 0, iso0M: 3100, cloudPct: 25, cond: 'Despejado' },
-      { day: 'Vie 23 Oct', tMin: 10, tMax: 19, tP10: 9, tP90: 21, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 25, snowCm: 0, iso0M: 3350, cloudPct: 20, cond: 'Soleado' },
-      { day: 'Sáb 24 Oct', tMin: 11, tMax: 18, tP10: 9, tP90: 20, precipP50: 0.0, precipP90: 0.4, probPct: 10, windMax: 28, snowCm: 0, iso0M: 3250, cloudPct: 40, cond: 'Nubosidad parcial' },
-      { day: 'Dom 25 Oct', tMin: 11, tMax: 17, tP10: 10, tP90: 19, precipP50: 0.0, precipP90: 0.8, probPct: 15, windMax: 26, snowCm: 0, iso0M: 3150, cloudPct: 50, cond: 'Parcial' }
+      { day: 'Lun 19 Oct', tMin: 11, tMax: 15, tempLowReferenceC: 10, tempHighReferenceC: 16, precipForecastMm: 24.5, precipUpperScenarioMm: 42.0, probPct: 90, windMax: 62, snowCm: 12, iso0M: 2880, cloudPct: 95, cond: 'Lluvia y viento costero' },
+      { day: 'Mar 20 Oct', tMin: 10, tMax: 15, tempLowReferenceC: 9, tempHighReferenceC: 17, precipForecastMm: 11.2, precipUpperScenarioMm: 21.5, probPct: 75, windMax: 45, snowCm: 18, iso0M: 2350, cloudPct: 80, cond: 'Chubascos postfrontales' },
+      { day: 'Mié 21 Oct', tMin: 8, tMax: 16, tempLowReferenceC: 7, tempHighReferenceC: 18, precipForecastMm: 0.5, precipUpperScenarioMm: 2.4, probPct: 20, windMax: 26, snowCm: 2, iso0M: 2550, cloudPct: 45, cond: 'Parcial y frío matinal' },
+      { day: 'Jue 22 Oct', tMin: 9, tMax: 18, tempLowReferenceC: 8, tempHighReferenceC: 20, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 24, snowCm: 0, iso0M: 3100, cloudPct: 25, cond: 'Despejado' },
+      { day: 'Vie 23 Oct', tMin: 10, tMax: 19, tempLowReferenceC: 9, tempHighReferenceC: 21, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 25, snowCm: 0, iso0M: 3350, cloudPct: 20, cond: 'Soleado' },
+      { day: 'Sáb 24 Oct', tMin: 11, tMax: 18, tempLowReferenceC: 9, tempHighReferenceC: 20, precipForecastMm: 0.0, precipUpperScenarioMm: 0.4, probPct: 10, windMax: 28, snowCm: 0, iso0M: 3250, cloudPct: 40, cond: 'Nubosidad parcial' },
+      { day: 'Dom 25 Oct', tMin: 11, tMax: 17, tempLowReferenceC: 10, tempHighReferenceC: 19, precipForecastMm: 0.0, precipUpperScenarioMm: 0.8, probPct: 15, windMax: 26, snowCm: 0, iso0M: 3150, cloudPct: 50, cond: 'Parcial' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 36.2, tempMaxAvg: 15.3, iso0Min: 2350, windPeak: 62 },
@@ -479,26 +479,26 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'EXTREMA',
     keyPhenomenon: 'Precipitación moderada a fuerte acoplada con isoterma 0 °C entre 2.900 y 3.150 m s.n.m. en primeras horas del pulso, generando escorrentía pluvial en subcuencas precordilleranas del Maipo y Mapocho.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 2.4, p90: 4.5, iso0: 3050, wind: 22, temp: 13.4 },
-      { hourOffset: 3, p50: 4.9, p90: 8.8, iso0: 3120, wind: 31, temp: 13.1 },
-      { hourOffset: 6, p50: 7.4, p90: 13.2, iso0: 2980, wind: 36, temp: 12.6 },
-      { hourOffset: 9, p50: 6.1, p90: 11.0, iso0: 2740, wind: 29, temp: 11.5 },
-      { hourOffset: 12, p50: 3.8, p90: 7.2, iso0: 2450, wind: 24, temp: 10.2 },
-      { hourOffset: 18, p50: 2.1, p90: 4.4, iso0: 2180, wind: 19, temp: 9.4 },
-      { hourOffset: 24, p50: 0.9, p90: 2.5, iso0: 2050, wind: 16, temp: 13.8 },
-      { hourOffset: 30, p50: 0.3, p90: 1.1, iso0: 2150, wind: 14, temp: 14.6 },
-      { hourOffset: 36, p50: 0.0, p90: 0.3, iso0: 2300, wind: 10, temp: 7.2 },
-      { hourOffset: 42, p50: 0.0, p90: 0.0, iso0: 2480, wind: 9, temp: 5.8 },
-      { hourOffset: 48, p50: 0.0, p90: 0.0, iso0: 2750, wind: 14, temp: 17.4 }
+      { hourOffset: 0, forecastMm: 2.4, upperScenarioMm: 4.5, iso0: 3050, wind: 22, temp: 13.4 },
+      { hourOffset: 3, forecastMm: 4.9, upperScenarioMm: 8.8, iso0: 3120, wind: 31, temp: 13.1 },
+      { hourOffset: 6, forecastMm: 7.4, upperScenarioMm: 13.2, iso0: 2980, wind: 36, temp: 12.6 },
+      { hourOffset: 9, forecastMm: 6.1, upperScenarioMm: 11.0, iso0: 2740, wind: 29, temp: 11.5 },
+      { hourOffset: 12, forecastMm: 3.8, upperScenarioMm: 7.2, iso0: 2450, wind: 24, temp: 10.2 },
+      { hourOffset: 18, forecastMm: 2.1, upperScenarioMm: 4.4, iso0: 2180, wind: 19, temp: 9.4 },
+      { hourOffset: 24, forecastMm: 0.9, upperScenarioMm: 2.5, iso0: 2050, wind: 16, temp: 13.8 },
+      { hourOffset: 30, forecastMm: 0.3, upperScenarioMm: 1.1, iso0: 2150, wind: 14, temp: 14.6 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.3, iso0: 2300, wind: 10, temp: 7.2 },
+      { hourOffset: 42, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 2480, wind: 9, temp: 5.8 },
+      { hourOffset: 48, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 2750, wind: 14, temp: 17.4 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 10, tMax: 14, tP10: 9, tP90: 15, precipP50: 32.0, precipP90: 54.5, probPct: 95, windMax: 44, snowCm: 22, iso0M: 3050, cloudPct: 98, cond: 'Lluvia intensa e Iso 0°C alta' },
-      { day: 'Mar 20 Oct', tMin: 7, tMax: 15, tP10: 6, tP90: 17, precipP50: 14.5, precipP90: 26.0, probPct: 80, windMax: 32, snowCm: 35, iso0M: 2150, cloudPct: 85, cond: 'Chubascos y descenso térmico' },
-      { day: 'Mié 21 Oct', tMin: 4, tMax: 17, tP10: 2, tP90: 19, precipP50: 0.8, precipP90: 3.0, probPct: 25, windMax: 20, snowCm: 4, iso0M: 2300, cloudPct: 40, cond: 'Parcial y frío matinal' },
-      { day: 'Jue 22 Oct', tMin: 5, tMax: 21, tP10: 4, tP90: 23, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 18, snowCm: 0, iso0M: 3100, cloudPct: 15, cond: 'Despejado' },
-      { day: 'Vie 23 Oct', tMin: 7, tMax: 24, tP10: 6, tP90: 26, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 19, snowCm: 0, iso0M: 3450, cloudPct: 10, cond: 'Soleado y templado' },
-      { day: 'Sáb 24 Oct', tMin: 8, tMax: 23, tP10: 7, tP90: 25, precipP50: 0.0, precipP90: 0.2, probPct: 10, windMax: 21, snowCm: 0, iso0M: 3380, cloudPct: 25, cond: 'Nubosidad parcial' },
-      { day: 'Dom 25 Oct', tMin: 8, tMax: 21, tP10: 7, tP90: 23, precipP50: 0.0, precipP90: 0.8, probPct: 15, windMax: 20, snowCm: 0, iso0M: 3200, cloudPct: 40, cond: 'Parcial' }
+      { day: 'Lun 19 Oct', tMin: 10, tMax: 14, tempLowReferenceC: 9, tempHighReferenceC: 15, precipForecastMm: 32.0, precipUpperScenarioMm: 54.5, probPct: 95, windMax: 44, snowCm: 22, iso0M: 3050, cloudPct: 98, cond: 'Lluvia intensa e Iso 0°C alta' },
+      { day: 'Mar 20 Oct', tMin: 7, tMax: 15, tempLowReferenceC: 6, tempHighReferenceC: 17, precipForecastMm: 14.5, precipUpperScenarioMm: 26.0, probPct: 80, windMax: 32, snowCm: 35, iso0M: 2150, cloudPct: 85, cond: 'Chubascos y descenso térmico' },
+      { day: 'Mié 21 Oct', tMin: 4, tMax: 17, tempLowReferenceC: 2, tempHighReferenceC: 19, precipForecastMm: 0.8, precipUpperScenarioMm: 3.0, probPct: 25, windMax: 20, snowCm: 4, iso0M: 2300, cloudPct: 40, cond: 'Parcial y frío matinal' },
+      { day: 'Jue 22 Oct', tMin: 5, tMax: 21, tempLowReferenceC: 4, tempHighReferenceC: 23, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 18, snowCm: 0, iso0M: 3100, cloudPct: 15, cond: 'Despejado' },
+      { day: 'Vie 23 Oct', tMin: 7, tMax: 24, tempLowReferenceC: 6, tempHighReferenceC: 26, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 19, snowCm: 0, iso0M: 3450, cloudPct: 10, cond: 'Soleado y templado' },
+      { day: 'Sáb 24 Oct', tMin: 8, tMax: 23, tempLowReferenceC: 7, tempHighReferenceC: 25, precipForecastMm: 0.0, precipUpperScenarioMm: 0.2, probPct: 10, windMax: 21, snowCm: 0, iso0M: 3380, cloudPct: 25, cond: 'Nubosidad parcial' },
+      { day: 'Dom 25 Oct', tMin: 8, tMax: 21, tempLowReferenceC: 7, tempHighReferenceC: 23, precipForecastMm: 0.0, precipUpperScenarioMm: 0.8, probPct: 15, windMax: 20, snowCm: 0, iso0M: 3200, cloudPct: 40, cond: 'Parcial' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 47.3, tempMaxAvg: 15.3, iso0Min: 2150, windPeak: 44 },
@@ -539,24 +539,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'TEMPRANA',
     keyPhenomenon: 'Precipitaciones intensas en precordillera de Cachapoal y Tinguiririca con aumento de caudal esperado.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 3.1, p90: 5.8, iso0: 2890, wind: 28, temp: 12.9 },
-      { hourOffset: 6, p50: 6.8, p90: 12.0, iso0: 2750, wind: 38, temp: 12.2 },
-      { hourOffset: 12, p50: 4.5, p90: 8.4, iso0: 2350, wind: 27, temp: 10.1 },
-      { hourOffset: 18, p50: 2.2, p90: 4.8, iso0: 2050, wind: 20, temp: 8.9 },
-      { hourOffset: 24, p50: 1.0, p90: 2.6, iso0: 1980, wind: 17, temp: 13.0 },
-      { hourOffset: 30, p50: 0.4, p90: 1.2, iso0: 2080, wind: 15, temp: 13.8 },
-      { hourOffset: 36, p50: 0.0, p90: 0.2, iso0: 2200, wind: 10, temp: 6.4 },
-      { hourOffset: 42, p50: 0.0, p90: 0.0, iso0: 2350, wind: 8, temp: 4.9 },
-      { hourOffset: 48, p50: 0.0, p90: 0.0, iso0: 2650, wind: 12, temp: 16.5 }
+      { hourOffset: 0, forecastMm: 3.1, upperScenarioMm: 5.8, iso0: 2890, wind: 28, temp: 12.9 },
+      { hourOffset: 6, forecastMm: 6.8, upperScenarioMm: 12.0, iso0: 2750, wind: 38, temp: 12.2 },
+      { hourOffset: 12, forecastMm: 4.5, upperScenarioMm: 8.4, iso0: 2350, wind: 27, temp: 10.1 },
+      { hourOffset: 18, forecastMm: 2.2, upperScenarioMm: 4.8, iso0: 2050, wind: 20, temp: 8.9 },
+      { hourOffset: 24, forecastMm: 1.0, upperScenarioMm: 2.6, iso0: 1980, wind: 17, temp: 13.0 },
+      { hourOffset: 30, forecastMm: 0.4, upperScenarioMm: 1.2, iso0: 2080, wind: 15, temp: 13.8 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.2, iso0: 2200, wind: 10, temp: 6.4 },
+      { hourOffset: 42, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 2350, wind: 8, temp: 4.9 },
+      { hourOffset: 48, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 2650, wind: 12, temp: 16.5 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 9, tMax: 14, tP10: 8, tP90: 15, precipP50: 38.0, precipP90: 62.0, probPct: 95, windMax: 48, snowCm: 28, iso0M: 2890, cloudPct: 100, cond: 'Lluvia moderada a fuerte' },
-      { day: 'Mar 20 Oct', tMin: 6, tMax: 14, tP10: 5, tP90: 16, precipP50: 16.0, precipP90: 29.0, probPct: 85, windMax: 34, snowCm: 40, iso0M: 1980, cloudPct: 85, cond: 'Chubascos y nieve andina' },
-      { day: 'Mié 21 Oct', tMin: 3, tMax: 16, tP10: 1, tP90: 18, precipP50: 1.0, precipP90: 3.5, probPct: 25, windMax: 20, snowCm: 5, iso0M: 2200, cloudPct: 40, cond: 'Helada local en valles' },
-      { day: 'Jue 22 Oct', tMin: 4, tMax: 20, tP10: 3, tP90: 22, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 17, snowCm: 0, iso0M: 2950, cloudPct: 15, cond: 'Despejado' },
-      { day: 'Vie 23 Oct', tMin: 6, tMax: 23, tP10: 5, tP90: 25, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 18, snowCm: 0, iso0M: 3300, cloudPct: 10, cond: 'Soleado' },
-      { day: 'Sáb 24 Oct', tMin: 7, tMax: 22, tP10: 6, tP90: 24, precipP50: 0.0, precipP90: 0.5, probPct: 10, windMax: 20, snowCm: 0, iso0M: 3200, cloudPct: 30, cond: 'Parcial' },
-      { day: 'Dom 25 Oct', tMin: 7, tMax: 20, tP10: 6, tP90: 22, precipP50: 0.0, precipP90: 1.2, probPct: 15, windMax: 21, snowCm: 0, iso0M: 3050, cloudPct: 45, cond: 'Parcial' }
+      { day: 'Lun 19 Oct', tMin: 9, tMax: 14, tempLowReferenceC: 8, tempHighReferenceC: 15, precipForecastMm: 38.0, precipUpperScenarioMm: 62.0, probPct: 95, windMax: 48, snowCm: 28, iso0M: 2890, cloudPct: 100, cond: 'Lluvia moderada a fuerte' },
+      { day: 'Mar 20 Oct', tMin: 6, tMax: 14, tempLowReferenceC: 5, tempHighReferenceC: 16, precipForecastMm: 16.0, precipUpperScenarioMm: 29.0, probPct: 85, windMax: 34, snowCm: 40, iso0M: 1980, cloudPct: 85, cond: 'Chubascos y nieve andina' },
+      { day: 'Mié 21 Oct', tMin: 3, tMax: 16, tempLowReferenceC: 1, tempHighReferenceC: 18, precipForecastMm: 1.0, precipUpperScenarioMm: 3.5, probPct: 25, windMax: 20, snowCm: 5, iso0M: 2200, cloudPct: 40, cond: 'Helada local en valles' },
+      { day: 'Jue 22 Oct', tMin: 4, tMax: 20, tempLowReferenceC: 3, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 17, snowCm: 0, iso0M: 2950, cloudPct: 15, cond: 'Despejado' },
+      { day: 'Vie 23 Oct', tMin: 6, tMax: 23, tempLowReferenceC: 5, tempHighReferenceC: 25, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 18, snowCm: 0, iso0M: 3300, cloudPct: 10, cond: 'Soleado' },
+      { day: 'Sáb 24 Oct', tMin: 7, tMax: 22, tempLowReferenceC: 6, tempHighReferenceC: 24, precipForecastMm: 0.0, precipUpperScenarioMm: 0.5, probPct: 10, windMax: 20, snowCm: 0, iso0M: 3200, cloudPct: 30, cond: 'Parcial' },
+      { day: 'Dom 25 Oct', tMin: 7, tMax: 20, tempLowReferenceC: 6, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 1.2, probPct: 15, windMax: 21, snowCm: 0, iso0M: 3050, cloudPct: 45, cond: 'Parcial' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 55.0, tempMaxAvg: 14.7, iso0Min: 1980, windPeak: 48 },
@@ -597,25 +597,25 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'EXTREMA',
     keyPhenomenon: 'Pulso intenso de precipitación sobre cuencas del Mataquito y Maule con acumulados de 50-85 mm en 48 h y riesgo de crecidas rápidas.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 4.8, p90: 8.2, iso0: 2680, wind: 34, temp: 12.1 },
-      { hourOffset: 3, p50: 6.5, p90: 11.4, iso0: 2620, wind: 42, temp: 11.8 },
-      { hourOffset: 6, p50: 5.9, p90: 10.5, iso0: 2450, wind: 39, temp: 11.2 },
-      { hourOffset: 12, p50: 3.4, p90: 6.8, iso0: 2050, wind: 28, temp: 9.5 },
-      { hourOffset: 18, p50: 2.0, p90: 4.2, iso0: 1820, wind: 22, temp: 8.4 },
-      { hourOffset: 24, p50: 1.1, p90: 2.8, iso0: 1750, wind: 18, temp: 12.6 },
-      { hourOffset: 30, p50: 0.4, p90: 1.3, iso0: 1850, wind: 15, temp: 13.2 },
-      { hourOffset: 36, p50: 0.0, p90: 0.4, iso0: 1950, wind: 9, temp: 5.5 },
-      { hourOffset: 42, p50: 0.0, p90: 0.0, iso0: 2100, wind: 7, temp: 3.2 },
-      { hourOffset: 48, p50: 0.0, p90: 0.0, iso0: 2450, wind: 11, temp: 15.8 }
+      { hourOffset: 0, forecastMm: 4.8, upperScenarioMm: 8.2, iso0: 2680, wind: 34, temp: 12.1 },
+      { hourOffset: 3, forecastMm: 6.5, upperScenarioMm: 11.4, iso0: 2620, wind: 42, temp: 11.8 },
+      { hourOffset: 6, forecastMm: 5.9, upperScenarioMm: 10.5, iso0: 2450, wind: 39, temp: 11.2 },
+      { hourOffset: 12, forecastMm: 3.4, upperScenarioMm: 6.8, iso0: 2050, wind: 28, temp: 9.5 },
+      { hourOffset: 18, forecastMm: 2.0, upperScenarioMm: 4.2, iso0: 1820, wind: 22, temp: 8.4 },
+      { hourOffset: 24, forecastMm: 1.1, upperScenarioMm: 2.8, iso0: 1750, wind: 18, temp: 12.6 },
+      { hourOffset: 30, forecastMm: 0.4, upperScenarioMm: 1.3, iso0: 1850, wind: 15, temp: 13.2 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.4, iso0: 1950, wind: 9, temp: 5.5 },
+      { hourOffset: 42, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 2100, wind: 7, temp: 3.2 },
+      { hourOffset: 48, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 2450, wind: 11, temp: 15.8 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 9, tMax: 13, tP10: 8, tP90: 14, precipP50: 45.0, precipP90: 74.0, probPct: 98, windMax: 58, snowCm: 35, iso0M: 2680, cloudPct: 100, cond: 'Temporal de lluvia y viento' },
-      { day: 'Mar 20 Oct', tMin: 5, tMax: 14, tP10: 4, tP90: 15, precipP50: 18.0, precipP90: 31.0, probPct: 85, windMax: 36, snowCm: 45, iso0M: 1750, cloudPct: 80, cond: 'Chubascos y descenso de isoterma' },
-      { day: 'Mié 21 Oct', tMin: 2, tMax: 15, tP10: 0, tP90: 17, precipP50: 0.8, precipP90: 2.8, probPct: 20, windMax: 18, snowCm: 3, iso0M: 1950, cloudPct: 35, cond: 'Riesgo de helada matinal' },
-      { day: 'Jue 22 Oct', tMin: 3, tMax: 19, tP10: 2, tP90: 21, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 16, snowCm: 0, iso0M: 2800, cloudPct: 20, cond: 'Despejado' },
-      { day: 'Vie 23 Oct', tMin: 5, tMax: 22, tP10: 4, tP90: 24, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 18, snowCm: 0, iso0M: 3100, cloudPct: 15, cond: 'Soleado' },
-      { day: 'Sáb 24 Oct', tMin: 6, tMax: 20, tP10: 5, tP90: 22, precipP50: 0.5, precipP90: 2.0, probPct: 20, windMax: 22, snowCm: 0, iso0M: 2950, cloudPct: 50, cond: 'Nubosidad en aumento' },
-      { day: 'Dom 25 Oct', tMin: 7, tMax: 18, tP10: 6, tP90: 20, precipP50: 2.5, precipP90: 7.0, probPct: 40, windMax: 25, snowCm: 2, iso0M: 2650, cloudPct: 70, cond: 'Chubascos débiles' }
+      { day: 'Lun 19 Oct', tMin: 9, tMax: 13, tempLowReferenceC: 8, tempHighReferenceC: 14, precipForecastMm: 45.0, precipUpperScenarioMm: 74.0, probPct: 98, windMax: 58, snowCm: 35, iso0M: 2680, cloudPct: 100, cond: 'Temporal de lluvia y viento' },
+      { day: 'Mar 20 Oct', tMin: 5, tMax: 14, tempLowReferenceC: 4, tempHighReferenceC: 15, precipForecastMm: 18.0, precipUpperScenarioMm: 31.0, probPct: 85, windMax: 36, snowCm: 45, iso0M: 1750, cloudPct: 80, cond: 'Chubascos y descenso de isoterma' },
+      { day: 'Mié 21 Oct', tMin: 2, tMax: 15, tempLowReferenceC: 0, tempHighReferenceC: 17, precipForecastMm: 0.8, precipUpperScenarioMm: 2.8, probPct: 20, windMax: 18, snowCm: 3, iso0M: 1950, cloudPct: 35, cond: 'Riesgo de helada matinal' },
+      { day: 'Jue 22 Oct', tMin: 3, tMax: 19, tempLowReferenceC: 2, tempHighReferenceC: 21, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 16, snowCm: 0, iso0M: 2800, cloudPct: 20, cond: 'Despejado' },
+      { day: 'Vie 23 Oct', tMin: 5, tMax: 22, tempLowReferenceC: 4, tempHighReferenceC: 24, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 18, snowCm: 0, iso0M: 3100, cloudPct: 15, cond: 'Soleado' },
+      { day: 'Sáb 24 Oct', tMin: 6, tMax: 20, tempLowReferenceC: 5, tempHighReferenceC: 22, precipForecastMm: 0.5, precipUpperScenarioMm: 2.0, probPct: 20, windMax: 22, snowCm: 0, iso0M: 2950, cloudPct: 50, cond: 'Nubosidad en aumento' },
+      { day: 'Dom 25 Oct', tMin: 7, tMax: 18, tempLowReferenceC: 6, tempHighReferenceC: 20, precipForecastMm: 2.5, precipUpperScenarioMm: 7.0, probPct: 40, windMax: 25, snowCm: 2, iso0M: 2650, cloudPct: 70, cond: 'Chubascos débiles' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 63.8, tempMaxAvg: 14.0, iso0Min: 1750, windPeak: 58 },
@@ -656,24 +656,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'TEMPRANA',
     keyPhenomenon: 'Lluvias intensas en precordillera de Ñuble seguido de ingreso de masa de aire polar con nevadas en Nevados de Chillán.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 5.2, p90: 9.0, iso0: 2420, wind: 36, temp: 11.4 },
-      { hourOffset: 6, p50: 4.8, p90: 8.6, iso0: 2150, wind: 34, temp: 10.6 },
-      { hourOffset: 12, p50: 2.9, p90: 5.5, iso0: 1780, wind: 25, temp: 8.4 },
-      { hourOffset: 18, p50: 1.6, p90: 3.4, iso0: 1580, wind: 19, temp: 7.5 },
-      { hourOffset: 24, p50: 0.8, p90: 2.0, iso0: 1520, wind: 16, temp: 11.9 },
-      { hourOffset: 30, p50: 0.2, p90: 0.8, iso0: 1650, wind: 13, temp: 12.4 },
-      { hourOffset: 36, p50: 0.0, p90: 0.2, iso0: 1750, wind: 8, temp: 4.1 },
-      { hourOffset: 42, p50: 0.0, p90: 0.0, iso0: 1900, wind: 6, temp: 1.8 },
-      { hourOffset: 48, p50: 0.0, p90: 0.0, iso0: 2250, wind: 11, temp: 14.9 }
+      { hourOffset: 0, forecastMm: 5.2, upperScenarioMm: 9.0, iso0: 2420, wind: 36, temp: 11.4 },
+      { hourOffset: 6, forecastMm: 4.8, upperScenarioMm: 8.6, iso0: 2150, wind: 34, temp: 10.6 },
+      { hourOffset: 12, forecastMm: 2.9, upperScenarioMm: 5.5, iso0: 1780, wind: 25, temp: 8.4 },
+      { hourOffset: 18, forecastMm: 1.6, upperScenarioMm: 3.4, iso0: 1580, wind: 19, temp: 7.5 },
+      { hourOffset: 24, forecastMm: 0.8, upperScenarioMm: 2.0, iso0: 1520, wind: 16, temp: 11.9 },
+      { hourOffset: 30, forecastMm: 0.2, upperScenarioMm: 0.8, iso0: 1650, wind: 13, temp: 12.4 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.2, iso0: 1750, wind: 8, temp: 4.1 },
+      { hourOffset: 42, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 1900, wind: 6, temp: 1.8 },
+      { hourOffset: 48, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 2250, wind: 11, temp: 14.9 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 8, tMax: 13, tP10: 7, tP90: 14, precipP50: 41.0, precipP90: 66.0, probPct: 95, windMax: 61, snowCm: 45, iso0M: 2420, cloudPct: 100, cond: 'Lluvia fuerte y viento' },
-      { day: 'Mar 20 Oct', tMin: 4, tMax: 13, tP10: 3, tP90: 14, precipP50: 12.5, precipP90: 22.0, probPct: 80, windMax: 32, snowCm: 50, iso0M: 1520, cloudPct: 75, cond: 'Chubascos y nieve desde 1.500m' },
-      { day: 'Mié 21 Oct', tMin: 1, tMax: 15, tP10: -1, tP90: 16, precipP50: 0.4, precipP90: 1.8, probPct: 15, windMax: 16, snowCm: 2, iso0M: 1750, cloudPct: 30, cond: 'Helada matinal agrícola' },
-      { day: 'Jue 22 Oct', tMin: 2, tMax: 18, tP10: 1, tP90: 20, precipP50: 0.0, precipP90: 0.0, probPct: 5, windMax: 15, snowCm: 0, iso0M: 2600, cloudPct: 20, cond: 'Soleado' },
-      { day: 'Vie 23 Oct', tMin: 4, tMax: 20, tP10: 3, tP90: 22, precipP50: 0.0, precipP90: 0.4, probPct: 10, windMax: 17, snowCm: 0, iso0M: 2900, cloudPct: 25, cond: 'Parcial' },
-      { day: 'Sáb 24 Oct', tMin: 6, tMax: 18, tP10: 5, tP90: 20, precipP50: 2.0, precipP90: 6.5, probPct: 35, windMax: 24, snowCm: 0, iso0M: 2700, cloudPct: 65, cond: 'Nublado con chubascos fines día' },
-      { day: 'Dom 25 Oct', tMin: 7, tMax: 16, tP10: 6, tP90: 18, precipP50: 6.0, precipP90: 14.0, probPct: 55, windMax: 28, snowCm: 5, iso0M: 2400, cloudPct: 80, cond: 'Chubascos débiles' }
+      { day: 'Lun 19 Oct', tMin: 8, tMax: 13, tempLowReferenceC: 7, tempHighReferenceC: 14, precipForecastMm: 41.0, precipUpperScenarioMm: 66.0, probPct: 95, windMax: 61, snowCm: 45, iso0M: 2420, cloudPct: 100, cond: 'Lluvia fuerte y viento' },
+      { day: 'Mar 20 Oct', tMin: 4, tMax: 13, tempLowReferenceC: 3, tempHighReferenceC: 14, precipForecastMm: 12.5, precipUpperScenarioMm: 22.0, probPct: 80, windMax: 32, snowCm: 50, iso0M: 1520, cloudPct: 75, cond: 'Chubascos y nieve desde 1.500m' },
+      { day: 'Mié 21 Oct', tMin: 1, tMax: 15, tempLowReferenceC: -1, tempHighReferenceC: 16, precipForecastMm: 0.4, precipUpperScenarioMm: 1.8, probPct: 15, windMax: 16, snowCm: 2, iso0M: 1750, cloudPct: 30, cond: 'Helada matinal agrícola' },
+      { day: 'Jue 22 Oct', tMin: 2, tMax: 18, tempLowReferenceC: 1, tempHighReferenceC: 20, precipForecastMm: 0.0, precipUpperScenarioMm: 0.0, probPct: 5, windMax: 15, snowCm: 0, iso0M: 2600, cloudPct: 20, cond: 'Soleado' },
+      { day: 'Vie 23 Oct', tMin: 4, tMax: 20, tempLowReferenceC: 3, tempHighReferenceC: 22, precipForecastMm: 0.0, precipUpperScenarioMm: 0.4, probPct: 10, windMax: 17, snowCm: 0, iso0M: 2900, cloudPct: 25, cond: 'Parcial' },
+      { day: 'Sáb 24 Oct', tMin: 6, tMax: 18, tempLowReferenceC: 5, tempHighReferenceC: 20, precipForecastMm: 2.0, precipUpperScenarioMm: 6.5, probPct: 35, windMax: 24, snowCm: 0, iso0M: 2700, cloudPct: 65, cond: 'Nublado con chubascos fines día' },
+      { day: 'Dom 25 Oct', tMin: 7, tMax: 16, tempLowReferenceC: 6, tempHighReferenceC: 18, precipForecastMm: 6.0, precipUpperScenarioMm: 14.0, probPct: 55, windMax: 28, snowCm: 5, iso0M: 2400, cloudPct: 80, cond: 'Chubascos débiles' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 53.9, tempMaxAvg: 13.7, iso0Min: 1520, windPeak: 61 },
@@ -714,24 +714,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'TEMPRANA',
     keyPhenomenon: 'Inestabilidad postfrontal con probables tormentas eléctricas costeras, saturación de suelos en cuenca del Andalién y marejadas.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 3.9, p90: 7.5, iso0: 2150, wind: 42, temp: 11.8 },
-      { hourOffset: 6, p50: 3.2, p90: 6.4, iso0: 1850, wind: 38, temp: 11.0 },
-      { hourOffset: 12, p50: 2.1, p90: 4.5, iso0: 1580, wind: 30, temp: 9.2 },
-      { hourOffset: 18, p50: 1.4, p90: 3.0, iso0: 1450, wind: 24, temp: 8.6 },
-      { hourOffset: 24, p50: 0.6, p90: 1.8, iso0: 1480, wind: 20, temp: 12.4 },
-      { hourOffset: 30, p50: 0.2, p90: 0.7, iso0: 1600, wind: 17, temp: 12.9 },
-      { hourOffset: 36, p50: 0.0, p90: 0.2, iso0: 1720, wind: 12, temp: 6.8 },
-      { hourOffset: 42, p50: 0.0, p90: 0.0, iso0: 1850, wind: 10, temp: 5.2 },
-      { hourOffset: 48, p50: 0.0, p90: 0.0, iso0: 2150, wind: 15, temp: 14.5 }
+      { hourOffset: 0, forecastMm: 3.9, upperScenarioMm: 7.5, iso0: 2150, wind: 42, temp: 11.8 },
+      { hourOffset: 6, forecastMm: 3.2, upperScenarioMm: 6.4, iso0: 1850, wind: 38, temp: 11.0 },
+      { hourOffset: 12, forecastMm: 2.1, upperScenarioMm: 4.5, iso0: 1580, wind: 30, temp: 9.2 },
+      { hourOffset: 18, forecastMm: 1.4, upperScenarioMm: 3.0, iso0: 1450, wind: 24, temp: 8.6 },
+      { hourOffset: 24, forecastMm: 0.6, upperScenarioMm: 1.8, iso0: 1480, wind: 20, temp: 12.4 },
+      { hourOffset: 30, forecastMm: 0.2, upperScenarioMm: 0.7, iso0: 1600, wind: 17, temp: 12.9 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.2, iso0: 1720, wind: 12, temp: 6.8 },
+      { hourOffset: 42, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 1850, wind: 10, temp: 5.2 },
+      { hourOffset: 48, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 2150, wind: 15, temp: 14.5 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 9, tMax: 13, tP10: 8, tP90: 14, precipP50: 29.0, precipP90: 48.0, probPct: 95, windMax: 68, snowCm: 30, iso0M: 2150, cloudPct: 92, cond: 'Chubascos y tormenta aislada' },
-      { day: 'Mar 20 Oct', tMin: 6, tMax: 13, tP10: 5, tP90: 14, precipP50: 10.5, precipP90: 19.0, probPct: 75, windMax: 38, snowCm: 25, iso0M: 1450, cloudPct: 75, cond: 'Chubascos en declinación' },
-      { day: 'Mié 21 Oct', tMin: 4, tMax: 14, tP10: 3, tP90: 16, precipP50: 0.3, precipP90: 1.5, probPct: 15, windMax: 20, snowCm: 0, iso0M: 1720, cloudPct: 35, cond: 'Parcial' },
-      { day: 'Jue 22 Oct', tMin: 5, tMax: 16, tP10: 4, tP90: 18, precipP50: 0.0, precipP90: 0.2, probPct: 10, windMax: 18, snowCm: 0, iso0M: 2450, cloudPct: 25, cond: 'Despejado' },
-      { day: 'Vie 23 Oct', tMin: 7, tMax: 17, tP10: 6, tP90: 19, precipP50: 0.5, precipP90: 2.0, probPct: 20, windMax: 22, snowCm: 0, iso0M: 2700, cloudPct: 45, cond: 'Parcial a nublado' },
-      { day: 'Sáb 24 Oct', tMin: 8, tMax: 15, tP10: 7, tP90: 17, precipP50: 5.5, precipP90: 13.0, probPct: 55, windMax: 32, snowCm: 2, iso0M: 2500, cloudPct: 80, cond: 'Lluvia débil' },
-      { day: 'Dom 25 Oct', tMin: 8, tMax: 15, tP10: 7, tP90: 17, precipP50: 9.0, precipP90: 19.0, probPct: 65, windMax: 35, snowCm: 6, iso0M: 2250, cloudPct: 85, cond: 'Chubascos' }
+      { day: 'Lun 19 Oct', tMin: 9, tMax: 13, tempLowReferenceC: 8, tempHighReferenceC: 14, precipForecastMm: 29.0, precipUpperScenarioMm: 48.0, probPct: 95, windMax: 68, snowCm: 30, iso0M: 2150, cloudPct: 92, cond: 'Chubascos y tormenta aislada' },
+      { day: 'Mar 20 Oct', tMin: 6, tMax: 13, tempLowReferenceC: 5, tempHighReferenceC: 14, precipForecastMm: 10.5, precipUpperScenarioMm: 19.0, probPct: 75, windMax: 38, snowCm: 25, iso0M: 1450, cloudPct: 75, cond: 'Chubascos en declinación' },
+      { day: 'Mié 21 Oct', tMin: 4, tMax: 14, tempLowReferenceC: 3, tempHighReferenceC: 16, precipForecastMm: 0.3, precipUpperScenarioMm: 1.5, probPct: 15, windMax: 20, snowCm: 0, iso0M: 1720, cloudPct: 35, cond: 'Parcial' },
+      { day: 'Jue 22 Oct', tMin: 5, tMax: 16, tempLowReferenceC: 4, tempHighReferenceC: 18, precipForecastMm: 0.0, precipUpperScenarioMm: 0.2, probPct: 10, windMax: 18, snowCm: 0, iso0M: 2450, cloudPct: 25, cond: 'Despejado' },
+      { day: 'Vie 23 Oct', tMin: 7, tMax: 17, tempLowReferenceC: 6, tempHighReferenceC: 19, precipForecastMm: 0.5, precipUpperScenarioMm: 2.0, probPct: 20, windMax: 22, snowCm: 0, iso0M: 2700, cloudPct: 45, cond: 'Parcial a nublado' },
+      { day: 'Sáb 24 Oct', tMin: 8, tMax: 15, tempLowReferenceC: 7, tempHighReferenceC: 17, precipForecastMm: 5.5, precipUpperScenarioMm: 13.0, probPct: 55, windMax: 32, snowCm: 2, iso0M: 2500, cloudPct: 80, cond: 'Lluvia débil' },
+      { day: 'Dom 25 Oct', tMin: 8, tMax: 15, tempLowReferenceC: 7, tempHighReferenceC: 17, precipForecastMm: 9.0, precipUpperScenarioMm: 19.0, probPct: 65, windMax: 35, snowCm: 6, iso0M: 2250, cloudPct: 85, cond: 'Chubascos' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 39.8, tempMaxAvg: 13.3, iso0Min: 1450, windPeak: 68 },
@@ -772,24 +772,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'PREVENTIVA',
     keyPhenomenon: 'Nevadas acumuladas de 35-60 cm en pasos fronterizos (Pino Hachado / Mamuil Malal) y helada matinal el miércoles.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 2.8, p90: 5.4, iso0: 1680, wind: 29, temp: 9.8 },
-      { hourOffset: 6, p50: 2.4, p90: 4.8, iso0: 1450, wind: 26, temp: 8.9 },
-      { hourOffset: 12, p50: 1.6, p90: 3.5, iso0: 1280, wind: 20, temp: 6.5 },
-      { hourOffset: 18, p50: 0.9, p90: 2.1, iso0: 1200, wind: 15, temp: 5.8 },
-      { hourOffset: 24, p50: 0.4, p90: 1.2, iso0: 1250, wind: 14, temp: 10.6 },
-      { hourOffset: 30, p50: 0.1, p90: 0.5, iso0: 1350, wind: 11, temp: 11.1 },
-      { hourOffset: 36, p50: 0.0, p90: 0.1, iso0: 1450, wind: 6, temp: 2.4 },
-      { hourOffset: 42, p50: 0.0, p90: 0.0, iso0: 1580, wind: 5, temp: 0.2 },
-      { hourOffset: 48, p50: 0.0, p90: 0.0, iso0: 1950, wind: 9, temp: 13.4 }
+      { hourOffset: 0, forecastMm: 2.8, upperScenarioMm: 5.4, iso0: 1680, wind: 29, temp: 9.8 },
+      { hourOffset: 6, forecastMm: 2.4, upperScenarioMm: 4.8, iso0: 1450, wind: 26, temp: 8.9 },
+      { hourOffset: 12, forecastMm: 1.6, upperScenarioMm: 3.5, iso0: 1280, wind: 20, temp: 6.5 },
+      { hourOffset: 18, forecastMm: 0.9, upperScenarioMm: 2.1, iso0: 1200, wind: 15, temp: 5.8 },
+      { hourOffset: 24, forecastMm: 0.4, upperScenarioMm: 1.2, iso0: 1250, wind: 14, temp: 10.6 },
+      { hourOffset: 30, forecastMm: 0.1, upperScenarioMm: 0.5, iso0: 1350, wind: 11, temp: 11.1 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.1, iso0: 1450, wind: 6, temp: 2.4 },
+      { hourOffset: 42, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 1580, wind: 5, temp: 0.2 },
+      { hourOffset: 48, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 1950, wind: 9, temp: 13.4 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 6, tMax: 11, tP10: 5, tP90: 12, precipP50: 22.0, precipP90: 36.0, probPct: 90, windMax: 49, snowCm: 40, iso0M: 1680, cloudPct: 88, cond: 'Chubascos y nieve andina' },
-      { day: 'Mar 20 Oct', tMin: 3, tMax: 11, tP10: 2, tP90: 12, precipP50: 7.5, precipP90: 14.0, probPct: 70, windMax: 28, snowCm: 25, iso0M: 1200, cloudPct: 70, cond: 'Chubascos fríos' },
-      { day: 'Mié 21 Oct', tMin: 0, tMax: 13, tP10: -2, tP90: 15, precipP50: 0.2, precipP90: 1.0, probPct: 15, windMax: 14, snowCm: 0, iso0M: 1450, cloudPct: 30, cond: 'Helada matinal (0 °C a -2 °C)' },
-      { day: 'Jue 22 Oct', tMin: 2, tMax: 16, tP10: 0, tP90: 18, precipP50: 0.0, precipP90: 0.5, probPct: 10, windMax: 15, snowCm: 0, iso0M: 2200, cloudPct: 30, cond: 'Parcial' },
-      { day: 'Vie 23 Oct', tMin: 5, tMax: 16, tP10: 4, tP90: 18, precipP50: 3.0, precipP90: 8.0, probPct: 40, windMax: 24, snowCm: 2, iso0M: 2350, cloudPct: 70, cond: 'Lluvia débil nocturna' },
-      { day: 'Sáb 24 Oct', tMin: 7, tMax: 14, tP10: 6, tP90: 16, precipP50: 14.0, precipP90: 26.0, probPct: 75, windMax: 38, snowCm: 12, iso0M: 2100, cloudPct: 90, cond: 'Lluvia moderada' },
-      { day: 'Dom 25 Oct', tMin: 6, tMax: 13, tP10: 5, tP90: 15, precipP50: 11.0, precipP90: 21.0, probPct: 70, windMax: 34, snowCm: 15, iso0M: 1850, cloudPct: 85, cond: 'Chubascos' }
+      { day: 'Lun 19 Oct', tMin: 6, tMax: 11, tempLowReferenceC: 5, tempHighReferenceC: 12, precipForecastMm: 22.0, precipUpperScenarioMm: 36.0, probPct: 90, windMax: 49, snowCm: 40, iso0M: 1680, cloudPct: 88, cond: 'Chubascos y nieve andina' },
+      { day: 'Mar 20 Oct', tMin: 3, tMax: 11, tempLowReferenceC: 2, tempHighReferenceC: 12, precipForecastMm: 7.5, precipUpperScenarioMm: 14.0, probPct: 70, windMax: 28, snowCm: 25, iso0M: 1200, cloudPct: 70, cond: 'Chubascos fríos' },
+      { day: 'Mié 21 Oct', tMin: 0, tMax: 13, tempLowReferenceC: -2, tempHighReferenceC: 15, precipForecastMm: 0.2, precipUpperScenarioMm: 1.0, probPct: 15, windMax: 14, snowCm: 0, iso0M: 1450, cloudPct: 30, cond: 'Helada matinal (0 °C a -2 °C)' },
+      { day: 'Jue 22 Oct', tMin: 2, tMax: 16, tempLowReferenceC: 0, tempHighReferenceC: 18, precipForecastMm: 0.0, precipUpperScenarioMm: 0.5, probPct: 10, windMax: 15, snowCm: 0, iso0M: 2200, cloudPct: 30, cond: 'Parcial' },
+      { day: 'Vie 23 Oct', tMin: 5, tMax: 16, tempLowReferenceC: 4, tempHighReferenceC: 18, precipForecastMm: 3.0, precipUpperScenarioMm: 8.0, probPct: 40, windMax: 24, snowCm: 2, iso0M: 2350, cloudPct: 70, cond: 'Lluvia débil nocturna' },
+      { day: 'Sáb 24 Oct', tMin: 7, tMax: 14, tempLowReferenceC: 6, tempHighReferenceC: 16, precipForecastMm: 14.0, precipUpperScenarioMm: 26.0, probPct: 75, windMax: 38, snowCm: 12, iso0M: 2100, cloudPct: 90, cond: 'Lluvia moderada' },
+      { day: 'Dom 25 Oct', tMin: 6, tMax: 13, tempLowReferenceC: 5, tempHighReferenceC: 15, precipForecastMm: 11.0, precipUpperScenarioMm: 21.0, probPct: 70, windMax: 34, snowCm: 15, iso0M: 1850, cloudPct: 85, cond: 'Chubascos' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 29.7, tempMaxAvg: 11.7, iso0Min: 1200, windPeak: 49 },
@@ -830,24 +830,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'PREVENTIVA',
     keyPhenomenon: 'Suelos con alta humedad antecedente y nuevo pulso frontal proyectado para el viernes-sábado.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 2.2, p90: 4.5, iso0: 1480, wind: 26, temp: 9.4 },
-      { hourOffset: 6, p50: 1.8, p90: 3.8, iso0: 1320, wind: 24, temp: 8.6 },
-      { hourOffset: 12, p50: 1.2, p90: 2.6, iso0: 1150, wind: 18, temp: 6.2 },
-      { hourOffset: 18, p50: 0.7, p90: 1.6, iso0: 1100, wind: 14, temp: 5.5 },
-      { hourOffset: 24, p50: 0.3, p90: 0.9, iso0: 1180, wind: 12, temp: 10.2 },
-      { hourOffset: 30, p50: 0.0, p90: 0.3, iso0: 1280, wind: 10, temp: 10.8 },
-      { hourOffset: 36, p50: 0.0, p90: 0.0, iso0: 1380, wind: 6, temp: 3.0 },
-      { hourOffset: 42, p50: 0.0, p90: 0.0, iso0: 1500, wind: 5, temp: 1.4 },
-      { hourOffset: 48, p50: 0.0, p90: 0.0, iso0: 1820, wind: 9, temp: 12.8 }
+      { hourOffset: 0, forecastMm: 2.2, upperScenarioMm: 4.5, iso0: 1480, wind: 26, temp: 9.4 },
+      { hourOffset: 6, forecastMm: 1.8, upperScenarioMm: 3.8, iso0: 1320, wind: 24, temp: 8.6 },
+      { hourOffset: 12, forecastMm: 1.2, upperScenarioMm: 2.6, iso0: 1150, wind: 18, temp: 6.2 },
+      { hourOffset: 18, forecastMm: 0.7, upperScenarioMm: 1.6, iso0: 1100, wind: 14, temp: 5.5 },
+      { hourOffset: 24, forecastMm: 0.3, upperScenarioMm: 0.9, iso0: 1180, wind: 12, temp: 10.2 },
+      { hourOffset: 30, forecastMm: 0.0, upperScenarioMm: 0.3, iso0: 1280, wind: 10, temp: 10.8 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 1380, wind: 6, temp: 3.0 },
+      { hourOffset: 42, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 1500, wind: 5, temp: 1.4 },
+      { hourOffset: 48, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 1820, wind: 9, temp: 12.8 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 6, tMax: 11, tP10: 5, tP90: 12, precipP50: 18.0, precipP90: 30.0, probPct: 90, windMax: 45, snowCm: 25, iso0M: 1480, cloudPct: 85, cond: 'Chubascos' },
-      { day: 'Mar 20 Oct', tMin: 3, tMax: 11, tP10: 2, tP90: 12, precipP50: 5.5, precipP90: 11.0, probPct: 65, windMax: 25, snowCm: 15, iso0M: 1100, cloudPct: 65, cond: 'Chubascos aislados' },
-      { day: 'Mié 21 Oct', tMin: 1, tMax: 13, tP10: -1, tP90: 15, precipP50: 0.2, precipP90: 0.8, probPct: 10, windMax: 14, snowCm: 0, iso0M: 1380, cloudPct: 30, cond: 'Frío matinal y bancos de niebla' },
-      { day: 'Jue 22 Oct', tMin: 3, tMax: 15, tP10: 2, tP90: 17, precipP50: 0.5, precipP90: 2.0, probPct: 20, windMax: 18, snowCm: 0, iso0M: 2050, cloudPct: 45, cond: 'Parcial' },
-      { day: 'Vie 23 Oct', tMin: 6, tMax: 14, tP10: 5, tP90: 16, precipP50: 8.0, precipP90: 16.0, probPct: 60, windMax: 32, snowCm: 5, iso0M: 2150, cloudPct: 85, cond: 'Lluvia desde la tarde' },
-      { day: 'Sáb 24 Oct', tMin: 7, tMax: 13, tP10: 6, tP90: 15, precipP50: 22.0, precipP90: 38.0, probPct: 80, windMax: 44, snowCm: 18, iso0M: 1950, cloudPct: 95, cond: 'Lluvia y viento' },
-      { day: 'Dom 25 Oct', tMin: 6, tMax: 12, tP10: 5, tP90: 14, precipP50: 14.0, precipP90: 25.0, probPct: 75, windMax: 36, snowCm: 15, iso0M: 1650, cloudPct: 85, cond: 'Chubascos' }
+      { day: 'Lun 19 Oct', tMin: 6, tMax: 11, tempLowReferenceC: 5, tempHighReferenceC: 12, precipForecastMm: 18.0, precipUpperScenarioMm: 30.0, probPct: 90, windMax: 45, snowCm: 25, iso0M: 1480, cloudPct: 85, cond: 'Chubascos' },
+      { day: 'Mar 20 Oct', tMin: 3, tMax: 11, tempLowReferenceC: 2, tempHighReferenceC: 12, precipForecastMm: 5.5, precipUpperScenarioMm: 11.0, probPct: 65, windMax: 25, snowCm: 15, iso0M: 1100, cloudPct: 65, cond: 'Chubascos aislados' },
+      { day: 'Mié 21 Oct', tMin: 1, tMax: 13, tempLowReferenceC: -1, tempHighReferenceC: 15, precipForecastMm: 0.2, precipUpperScenarioMm: 0.8, probPct: 10, windMax: 14, snowCm: 0, iso0M: 1380, cloudPct: 30, cond: 'Frío matinal y bancos de niebla' },
+      { day: 'Jue 22 Oct', tMin: 3, tMax: 15, tempLowReferenceC: 2, tempHighReferenceC: 17, precipForecastMm: 0.5, precipUpperScenarioMm: 2.0, probPct: 20, windMax: 18, snowCm: 0, iso0M: 2050, cloudPct: 45, cond: 'Parcial' },
+      { day: 'Vie 23 Oct', tMin: 6, tMax: 14, tempLowReferenceC: 5, tempHighReferenceC: 16, precipForecastMm: 8.0, precipUpperScenarioMm: 16.0, probPct: 60, windMax: 32, snowCm: 5, iso0M: 2150, cloudPct: 85, cond: 'Lluvia desde la tarde' },
+      { day: 'Sáb 24 Oct', tMin: 7, tMax: 13, tempLowReferenceC: 6, tempHighReferenceC: 15, precipForecastMm: 22.0, precipUpperScenarioMm: 38.0, probPct: 80, windMax: 44, snowCm: 18, iso0M: 1950, cloudPct: 95, cond: 'Lluvia y viento' },
+      { day: 'Dom 25 Oct', tMin: 6, tMax: 12, tempLowReferenceC: 5, tempHighReferenceC: 14, precipForecastMm: 14.0, precipUpperScenarioMm: 25.0, probPct: 75, windMax: 36, snowCm: 15, iso0M: 1650, cloudPct: 85, cond: 'Chubascos' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 23.7, tempMaxAvg: 11.7, iso0Min: 1100, windPeak: 45 },
@@ -888,24 +888,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'PREVENTIVA',
     keyPhenomenon: 'Descenso de isoterma 0 °C a 950 m s.n.m. en Palena y Osorno; nuevo sistema frontal ingresando el viernes 23.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 1.9, p90: 3.8, iso0: 1250, wind: 31, temp: 8.6 },
-      { hourOffset: 6, p50: 1.5, p90: 3.2, iso0: 1080, wind: 28, temp: 7.5 },
-      { hourOffset: 12, p50: 1.0, p90: 2.2, iso0: 950, wind: 22, temp: 5.1 },
-      { hourOffset: 18, p50: 0.5, p90: 1.3, iso0: 920, wind: 16, temp: 4.6 },
-      { hourOffset: 24, p50: 0.2, p90: 0.7, iso0: 1020, wind: 14, temp: 9.2 },
-      { hourOffset: 30, p50: 0.0, p90: 0.3, iso0: 1120, wind: 11, temp: 9.8 },
-      { hourOffset: 36, p50: 0.0, p90: 0.0, iso0: 1220, wind: 7, temp: 2.2 },
-      { hourOffset: 42, p50: 0.0, p90: 0.0, iso0: 1350, wind: 6, temp: 0.8 },
-      { hourOffset: 48, p50: 0.0, p90: 0.2, iso0: 1650, wind: 12, temp: 11.6 }
+      { hourOffset: 0, forecastMm: 1.9, upperScenarioMm: 3.8, iso0: 1250, wind: 31, temp: 8.6 },
+      { hourOffset: 6, forecastMm: 1.5, upperScenarioMm: 3.2, iso0: 1080, wind: 28, temp: 7.5 },
+      { hourOffset: 12, forecastMm: 1.0, upperScenarioMm: 2.2, iso0: 950, wind: 22, temp: 5.1 },
+      { hourOffset: 18, forecastMm: 0.5, upperScenarioMm: 1.3, iso0: 920, wind: 16, temp: 4.6 },
+      { hourOffset: 24, forecastMm: 0.2, upperScenarioMm: 0.7, iso0: 1020, wind: 14, temp: 9.2 },
+      { hourOffset: 30, forecastMm: 0.0, upperScenarioMm: 0.3, iso0: 1120, wind: 11, temp: 9.8 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 1220, wind: 7, temp: 2.2 },
+      { hourOffset: 42, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 1350, wind: 6, temp: 0.8 },
+      { hourOffset: 48, forecastMm: 0.0, upperScenarioMm: 0.2, iso0: 1650, wind: 12, temp: 11.6 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 5, tMax: 10, tP10: 4, tP90: 11, precipP50: 15.0, precipP90: 26.0, probPct: 85, windMax: 52, snowCm: 20, iso0M: 1250, cloudPct: 85, cond: 'Chubascos y viento' },
-      { day: 'Mar 20 Oct', tMin: 2, tMax: 10, tP10: 1, tP90: 11, precipP50: 4.5, precipP90: 9.5, probPct: 60, windMax: 28, snowCm: 12, iso0M: 920, cloudPct: 65, cond: 'Chubascos fríos' },
-      { day: 'Mié 21 Oct', tMin: 1, tMax: 12, tP10: -1, tP90: 13, precipP50: 0.2, precipP90: 0.8, probPct: 15, windMax: 16, snowCm: 0, iso0M: 1220, cloudPct: 35, cond: 'Escarchas matinales' },
-      { day: 'Jue 22 Oct', tMin: 4, tMax: 13, tP10: 3, tP90: 15, precipP50: 2.5, precipP90: 6.5, probPct: 35, windMax: 25, snowCm: 2, iso0M: 1850, cloudPct: 65, cond: 'Nublado' },
-      { day: 'Vie 23 Oct', tMin: 6, tMax: 12, tP10: 5, tP90: 14, precipP50: 16.0, precipP90: 29.0, probPct: 75, windMax: 42, snowCm: 10, iso0M: 1950, cloudPct: 90, cond: 'Lluvia moderada' },
-      { day: 'Sáb 24 Oct', tMin: 7, tMax: 12, tP10: 6, tP90: 14, precipP50: 25.0, precipP90: 44.0, probPct: 85, windMax: 50, snowCm: 22, iso0M: 1750, cloudPct: 95, cond: 'Temporal de lluvia' },
-      { day: 'Dom 25 Oct', tMin: 5, tMax: 11, tP10: 4, tP90: 13, precipP50: 14.0, precipP90: 25.0, probPct: 75, windMax: 38, snowCm: 15, iso0M: 1450, cloudPct: 85, cond: 'Chubascos' }
+      { day: 'Lun 19 Oct', tMin: 5, tMax: 10, tempLowReferenceC: 4, tempHighReferenceC: 11, precipForecastMm: 15.0, precipUpperScenarioMm: 26.0, probPct: 85, windMax: 52, snowCm: 20, iso0M: 1250, cloudPct: 85, cond: 'Chubascos y viento' },
+      { day: 'Mar 20 Oct', tMin: 2, tMax: 10, tempLowReferenceC: 1, tempHighReferenceC: 11, precipForecastMm: 4.5, precipUpperScenarioMm: 9.5, probPct: 60, windMax: 28, snowCm: 12, iso0M: 920, cloudPct: 65, cond: 'Chubascos fríos' },
+      { day: 'Mié 21 Oct', tMin: 1, tMax: 12, tempLowReferenceC: -1, tempHighReferenceC: 13, precipForecastMm: 0.2, precipUpperScenarioMm: 0.8, probPct: 15, windMax: 16, snowCm: 0, iso0M: 1220, cloudPct: 35, cond: 'Escarchas matinales' },
+      { day: 'Jue 22 Oct', tMin: 4, tMax: 13, tempLowReferenceC: 3, tempHighReferenceC: 15, precipForecastMm: 2.5, precipUpperScenarioMm: 6.5, probPct: 35, windMax: 25, snowCm: 2, iso0M: 1850, cloudPct: 65, cond: 'Nublado' },
+      { day: 'Vie 23 Oct', tMin: 6, tMax: 12, tempLowReferenceC: 5, tempHighReferenceC: 14, precipForecastMm: 16.0, precipUpperScenarioMm: 29.0, probPct: 75, windMax: 42, snowCm: 10, iso0M: 1950, cloudPct: 90, cond: 'Lluvia moderada' },
+      { day: 'Sáb 24 Oct', tMin: 7, tMax: 12, tempLowReferenceC: 6, tempHighReferenceC: 14, precipForecastMm: 25.0, precipUpperScenarioMm: 44.0, probPct: 85, windMax: 50, snowCm: 22, iso0M: 1750, cloudPct: 95, cond: 'Temporal de lluvia' },
+      { day: 'Dom 25 Oct', tMin: 5, tMax: 11, tempLowReferenceC: 4, tempHighReferenceC: 13, precipForecastMm: 14.0, precipUpperScenarioMm: 25.0, probPct: 75, windMax: 38, snowCm: 15, iso0M: 1450, cloudPct: 85, cond: 'Chubascos' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 19.7, tempMaxAvg: 10.7, iso0Min: 920, windPeak: 52 },
@@ -946,24 +946,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'PREVENTIVA',
     keyPhenomenon: 'Heladas severas (-3 °C a -5 °C) tras el paso frontal y escarcha en Ruta 7 (Carretera Austral).',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 0.8, p90: 1.9, iso0: 780, wind: 28, temp: 4.8 },
-      { hourOffset: 6, p50: 0.5, p90: 1.2, iso0: 680, wind: 22, temp: 3.4 },
-      { hourOffset: 12, p50: 0.2, p90: 0.6, iso0: 620, wind: 14, temp: 0.2 },
-      { hourOffset: 18, p50: 0.0, p90: 0.2, iso0: 600, wind: 10, temp: -1.8 },
-      { hourOffset: 24, p50: 0.0, p90: 0.1, iso0: 720, wind: 12, temp: 6.4 },
-      { hourOffset: 30, p50: 0.0, p90: 0.0, iso0: 850, wind: 10, temp: 7.2 },
-      { hourOffset: 36, p50: 0.0, p90: 0.0, iso0: 920, wind: 6, temp: -2.4 },
-      { hourOffset: 42, p50: 0.0, p90: 0.0, iso0: 1050, wind: 5, temp: -3.9 },
-      { hourOffset: 48, p50: 0.4, p90: 1.2, iso0: 1380, wind: 18, temp: 8.8 }
+      { hourOffset: 0, forecastMm: 0.8, upperScenarioMm: 1.9, iso0: 780, wind: 28, temp: 4.8 },
+      { hourOffset: 6, forecastMm: 0.5, upperScenarioMm: 1.2, iso0: 680, wind: 22, temp: 3.4 },
+      { hourOffset: 12, forecastMm: 0.2, upperScenarioMm: 0.6, iso0: 620, wind: 14, temp: 0.2 },
+      { hourOffset: 18, forecastMm: 0.0, upperScenarioMm: 0.2, iso0: 600, wind: 10, temp: -1.8 },
+      { hourOffset: 24, forecastMm: 0.0, upperScenarioMm: 0.1, iso0: 720, wind: 12, temp: 6.4 },
+      { hourOffset: 30, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 850, wind: 10, temp: 7.2 },
+      { hourOffset: 36, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 920, wind: 6, temp: -2.4 },
+      { hourOffset: 42, forecastMm: 0.0, upperScenarioMm: 0.0, iso0: 1050, wind: 5, temp: -3.9 },
+      { hourOffset: 48, forecastMm: 0.4, upperScenarioMm: 1.2, iso0: 1380, wind: 18, temp: 8.8 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 0, tMax: 7, tP10: -2, tP90: 8, precipP50: 6.5, precipP90: 13.0, probPct: 75, windMax: 46, snowCm: 8, iso0M: 780, cloudPct: 75, cond: 'Aguanieve en sectores altos' },
-      { day: 'Mar 20 Oct', tMin: -3, tMax: 7, tP10: -5, tP90: 9, precipP50: 1.0, precipP90: 3.0, probPct: 30, windMax: 24, snowCm: 2, iso0M: 600, cloudPct: 45, cond: 'Helada y escarcha en rutas' },
-      { day: 'Mié 21 Oct', tMin: -4, tMax: 10, tP10: -6, tP90: 12, precipP50: 0.5, precipP90: 2.0, probPct: 20, windMax: 22, snowCm: 0, iso0M: 920, cloudPct: 40, cond: 'Helada matinal severa' },
-      { day: 'Jue 22 Oct', tMin: 2, tMax: 11, tP10: 0, tP90: 13, precipP50: 12.0, precipP90: 24.0, probPct: 75, windMax: 48, snowCm: 6, iso0M: 1450, cloudPct: 90, cond: 'Ingreso de nuevo frente' },
-      { day: 'Vie 23 Oct', tMin: 4, tMax: 10, tP10: 2, tP90: 12, precipP50: 26.0, precipP90: 45.0, probPct: 85, windMax: 62, snowCm: 15, iso0M: 1550, cloudPct: 95, cond: 'Lluvia intensa y viento' },
-      { day: 'Sáb 24 Oct', tMin: 3, tMax: 9, tP10: 1, tP90: 11, precipP50: 18.0, precipP90: 32.0, probPct: 80, windMax: 54, snowCm: 14, iso0M: 1250, cloudPct: 85, cond: 'Chubascos y viento' },
-      { day: 'Dom 25 Oct', tMin: 1, tMax: 8, tP10: -1, tP90: 10, precipP50: 8.0, precipP90: 16.0, probPct: 65, windMax: 38, snowCm: 10, iso0M: 980, cloudPct: 75, cond: 'Chubascos de agua-nieve' }
+      { day: 'Lun 19 Oct', tMin: 0, tMax: 7, tempLowReferenceC: -2, tempHighReferenceC: 8, precipForecastMm: 6.5, precipUpperScenarioMm: 13.0, probPct: 75, windMax: 46, snowCm: 8, iso0M: 780, cloudPct: 75, cond: 'Aguanieve en sectores altos' },
+      { day: 'Mar 20 Oct', tMin: -3, tMax: 7, tempLowReferenceC: -5, tempHighReferenceC: 9, precipForecastMm: 1.0, precipUpperScenarioMm: 3.0, probPct: 30, windMax: 24, snowCm: 2, iso0M: 600, cloudPct: 45, cond: 'Helada y escarcha en rutas' },
+      { day: 'Mié 21 Oct', tMin: -4, tMax: 10, tempLowReferenceC: -6, tempHighReferenceC: 12, precipForecastMm: 0.5, precipUpperScenarioMm: 2.0, probPct: 20, windMax: 22, snowCm: 0, iso0M: 920, cloudPct: 40, cond: 'Helada matinal severa' },
+      { day: 'Jue 22 Oct', tMin: 2, tMax: 11, tempLowReferenceC: 0, tempHighReferenceC: 13, precipForecastMm: 12.0, precipUpperScenarioMm: 24.0, probPct: 75, windMax: 48, snowCm: 6, iso0M: 1450, cloudPct: 90, cond: 'Ingreso de nuevo frente' },
+      { day: 'Vie 23 Oct', tMin: 4, tMax: 10, tempLowReferenceC: 2, tempHighReferenceC: 12, precipForecastMm: 26.0, precipUpperScenarioMm: 45.0, probPct: 85, windMax: 62, snowCm: 15, iso0M: 1550, cloudPct: 95, cond: 'Lluvia intensa y viento' },
+      { day: 'Sáb 24 Oct', tMin: 3, tMax: 9, tempLowReferenceC: 1, tempHighReferenceC: 11, precipForecastMm: 18.0, precipUpperScenarioMm: 32.0, probPct: 80, windMax: 54, snowCm: 14, iso0M: 1250, cloudPct: 85, cond: 'Chubascos y viento' },
+      { day: 'Dom 25 Oct', tMin: 1, tMax: 8, tempLowReferenceC: -1, tempHighReferenceC: 10, precipForecastMm: 8.0, precipUpperScenarioMm: 16.0, probPct: 65, windMax: 38, snowCm: 10, iso0M: 980, cloudPct: 75, cond: 'Chubascos de agua-nieve' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 8.0, tempMaxAvg: 8.0, iso0Min: 600, windPeak: 46 },
@@ -1004,24 +1004,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'TEMPRANA',
     keyPhenomenon: 'Rachas de viento pampa/costero entre 85 y 105 km/h por fuerte gradiente bárico austral.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 0.4, p90: 1.1, iso0: 580, wind: 58, temp: 5.2 },
-      { hourOffset: 6, p50: 0.6, p90: 1.5, iso0: 550, wind: 68, temp: 5.8 },
-      { hourOffset: 12, p50: 0.3, p90: 0.9, iso0: 520, wind: 52, temp: 2.4 },
-      { hourOffset: 18, p50: 0.2, p90: 0.6, iso0: 540, wind: 48, temp: 3.1 },
-      { hourOffset: 24, p50: 0.8, p90: 2.0, iso0: 680, wind: 74, temp: 6.8 },
-      { hourOffset: 30, p50: 1.1, p90: 2.6, iso0: 720, wind: 78, temp: 7.1 },
-      { hourOffset: 36, p50: 0.5, p90: 1.4, iso0: 640, wind: 56, temp: 3.5 },
-      { hourOffset: 42, p50: 0.2, p90: 0.7, iso0: 610, wind: 44, temp: 2.8 },
-      { hourOffset: 48, p50: 0.3, p90: 0.9, iso0: 690, wind: 52, temp: 6.5 }
+      { hourOffset: 0, forecastMm: 0.4, upperScenarioMm: 1.1, iso0: 580, wind: 58, temp: 5.2 },
+      { hourOffset: 6, forecastMm: 0.6, upperScenarioMm: 1.5, iso0: 550, wind: 68, temp: 5.8 },
+      { hourOffset: 12, forecastMm: 0.3, upperScenarioMm: 0.9, iso0: 520, wind: 52, temp: 2.4 },
+      { hourOffset: 18, forecastMm: 0.2, upperScenarioMm: 0.6, iso0: 540, wind: 48, temp: 3.1 },
+      { hourOffset: 24, forecastMm: 0.8, upperScenarioMm: 2.0, iso0: 680, wind: 74, temp: 6.8 },
+      { hourOffset: 30, forecastMm: 1.1, upperScenarioMm: 2.6, iso0: 720, wind: 78, temp: 7.1 },
+      { hourOffset: 36, forecastMm: 0.5, upperScenarioMm: 1.4, iso0: 640, wind: 56, temp: 3.5 },
+      { hourOffset: 42, forecastMm: 0.2, upperScenarioMm: 0.7, iso0: 610, wind: 44, temp: 2.8 },
+      { hourOffset: 48, forecastMm: 0.3, upperScenarioMm: 0.9, iso0: 690, wind: 52, temp: 6.5 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 2, tMax: 7, tP10: 0, tP90: 8, precipP50: 3.5, precipP90: 7.0, probPct: 60, windMax: 92, snowCm: 2, iso0M: 580, cloudPct: 70, cond: 'Temporal de viento (rachas 92 km/h)' },
-      { day: 'Mar 20 Oct', tMin: 2, tMax: 8, tP10: 1, tP90: 9, precipP50: 4.5, precipP90: 9.5, probPct: 65, windMax: 102, snowCm: 1, iso0M: 680, cloudPct: 75, cond: 'Rachas hasta 102 km/h y chubascos' },
-      { day: 'Mié 21 Oct', tMin: 2, tMax: 8, tP10: 0, tP90: 10, precipP50: 2.0, precipP90: 5.0, probPct: 45, windMax: 76, snowCm: 1, iso0M: 650, cloudPct: 65, cond: 'Ventoso y parcial' },
-      { day: 'Jue 22 Oct', tMin: 3, tMax: 9, tP10: 1, tP90: 11, precipP50: 3.0, precipP90: 7.5, probPct: 50, windMax: 68, snowCm: 0, iso0M: 750, cloudPct: 70, cond: 'Chubascos débiles' },
-      { day: 'Vie 23 Oct', tMin: 2, tMax: 8, tP10: 0, tP90: 10, precipP50: 4.0, precipP90: 8.5, probPct: 55, windMax: 72, snowCm: 2, iso0M: 620, cloudPct: 75, cond: 'Viento y chubascos' },
-      { day: 'Sáb 24 Oct', tMin: 1, tMax: 7, tP10: -1, tP90: 9, precipP50: 2.5, precipP90: 6.0, probPct: 50, windMax: 64, snowCm: 3, iso0M: 540, cloudPct: 70, cond: 'Chubascos fríos' },
-      { day: 'Dom 25 Oct', tMin: 1, tMax: 8, tP10: 0, tP90: 10, precipP50: 1.5, precipP90: 4.0, probPct: 40, windMax: 58, snowCm: 1, iso0M: 600, cloudPct: 60, cond: 'Parcial y ventoso' }
+      { day: 'Lun 19 Oct', tMin: 2, tMax: 7, tempLowReferenceC: 0, tempHighReferenceC: 8, precipForecastMm: 3.5, precipUpperScenarioMm: 7.0, probPct: 60, windMax: 92, snowCm: 2, iso0M: 580, cloudPct: 70, cond: 'Temporal de viento (rachas 92 km/h)' },
+      { day: 'Mar 20 Oct', tMin: 2, tMax: 8, tempLowReferenceC: 1, tempHighReferenceC: 9, precipForecastMm: 4.5, precipUpperScenarioMm: 9.5, probPct: 65, windMax: 102, snowCm: 1, iso0M: 680, cloudPct: 75, cond: 'Rachas hasta 102 km/h y chubascos' },
+      { day: 'Mié 21 Oct', tMin: 2, tMax: 8, tempLowReferenceC: 0, tempHighReferenceC: 10, precipForecastMm: 2.0, precipUpperScenarioMm: 5.0, probPct: 45, windMax: 76, snowCm: 1, iso0M: 650, cloudPct: 65, cond: 'Ventoso y parcial' },
+      { day: 'Jue 22 Oct', tMin: 3, tMax: 9, tempLowReferenceC: 1, tempHighReferenceC: 11, precipForecastMm: 3.0, precipUpperScenarioMm: 7.5, probPct: 50, windMax: 68, snowCm: 0, iso0M: 750, cloudPct: 70, cond: 'Chubascos débiles' },
+      { day: 'Vie 23 Oct', tMin: 2, tMax: 8, tempLowReferenceC: 0, tempHighReferenceC: 10, precipForecastMm: 4.0, precipUpperScenarioMm: 8.5, probPct: 55, windMax: 72, snowCm: 2, iso0M: 620, cloudPct: 75, cond: 'Viento y chubascos' },
+      { day: 'Sáb 24 Oct', tMin: 1, tMax: 7, tempLowReferenceC: -1, tempHighReferenceC: 9, precipForecastMm: 2.5, precipUpperScenarioMm: 6.0, probPct: 50, windMax: 64, snowCm: 3, iso0M: 540, cloudPct: 70, cond: 'Chubascos fríos' },
+      { day: 'Dom 25 Oct', tMin: 1, tMax: 8, tempLowReferenceC: 0, tempHighReferenceC: 10, precipForecastMm: 1.5, precipUpperScenarioMm: 4.0, probPct: 40, windMax: 58, snowCm: 1, iso0M: 600, cloudPct: 60, cond: 'Parcial y ventoso' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 10.0, tempMaxAvg: 7.7, iso0Min: 520, windPeak: 102 },
@@ -1062,24 +1062,24 @@ export const CHILE_LOCATIONS = [
     summaryRisk: 'INFORMATIVA',
     keyPhenomenon: 'Régimen de alisios del este-sureste con chubascos breves matinales.',
     hourlyRain48h: [
-      { hourOffset: 0, p50: 0.2, p90: 0.8, iso0: 4250, wind: 24, temp: 21.5 },
-      { hourOffset: 6, p50: 0.4, p90: 1.5, iso0: 4260, wind: 26, temp: 22.8 },
-      { hourOffset: 12, p50: 0.3, p90: 1.2, iso0: 4220, wind: 20, temp: 18.9 },
-      { hourOffset: 18, p50: 0.5, p90: 1.8, iso0: 4210, wind: 22, temp: 19.6 },
-      { hourOffset: 24, p50: 0.2, p90: 0.9, iso0: 4240, wind: 25, temp: 22.4 },
-      { hourOffset: 30, p50: 0.1, p90: 0.6, iso0: 4260, wind: 24, temp: 22.9 },
-      { hourOffset: 36, p50: 0.2, p90: 0.8, iso0: 4230, wind: 19, temp: 18.6 },
-      { hourOffset: 42, p50: 0.3, p90: 1.0, iso0: 4220, wind: 18, temp: 18.4 },
-      { hourOffset: 48, p50: 0.2, p90: 0.7, iso0: 4250, wind: 22, temp: 22.1 }
+      { hourOffset: 0, forecastMm: 0.2, upperScenarioMm: 0.8, iso0: 4250, wind: 24, temp: 21.5 },
+      { hourOffset: 6, forecastMm: 0.4, upperScenarioMm: 1.5, iso0: 4260, wind: 26, temp: 22.8 },
+      { hourOffset: 12, forecastMm: 0.3, upperScenarioMm: 1.2, iso0: 4220, wind: 20, temp: 18.9 },
+      { hourOffset: 18, forecastMm: 0.5, upperScenarioMm: 1.8, iso0: 4210, wind: 22, temp: 19.6 },
+      { hourOffset: 24, forecastMm: 0.2, upperScenarioMm: 0.9, iso0: 4240, wind: 25, temp: 22.4 },
+      { hourOffset: 30, forecastMm: 0.1, upperScenarioMm: 0.6, iso0: 4260, wind: 24, temp: 22.9 },
+      { hourOffset: 36, forecastMm: 0.2, upperScenarioMm: 0.8, iso0: 4230, wind: 19, temp: 18.6 },
+      { hourOffset: 42, forecastMm: 0.3, upperScenarioMm: 1.0, iso0: 4220, wind: 18, temp: 18.4 },
+      { hourOffset: 48, forecastMm: 0.2, upperScenarioMm: 0.7, iso0: 4250, wind: 22, temp: 22.1 }
     ],
     daily7d: [
-      { day: 'Lun 19 Oct', tMin: 18, tMax: 23, tP10: 17, tP90: 24, precipP50: 2.5, precipP90: 7.0, probPct: 45, windMax: 38, snowCm: 0, iso0M: 4250, cloudPct: 60, cond: 'Chubascos aislados' },
-      { day: 'Mar 20 Oct', tMin: 18, tMax: 23, tP10: 17, tP90: 24, precipP50: 1.8, precipP90: 5.5, probPct: 40, windMax: 35, snowCm: 0, iso0M: 4260, cloudPct: 55, cond: 'Parcial' },
-      { day: 'Mié 21 Oct', tMin: 18, tMax: 24, tP10: 17, tP90: 25, precipP50: 1.0, precipP90: 3.5, probPct: 30, windMax: 32, snowCm: 0, iso0M: 4280, cloudPct: 50, cond: 'Parcial' },
-      { day: 'Jue 22 Oct', tMin: 19, tMax: 24, tP10: 18, tP90: 25, precipP50: 0.8, precipP90: 3.0, probPct: 25, windMax: 30, snowCm: 0, iso0M: 4300, cloudPct: 45, cond: 'Nubosidad parcial' },
-      { day: 'Vie 23 Oct', tMin: 19, tMax: 24, tP10: 18, tP90: 25, precipP50: 1.5, precipP90: 4.5, probPct: 35, windMax: 34, snowCm: 0, iso0M: 4270, cloudPct: 55, cond: 'Chubascos breves' },
-      { day: 'Sáb 24 Oct', tMin: 18, tMax: 23, tP10: 17, tP90: 25, precipP50: 3.2, precipP90: 8.5, probPct: 50, windMax: 38, snowCm: 0, iso0M: 4230, cloudPct: 65, cond: 'Chubascos subtropicales' },
-      { day: 'Dom 25 Oct', tMin: 18, tMax: 23, tP10: 17, tP90: 24, precipP50: 2.0, precipP90: 6.0, probPct: 40, windMax: 35, snowCm: 0, iso0M: 4250, cloudPct: 55, cond: 'Parcial' }
+      { day: 'Lun 19 Oct', tMin: 18, tMax: 23, tempLowReferenceC: 17, tempHighReferenceC: 24, precipForecastMm: 2.5, precipUpperScenarioMm: 7.0, probPct: 45, windMax: 38, snowCm: 0, iso0M: 4250, cloudPct: 60, cond: 'Chubascos aislados' },
+      { day: 'Mar 20 Oct', tMin: 18, tMax: 23, tempLowReferenceC: 17, tempHighReferenceC: 24, precipForecastMm: 1.8, precipUpperScenarioMm: 5.5, probPct: 40, windMax: 35, snowCm: 0, iso0M: 4260, cloudPct: 55, cond: 'Parcial' },
+      { day: 'Mié 21 Oct', tMin: 18, tMax: 24, tempLowReferenceC: 17, tempHighReferenceC: 25, precipForecastMm: 1.0, precipUpperScenarioMm: 3.5, probPct: 30, windMax: 32, snowCm: 0, iso0M: 4280, cloudPct: 50, cond: 'Parcial' },
+      { day: 'Jue 22 Oct', tMin: 19, tMax: 24, tempLowReferenceC: 18, tempHighReferenceC: 25, precipForecastMm: 0.8, precipUpperScenarioMm: 3.0, probPct: 25, windMax: 30, snowCm: 0, iso0M: 4300, cloudPct: 45, cond: 'Nubosidad parcial' },
+      { day: 'Vie 23 Oct', tMin: 19, tMax: 24, tempLowReferenceC: 18, tempHighReferenceC: 25, precipForecastMm: 1.5, precipUpperScenarioMm: 4.5, probPct: 35, windMax: 34, snowCm: 0, iso0M: 4270, cloudPct: 55, cond: 'Chubascos breves' },
+      { day: 'Sáb 24 Oct', tMin: 18, tMax: 23, tempLowReferenceC: 17, tempHighReferenceC: 25, precipForecastMm: 3.2, precipUpperScenarioMm: 8.5, probPct: 50, windMax: 38, snowCm: 0, iso0M: 4230, cloudPct: 65, cond: 'Chubascos subtropicales' },
+      { day: 'Dom 25 Oct', tMin: 18, tMax: 23, tempLowReferenceC: 17, tempHighReferenceC: 24, precipForecastMm: 2.0, precipUpperScenarioMm: 6.0, probPct: 40, windMax: 35, snowCm: 0, iso0M: 4250, cloudPct: 55, cond: 'Parcial' }
     ],
     modelsComparison: {
       ecmwf: { precip72h: 5.3, tempMaxAvg: 23.3, iso0Min: 4210, windPeak: 38 },
@@ -1107,7 +1107,7 @@ export const ALERTS_DATA = [
     expiresUtc: '2026-10-20T12:00:00Z',
     issuedAtUtc: '2026-10-19T13:30:00Z',
     confidenceLevel: 'ALTA',
-    confidenceRationale: 'Acuerdo superior al 85% entre ECMWF IFS, NOAA GFS y radiosondeo de Santo Domingo en transporte integrado de vapor (IVT > 450 kg/m/s).',
+    confidenceRationale: 'Texto de muestra; la aplicación no consulta ensambles ni radiosondeos para calcular este nivel de confianza.',
     preventiveActions: [
       'Alejarse de riberas de ríos, esteros y quebradas precordilleranas (Cajón del Maipo, Alto Cachapoal, Río Claro).',
       'No cruzar pasos badenes ni caminos inundados a pie o en vehículo.',
@@ -1183,7 +1183,7 @@ export const ALERTS_DATA = [
     expiresUtc: '2026-10-20T18:00:00Z',
     issuedAtUtc: '2026-10-19T15:05:00Z',
     confidenceLevel: 'MEDIA',
-    confidenceRationale: 'Estimación numérica sujeta a la localización exacta de las bandas convectivas postfrontales (rango P50–P90 entre 39 y 74 mm).',
+    confidenceRationale: 'Estimación numérica sujeta a la localización exacta de las bandas convectivas postfrontales (escenario de referencia entre 39 y 74 mm).',
     preventiveActions: [
       'Revisar canaletas y sumideros domiciliarios antes del pulso nocturno.',
       'Evitar transitar por pasos bajo nivel con acumulación de agua.',
@@ -1282,7 +1282,7 @@ export const SCENARIOS_DATA = [
     narrative: 'El acoplamiento de un flujo prefrontal templado con tasas de precipitación de 4 a 9 mm/h mantiene la isoterma 0 °C cerca de los 3.000 m s.n.m. en el inicio del evento. Esto implica captación pluvial en cuencas que normalmente retienen nieve, aumentando el caudal líquido y el arrastre de sedimentos finos antes de que ingrese la masa fría postfrontal.',
     supportingFactors: [
       'Observación actual en Quinta Normal / Cajón del Maipo: lluvia activa con isoterma estimada en 3.050 m s.n.m.',
-      'Consenso de ECMWF IFS y NOAA GFS en acumulado de 35–58 mm en precordillera central en 24 horas.',
+      'Comparación ilustrativa; no corresponde a una consulta de ECMWF IFS o NOAA GFS.',
       'Saturación superficial previa del suelo (humedad antecedente >78%).'
     ],
     invalidationSignals: [
@@ -1303,8 +1303,8 @@ export const SCENARIOS_DATA = [
     narrative: 'La persistencia de bandas de precipitación frontal seguidas de núcleos convectivos postfrontales puede generar pulsos cortos de alta intensidad (8–12 mm en 1–2 horas) sobre suelos ya saturados, superando temporalmente la capacidad de drenaje pluvial urbano.',
     supportingFactors: [
       'Acumulados registrados en las últimas 24 h entre 29 y 38 mm en Talca, Chillán y Concepción.',
-      'Pronóstico P90 indica hasta 30–45 mm adicionales en las próximas 24 horas.',
-      'Pronóstico hidrológico GloFAS muestra ascenso de caudal hacia percentil 85–90.'
+      'El escenario superior de muestra contempla hasta 30–45 mm adicionales en las próximas 24 horas.',
+      'Escenario ilustrativo de ascenso de caudal; no corresponde a un percentil calculado por la aplicación.'
     ],
     invalidationSignals: [
       'Desplazamiento más rápido del eje de la vaguada hacia territorio argentino, cortando las precipitaciones antes de la medianoche.',
@@ -1359,8 +1359,8 @@ export const VERIFICATION_HISTORY = [
     locationName: 'Santiago (Quinta Normal)',
     targetDate: '2026-10-18',
     leadTimeHours: 24,
-    modelName: 'Consenso Multimodelo (ECMWF/GFS/ICON)',
-    predictedPrecipP50Mm: 10.5,
+    modelName: 'Serie sintética de demostración',
+    predictedPrecipMm: 10.5,
     predictedPrecipRangeMm: '7.5 – 14.0',
     observedPrecipMm: 11.8,
     predictedTempMaxC: 15.0,
@@ -1368,7 +1368,7 @@ export const VERIFICATION_HISTORY = [
     precipAbsErrorMm: 1.3,
     tempAbsErrorC: 0.4,
     withinUncertaintyBand: true,
-    evaluationNote: 'Observación dentro de la banda intercuartil P10–P90 prevista a 24 h.'
+    evaluationNote: 'Registro sintético de demostración; no es una observación verificada.'
   },
   {
     id: 'VER-02',
@@ -1376,8 +1376,8 @@ export const VERIFICATION_HISTORY = [
     locationName: 'Valparaíso (Rodelillo)',
     targetDate: '2026-10-18',
     leadTimeHours: 24,
-    modelName: 'Consenso Multimodelo (ECMWF/GFS/ICON)',
-    predictedPrecipP50Mm: 9.2,
+    modelName: 'Serie sintética de demostración',
+    predictedPrecipMm: 9.2,
     predictedPrecipRangeMm: '6.0 – 13.5',
     observedPrecipMm: 8.4,
     predictedTempMaxC: 15.5,
@@ -1385,7 +1385,7 @@ export const VERIFICATION_HISTORY = [
     precipAbsErrorMm: 0.8,
     tempAbsErrorC: 0.4,
     withinUncertaintyBand: true,
-    evaluationNote: 'Excelente ajuste en inicio del pulso frontal costero.'
+    evaluationNote: 'Comentario ilustrativo; los valores no representan una verificación observacional.'
   },
   {
     id: 'VER-03',
@@ -1393,8 +1393,8 @@ export const VERIFICATION_HISTORY = [
     locationName: 'Talca',
     targetDate: '2026-10-18',
     leadTimeHours: 48,
-    modelName: 'Consenso Multimodelo (ECMWF/GFS/ICON)',
-    predictedPrecipP50Mm: 25.0,
+    modelName: 'Serie sintética de demostración',
+    predictedPrecipMm: 25.0,
     predictedPrecipRangeMm: '18.0 – 33.0',
     observedPrecipMm: 29.6,
     predictedTempMaxC: 13.8,
@@ -1402,7 +1402,7 @@ export const VERIFICATION_HISTORY = [
     precipAbsErrorMm: 4.6,
     tempAbsErrorC: 0.6,
     withinUncertaintyBand: true,
-    evaluationNote: 'El acumulado real se ubicó cerca del percentil 75 debido a intensificación orográfica.'
+    evaluationNote: 'Nota de demostración sobre intensificación orográfica; no es una evaluación observacional verificada.'
   },
   {
     id: 'VER-04',
@@ -1410,8 +1410,8 @@ export const VERIFICATION_HISTORY = [
     locationName: 'Concepción (Carriel Sur)',
     targetDate: '2026-10-17',
     leadTimeHours: 72,
-    modelName: 'Consenso Multimodelo (ECMWF/GFS/ICON)',
-    predictedPrecipP50Mm: 31.0,
+    modelName: 'Serie sintética de demostración',
+    predictedPrecipMm: 31.0,
     predictedPrecipRangeMm: '21.0 – 42.0',
     observedPrecipMm: 38.5,
     predictedTempMaxC: 13.5,
@@ -1419,7 +1419,7 @@ export const VERIFICATION_HISTORY = [
     precipAbsErrorMm: 7.5,
     tempAbsErrorC: 0.6,
     withinUncertaintyBand: true,
-    evaluationNote: 'Banda convectiva costera aportó +7.5 mm sobre la mediana P50, pero dentro del umbral P90 (42 mm).'
+    evaluationNote: 'Registro sintético de demostración; no es una observación verificada.'
   },
   {
     id: 'VER-05',
@@ -1427,8 +1427,8 @@ export const VERIFICATION_HISTORY = [
     locationName: 'Temuco (Maquehue)',
     targetDate: '2026-10-17',
     leadTimeHours: 48,
-    modelName: 'Consenso Multimodelo (ECMWF/GFS/ICON)',
-    predictedPrecipP50Mm: 28.5,
+    modelName: 'Serie sintética de demostración',
+    predictedPrecipMm: 28.5,
     predictedPrecipRangeMm: '22.0 – 36.0',
     observedPrecipMm: 31.0,
     predictedTempMaxC: 11.5,
@@ -1436,7 +1436,7 @@ export const VERIFICATION_HISTORY = [
     precipAbsErrorMm: 2.5,
     tempAbsErrorC: 0.3,
     withinUncertaintyBand: true,
-    evaluationNote: 'Alta precisión tanto en monto acumulado como en cota de nieve andina.'
+    evaluationNote: 'Comentario ilustrativo; los valores no representan una verificación observacional.'
   },
   {
     id: 'VER-06',
@@ -1444,8 +1444,8 @@ export const VERIFICATION_HISTORY = [
     locationName: 'Punta Arenas',
     targetDate: '2026-10-18',
     leadTimeHours: 24,
-    modelName: 'Consenso Multimodelo (ECMWF/GFS/ICON)',
-    predictedPrecipP50Mm: 5.5,
+    modelName: 'Serie sintética de demostración',
+    predictedPrecipMm: 5.5,
     predictedPrecipRangeMm: '3.0 – 8.0',
     observedPrecipMm: 4.8,
     predictedTempMaxC: 7.0,
@@ -1453,7 +1453,7 @@ export const VERIFICATION_HISTORY = [
     precipAbsErrorMm: 0.7,
     tempAbsErrorC: 0.2,
     withinUncertaintyBand: true,
-    evaluationNote: 'Error menor a 1 mm; racha máxima prevista 88 km/h vs 92 km/h observada.'
+    evaluationNote: 'Registro sintético de demostración; no es una observación verificada.'
   }
 ];
 
@@ -1469,7 +1469,7 @@ export const AI_AGENTS_DATA = {
     },
     'EV-102': {
       id: 'EV-102',
-      source: 'Open-Meteo Multi-Model (ECMWF IFS 12Z vs NOAA GFS 12Z)',
+      source: 'Comparación de modelos de demostración (sin consulta operativa)',
       timestampUtc: '2026-10-19T15:05:00Z',
       parameter: 'Acumulado 72h y dispersión de Isoterma 0 °C en RM',
       rawValue: 'ECMWF: 47.3 mm (Iso mín 2.150m) | GFS: 58.1 mm (Iso mín 2.320m) | ICON: 41.0 mm',
@@ -1488,7 +1488,7 @@ export const AI_AGENTS_DATA = {
       source: 'Comparador de Corridas NWP (00Z vs 12Z en Maule/Ñuble)',
       timestampUtc: '2026-10-19T15:05:00Z',
       parameter: 'Cambio entre corridas (Shift Detection)',
-      rawValue: 'Incremento de +9.4 mm en percentil 90 para Talca y Chillán respecto a corrida 00Z',
+      rawValue: 'Escenario ilustrativo: incremento de precipitación para Talca y Chillán respecto de una corrida de referencia',
       dataType: 'ANALISIS_PREDICTIVO'
     },
     'EV-105': {
@@ -1546,7 +1546,7 @@ export const AI_AGENTS_DATA = {
     {
       id: 'AG-ANA-02',
       name: 'Agente Analista de Divergencia de Modelos (ForecastAnalyst)',
-      role: 'Cuantificación de incertidumbre entre ECMWF IFS, NOAA GFS y DWD ICON',
+      role: 'Ejemplo de análisis de divergencia; no consulta modelos externos',
       status: 'ACTIVO',
       autonomyLevel: 'EXPLICATIVO_CON_CITAS',
       lastRunUtc: '2026-10-19T15:08:00Z',
@@ -1556,7 +1556,7 @@ export const AI_AGENTS_DATA = {
           citations: ['EV-102']
         },
         {
-          text: 'La banda de incertidumbre P50–P90 recomienda planificar con escenario de 32 a 54.5 mm para hoy en Santiago.',
+          text: 'El escenario de demostración recomienda planificar con un rango ilustrativo de 32 a 54.5 mm para Santiago.',
           citations: ['EV-102']
         }
       ]
@@ -1570,7 +1570,7 @@ export const AI_AGENTS_DATA = {
       lastRunUtc: '2026-10-19T15:09:00Z',
       findings: [
         {
-          text: 'La corrida 12Z incrementó en +9.4 mm el extremo superior (P90) de precipitación para las cuencas del Maule y Ñuble debido a mayor retención orográfica detectada en el flujo del noroeste.',
+          text: 'La corrida 12Z incrementó en +9.4 mm el escenario superior de referencia de precipitación para las cuencas del Maule y Ñuble debido a mayor retención orográfica detectada en el flujo del noroeste.',
           citations: ['EV-104', 'EV-103']
         }
       ]

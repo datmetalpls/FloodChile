@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Plataforma abierta de meteorología operacional, pronóstico hidrometeorológico probabilístico (P10–P50–P90), monitoreo de isoterma 0 °C y anticipación de riesgos aluvionales para las 16 regiones de Chile.</strong>
+  <strong>Plataforma abierta de meteorología operacional, pronóstico hidrometeorológico externo y escenarios de referencia, monitoreo de isoterma 0 °C y anticipación de riesgos aluvionales para las 16 regiones de Chile.</strong>
 </p>
 
 <p align="center">
@@ -113,7 +113,7 @@ Chile presenta alta vulnerabilidad aluvional cuando llueve con una isoterma 0 °
   <img src="docs/images/hydro-risk.svg" alt="Modelo Hidrometeorológico e Isoterma 0 C" width="100%" style="max-width: 960px;" />
 </p>
 
-- **Banda Probabilística P10–P50–P90**: Expresa honestamente la incertidumbre entre modelos meteorológicos, mostrando el rango mínimo esperado (P10), la mediana más probable (P50) y el peor escenario plausible (P90).
+- **Pronóstico y escenario de referencia**: muestra el dato de lluvia entregado por la API y un escenario superior heurístico. Este escenario no es un percentil ni un intervalo calibrado; consultar la fuente y las alertas oficiales antes de decidir.
 - **Riesgo Aluvional**: Monitorea si la isoterma 0 °C supera cotas críticas (>3.000 m s.n.m. en la zona central) coincidiendo con precipitaciones líquidas abundantes sobre cuencas de tierra suelta (Maipo, Cachapoal, Maule, Biobío).
 
 ---
@@ -182,7 +182,7 @@ Abre tu navegador en: **`http://localhost:4173`**
 
 ### Paso 4: Verificación de pruebas (CA-01 a CA-09)
 
-Para verificar que todos los criterios de aceptación, rangos probabilísticos (P10-P50-P90), capas y seguridad estén en orden, ejecuta:
+Para verificar que todos los criterios de aceptación, coherencia entre pronóstico base y escenario superior de muestra, capas y seguridad estén en orden, ejecuta:
 
 ```bash
 npm test
@@ -196,7 +196,7 @@ Salida esperada:
 ✓ Cobertura territorial y multizona horaria de Chile verificada.
 ✓ 6 capas activables del Mapa Nacional y leyendas simbólicas verificadas.
 ✓ Secuencia de imágenes satelitales GOES-16 y metadatos de captura verificados.
-✓ CA-02: Rangos de incertidumbre (P10–P50–P90) verificados en todas las comunas.
+✓ CA-02: Coherencia de pronóstico base y escenarios superiores de muestra verificada.
 ✓ CA-01 y Sección 5: Separación explícita de Alertas Oficiales vs. Estimaciones App verificada.
 ✓ Sección 6: Escenarios plausibles con factores de respaldo y señales de cambio verificados.
 ✓ CA-03: Registro de verificación histórica (Predicho vs. Observado) validado.
@@ -281,7 +281,7 @@ FloodChile/
 │   │   ├── data/
 │   │   │   └── chile-data.js         # Datos de comunas, zonas horarias y modelos base
 │   │   └── modules/
-│   │       ├── charts.js             # Gráficos probabilísticos (Canvas nativo)
+│   │       ├── charts.js             # Gráficos SVG de pronóstico y escenario de referencia
 │   │       ├── live-api.js           # Clientes para Open-Meteo, GloFAS y Marine
 │   │       ├── map-engine.js         # Motor cartográfico Leaflet con capas NASA GIBS
 │   │       └── satellite-viewer.js   # Visor satelital con cortina comparativa
@@ -304,8 +304,8 @@ FloodChile/
 
 El proyecto se rige por 9 Criterios de Aceptación (`CA-01` a `CA-09`):
 1. **CA-01**: Separación rigurosa entre Alertas Oficiales (SENAPRED / DMC / SHOA) y Estimaciones Preventivas de la App.
-2. **CA-02**: Rangos de incertidumbre probabilísticos (`P10 <= P50 <= P90`) en todas las variables.
-3. **CA-03**: Registro histórico transparente de predicciones pasadas vs. observaciones reales.
+2. **CA-02**: Coherencia entre pronóstico base y escenario superior de muestra; no se calculan percentiles estadísticos.
+3. **CA-03**: La vista histórica actual usa datos sintéticos para ilustrar métricas; la verificación con observaciones reales es una capacidad objetivo aún no implementada.
 4. **CA-04**: Monitoreo de Isoterma 0 °C y caudales fluviales en cuencas críticas.
 5. **CA-05**: Secuencia satelital con marcas temporales reales y trazabilidad de satélite.
 6. **CA-06**: Trazabilidad completa de fuentes de datos meteorológicos y satelitales.

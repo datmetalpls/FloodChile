@@ -1,13 +1,16 @@
 /**
  * Generadores gráficos SVG accesibles:
- * 1. Hietograma horario de lluvia con incertidumbre (P50 vs P90) y curva de Isoterma 0 °C
- * 2. Comparativa de modelos numéricos (ECMWF IFS vs NOAA GFS vs DWD ICON) basada en los datos de la comuna
+ * 1. Hietograma de pronóstico base y escenario superior estimado, más isoterma 0 °C
+ * 2. Comparativa sintética de modelos numéricos para contextualizar escenarios de muestra
  */
 
 export function renderHourlyRainChartSVG(container, location) {
   if (!container || !location) return;
   const series = location.hourlyRain48h || [];
   if (!series.length) return;
+  const isLive = Boolean(location.observation?.isLiveSynced);
+  const baseLabel = isLive ? 'Pronóstico Open-Meteo' : 'Pronóstico base (muestra)';
+  const upperLabel = isLive ? 'Escenario superior heurístico' : 'Escenario superior (muestra)';
 
   const width = 760;
   const height = 270;
@@ -18,7 +21,7 @@ export function renderHourlyRainChartSVG(container, location) {
   const plotW = width - padLeft - padRight;
   const plotH = height - padTop - padBottom;
 
-  const maxRain = Math.max(12, ...series.map((s) => s.p90 * 1.15));
+  const maxRain = Math.max(12, ...series.map((s) => s.upperScenarioMm * 1.15));
   const minIso = Math.min(500, ...series.map((s) => s.iso0 - 200));
   const maxIso = Math.max(4800, ...series.map((s) => s.iso0 + 200));
 
@@ -27,22 +30,22 @@ export function renderHourlyRainChartSVG(container, location) {
   const barsAndPoints = series.map((pt, i) => {
     const cx = padLeft + i * colWidth + colWidth / 2;
     const barW = Math.min(28, colWidth * 0.45);
-    const hP50 = (pt.p50 / maxRain) * plotH;
-    const hP90 = (pt.p90 / maxRain) * plotH;
-    const yP50 = padTop + plotH - hP50;
-    const yP90 = padTop + plotH - hP90;
+    const hBase = (pt.forecastMm / maxRain) * plotH;
+    const hUpper = (pt.upperScenarioMm / maxRain) * plotH;
+    const yBase = padTop + plotH - hBase;
+    const yUpper = padTop + plotH - hUpper;
 
     const isoY = padTop + plotH - ((pt.iso0 - minIso) / (maxIso - minIso)) * plotH;
 
-    const isIntense = pt.p90 >= 7.0 || (pt.p50 >= 2.0 && pt.iso0 >= 2800);
+    const isIntense = pt.forecastMm >= 7.0 || (pt.forecastMm >= 2.0 && pt.iso0 >= 2800);
 
     return {
       cx,
       barW,
-      yP50,
-      hP50,
-      yP90,
-      hP90,
+      yBase,
+      hBase,
+      yUpper,
+      hUpper,
       isoY,
       isIntense,
       pt
@@ -55,7 +58,7 @@ export function renderHourlyRainChartSVG(container, location) {
 
   container.innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" class="chart-svg" role="img"
-         aria-label="Gráfico horario de precipitación estimada mediana P50, extremo P90 y altura de isoterma cero grados para ${location.name}">
+         aria-label="Gráfico horario de precipitación: ${baseLabel} y ${upperLabel}; altura de isoterma cero grados para ${location.name}">
       ${[0, 0.25, 0.5, 0.75, 1]
         .map((f) => {
           const y = padTop + plotH * (1 - f);
@@ -77,14 +80,14 @@ export function renderHourlyRainChartSVG(container, location) {
       ${barsAndPoints
         .map(
           (b) => `
-          <rect x="${b.cx - b.barW / 2}" y="${b.yP90}" width="${b.barW}" height="${Math.max(2, b.hP90)}"
+          <rect x="${b.cx - b.barW / 2}" y="${b.yUpper}" width="${b.barW}" height="${Math.max(2, b.hUpper)}"
                 rx="3" fill="rgba(56, 189, 248, 0.28)" stroke="#38bdf8" stroke-dasharray="2 2" />
-          <rect x="${b.cx - b.barW / 2}" y="${b.yP50}" width="${b.barW}" height="${Math.max(2, b.hP50)}"
+          <rect x="${b.cx - b.barW / 2}" y="${b.yBase}" width="${b.barW}" height="${Math.max(2, b.hBase)}"
                 rx="3" fill="${b.isIntense ? '#ea580c' : '#0284c7'}" />
           ${
-            b.pt.p90 > 0
-              ? `<text x="${b.cx}" y="${b.yP90 - 5}" text-anchor="middle" fill="#e2e8f0" font-size="9.5" font-weight="600">
-                   ${b.pt.p50}–${b.pt.p90}
+            b.pt.upperScenarioMm > 0
+              ? `<text x="${b.cx}" y="${b.yUpper - 5}" text-anchor="middle" fill="#e2e8f0" font-size="9.5" font-weight="600">
+                   ${b.pt.forecastMm}–${b.pt.upperScenarioMm}
                  </text>`
               : ''
           }
@@ -109,10 +112,10 @@ export function renderHourlyRainChartSVG(container, location) {
 
       <g transform="translate(${padLeft}, 14)">
         <rect x="0" y="-9" width="12" height="10" fill="#0284c7" rx="2" />
-        <text x="16" y="0" fill="#e2e8f0" font-size="10.5">Mediana esperada (P50 mm/h)</text>
+        <text x="16" y="0" fill="#e2e8f0" font-size="10.5">${baseLabel} (mm/h)</text>
 
         <rect x="180" y="-9" width="12" height="10" fill="rgba(56, 189, 248, 0.28)" stroke="#38bdf8" stroke-dasharray="2 2" rx="2" />
-        <text x="196" y="0" fill="#e2e8f0" font-size="10.5">Techo incertidumbre (P90 mm/h)</text>
+        <text x="196" y="0" fill="#e2e8f0" font-size="10.5">${upperLabel} (mm/h)</text>
 
         <rect x="378" y="-9" width="12" height="10" fill="#ea580c" rx="2" />
         <text x="394" y="0" fill="#fed7aa" font-size="10.5">Pulso intenso / Iso 0°C alta</text>
@@ -200,7 +203,7 @@ export function renderModelComparisonChartSVG(container, location) {
       <div class="model-spread-explanation-box">
         <span class="spread-icon" aria-hidden="true">💡</span>
         <div>
-          <strong>Diagnóstico Multimodelo:</strong> ${mc.spreadNote}
+          <strong>Lectura ilustrativa:</strong> ${mc.spreadNote}
         </div>
       </div>
     </div>

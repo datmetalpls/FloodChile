@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+<title id="title">Auditoría del machine learning actual en ClimasFlood</title>
+<desc id="desc">Diagrama del flujo meteorológico actual y elementos que aún no constituyen aprendizaje automático propio.</desc>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#7890a4"/></marker>
+  <style>
+    .bg{fill:#f5f7f8}.ink{fill:#102338}.muted{fill:#53687b}.small{font:15px 'Arial',sans-serif}.body{font:17px 'Arial',sans-serif}.title{font:700 30px 'Arial',sans-serif}.h{font:700 19px 'Arial',sans-serif}.micro{font:13px 'Arial',sans-serif}.box{rx:16;stroke-width:1.5}.arrow{stroke:#7890a4;stroke-width:2.5;fill:none;marker-end:url(#arrow)}
+  </style>
+</defs>
+<rect class="bg" width="1280" height="760" rx="24"/>
+<text x="48" y="55" class="title ink">ClimasFlood · ¿dónde está el ML hoy?</text>
+<text x="48" y="84" class="body muted">Auditoría del código actual · separar pronóstico meteorológico, cálculo y aprendizaje automático</text>
+
+<!-- live inputs -->
+<rect x="48" y="125" width="270" height="185" class="box" fill="#e9f4fb" stroke="#8dbbd6"/>
+<text x="70" y="158" class="h ink">1 · Dato externo en vivo</text>
+<text x="70" y="191" class="body ink">Open‑Meteo Forecast API</text>
+<text x="70" y="220" class="small muted">Temperatura · lluvia · probabilidad</text>
+<text x="70" y="245" class="small muted">viento · isoterma · 7 días</text>
+<text x="70" y="282" class="micro muted">Lo consulta live-api.js</text>
+
+<path d="M318 218 H370" class="arrow"/>
+
+<!-- forecast -->
+<rect x="380" y="125" width="285" height="185" class="box" fill="#edf4ec" stroke="#9bb899"/>
+<text x="402" y="158" class="h ink">2 · Pronóstico del proveedor</text>
+<text x="402" y="191" class="body ink">Salida numérica del tiempo</text>
+<text x="402" y="220" class="small muted">ClimasFlood la consume; no la entrena</text>
+<text x="402" y="245" class="small muted">No hay modelo local ni ajuste propio</text>
+<text x="402" y="282" class="micro muted">No confundir NWP con ML de la app</text>
+
+<path d="M665 218 H717" class="arrow"/>
+
+<!-- derived -->
+<rect x="727" y="125" width="505" height="185" class="box" fill="#fff4df" stroke="#e0bc70"/>
+<text x="751" y="158" class="h ink">3 · Transformaciones locales</text>
+<text x="751" y="192" class="body ink">Pronóstico de lluvia → etiquetado como P50</text>
+<text x="751" y="222" class="body ink">“P90” = pronóstico × factor fijo + constante</text>
+<text x="751" y="252" class="small muted">Ej.: p50 × 1,65 + ajuste según probabilidad</text>
+<text x="751" y="282" class="micro" fill="#8a5a00">Es una heurística, no un percentil calibrado</text>
+
+<!-- rules -->
+<rect x="48" y="355" width="365" height="165" class="box" fill="#f1effa" stroke="#b7add9"/>
+<text x="70" y="389" class="h ink">4 · Reglas / umbrales</text>
+<text x="70" y="422" class="body ink">Marcan condiciones de riesgo</text>
+<text x="70" y="451" class="small muted">p. ej., lluvia + umbral de isoterma</text>
+<text x="70" y="484" class="micro muted">Lógica explícita, no aprendizaje</text>
+
+<rect x="457" y="355" width="365" height="165" class="box" fill="#fff0ed" stroke="#dda49a"/>
+<text x="479" y="389" class="h ink">5 · “Agentes IA” visibles</text>
+<text x="479" y="422" class="body ink">Registros de demostración precargados</text>
+<text x="479" y="451" class="small muted">Hallazgos y citas no salen de inferencia</text>
+<text x="479" y="484" class="micro muted">Decisiones HITL: almacenamiento local</text>
+
+<rect x="866" y="355" width="366" height="165" class="box" fill="#f8f9fa" stroke="#b8c3cc" stroke-dasharray="7 5"/>
+<text x="888" y="389" class="h ink">6 · ML propio</text>
+<text x="888" y="422" class="body ink">No aparece en el repositorio</text>
+<text x="888" y="451" class="small muted">Sin entrenamiento, artefacto ni inferencia</text>
+<text x="888" y="484" class="micro muted">Sin calibración / monitoreo de modelo</text>
+
+<!-- footer takeaway -->
+<rect x="48" y="565" width="1184" height="130" rx="18" fill="#102338"/>
+<text x="76" y="605" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#ffffff">Conclusión</text>
+<text x="76" y="640" font-family="Arial,sans-serif" font-size="17" fill="#e3edf4">Hay pronósticos externos y reglas útiles; hoy no hay ML propio operando en ClimasFlood.</text>
+<text x="76" y="670" font-family="Arial,sans-serif" font-size="15" fill="#b9cad7">Antes de agentizar: corregir etiquetas P50/P90 y construir un histórico verificable de pronóstico ↔ observación.</text>
+<text x="48" y="731" class="micro muted">Evidencia de código: public/js/modules/live-api.js · public/js/data/chile-data.js · public/js/app.js · tests/verify-criteria.js</text>
+</svg>

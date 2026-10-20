@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es-CL" data-theme="apple">
+<html lang="es-CL" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClimasFlood Chile — Meteorología Nacional y Anticipación de Riesgos</title>
-  <meta name="description" content="Plataforma nacional de meteorología para Chile: mapa interactivo y esquemático, resumen comunal, pronósticos con rangos de incertidumbre (P10-P50-P90), isoterma 0 °C, alertas oficiales vs estimaciones de la aplicación y verificación histórica." />
+  <meta name="description" content="Plataforma nacional de meteorología para Chile: mapa interactivo, pronóstico externo por comuna, escenario superior de referencia, isoterma 0 °C y separación entre alertas oficiales y estimaciones de la aplicación." />
   <!-- Tipografía: Plus Jakarta Sans + Space Grotesk + JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -40,10 +40,9 @@
 
       <!-- Conmutador de Tema -->
       <div class="theme-toggle" role="group" aria-label="Selector de tema visual">
-        <button type="button" data-theme-opt="apple" class="active" title="Estilo Apple HIG / Frosted Glass">🍏 Apple</button>
+        <button type="button" data-theme-opt="light" class="active" title="Tema claro cartográfico">🗺 Terreno</button>
         <button type="button" data-theme-opt="retro" title="Estilo Retro-Terminal CRT Radar">📟 Retro</button>
         <button type="button" data-theme-opt="dark" title="Tema Oscuro Estándar">🌙 Oscuro</button>
-        <button type="button" data-theme-opt="light" title="Tema Claro">☀ Claro</button>
       </div>
 
       <button id="btnLiveSync" class="btn btn-sm btn-primary" type="button" title="Vuelve a consultar Open-Meteo (pronóstico, GloFAS y oleaje) para todas las comunas. Se ejecuta automáticamente al abrir la app.">
@@ -65,7 +64,7 @@
             <span class="epistemic-badge badge-pronostico">Chile</span>
           </h1>
           <p class="brand-subtitle">
-            Meteorología de Alta Resolución y Alerta Temprana
+            Mapa, pronóstico y fuentes para Chile
           </p>
         </div>
       </div>
@@ -114,20 +113,21 @@
       </div>
     </div>
 
-    <!-- Accesos rápidos a comunas representativas -->
-    <div class="quick-communes-bar" role="group" aria-label="Acceso rápido a comunas representativas">
-      <span class="quick-bar-label">Acceso rápido:</span>
-      <button type="button" class="quick-commune-chip active" data-quick-loc="santiago">Santiago / Maipo</button>
-      <button type="button" class="quick-commune-chip" data-quick-loc="valparaiso">Valparaíso</button>
-      <button type="button" class="quick-commune-chip" data-quick-loc="talca">Talca</button>
-      <button type="button" class="quick-commune-chip" data-quick-loc="concepcion">Concepción</button>
-      <button type="button" class="quick-commune-chip" data-quick-loc="puertomontt">Puerto Montt</button>
-      <button type="button" class="quick-commune-chip" data-quick-loc="puntaarenas">Punta Arenas</button>
-      <button type="button" class="quick-commune-chip" data-quick-loc="rapanui">Rapa Nui</button>
-      <button type="button" class="quick-commune-chip" id="btnGeolocate" title="Selecciona la comuna de referencia más cercana a tu ubicación (no se envía a ningún servidor)">📍 Cerca de mí</button>
-      <button type="button" class="quick-commune-chip" id="btnShareView" title="Copia un enlace a esta comuna, capa y horizonte">🔗 Compartir vista</button>
-      <span id="quickBarStatus" class="quick-bar-label" role="status" aria-live="polite"></span>
-    </div>
+    <details class="quick-communes-disclosure">
+      <summary>Accesos rápidos a comunas</summary>
+      <div class="quick-communes-bar" role="group" aria-label="Acceso rápido a comunas representativas">
+        <button type="button" class="quick-commune-chip active" data-quick-loc="santiago">Santiago / Maipo</button>
+        <button type="button" class="quick-commune-chip" data-quick-loc="valparaiso">Valparaíso</button>
+        <button type="button" class="quick-commune-chip" data-quick-loc="talca">Talca</button>
+        <button type="button" class="quick-commune-chip" data-quick-loc="concepcion">Concepción</button>
+        <button type="button" class="quick-commune-chip" data-quick-loc="puertomontt">Puerto Montt</button>
+        <button type="button" class="quick-commune-chip" data-quick-loc="puntaarenas">Punta Arenas</button>
+        <button type="button" class="quick-commune-chip" data-quick-loc="rapanui">Rapa Nui</button>
+        <button type="button" class="quick-commune-chip" id="btnGeolocate" title="Selecciona la comuna de referencia más cercana a tu ubicación (no se envía a ningún servidor)">📍 Cerca de mí</button>
+        <button type="button" class="quick-commune-chip" id="btnShareView" title="Copia un enlace a esta comuna, capa y horizonte">🔗 Compartir vista</button>
+        <span id="quickBarStatus" class="quick-bar-label" role="status" aria-live="polite"></span>
+      </div>
+    </details>
   </header>
 
   <!-- Backdrop para cierre en móviles -->
@@ -138,70 +138,48 @@
     <!-- Menú Lateral Arquitectónico UX -->
     <aside id="appSidebar" class="app-sidebar" aria-label="Navegación lateral y módulos">
       <div class="sidebar-scrollable">
-        <!-- Grupo 1: Cartografía y Comuna -->
+        <!-- Navegación principal -->
         <div class="sidebar-group">
-          <span class="sidebar-group-title">Cartografía y Comuna</span>
+          <span class="sidebar-group-title">Vista principal</span>
           <button class="sidebar-nav-item nav-tab active" data-tab="tab-mapa" data-group="mapa" type="button">
             <span class="nav-item-icon">🗺</span>
-            <span class="nav-item-label">Mapa y Resumen</span>
-            <span class="nav-item-badge badge-cyan">En vivo</span>
+            <span class="nav-item-label">Resumen y mapa</span>
           </button>
-        </div>
-
-        <!-- Grupo 2: Pronóstico y Lluvia -->
-        <div class="sidebar-group">
-          <span class="sidebar-group-title">Pronóstico y Lluvia</span>
           <button class="sidebar-nav-item nav-tab" data-tab="tab-pronostico" data-group="pronostico" type="button">
             <span class="nav-item-icon">📅</span>
-            <span class="nav-item-label">Pronóstico 7 Días</span>
-            <span class="nav-item-badge">P10-P90</span>
+            <span class="nav-item-label">Pronóstico</span>
           </button>
-          <button class="sidebar-nav-item nav-tab" data-tab="tab-lluvia" data-group="pronostico" type="button">
-            <span class="nav-item-icon">🌧</span>
-            <span class="nav-item-label">Lluvia Horaria e Isoterma</span>
-            <span class="nav-item-badge">0 °C</span>
-          </button>
-        </div>
-
-        <!-- Grupo 3: Riesgo y Alertas -->
-        <div class="sidebar-group">
-          <span class="sidebar-group-title">Riesgo y Alertas</span>
           <button class="sidebar-nav-item nav-tab" data-tab="tab-alertas" data-group="alertas" type="button">
             <span class="nav-item-icon">⚠</span>
-            <span class="nav-item-label">Alertas y Notificaciones</span>
-            <span id="sidebarAlertBadge" class="nav-item-badge badge-rose">7 Activas</span>
-          </button>
-          <button class="sidebar-nav-item nav-tab" data-tab="tab-escenarios" data-group="mas" type="button">
-            <span class="nav-item-icon">🌊</span>
-            <span class="nav-item-label">Escenarios de Cuencas</span>
-            <span class="nav-item-badge">4 Casos</span>
+            <span class="nav-item-label">Alertas</span>
+            <span id="sidebarAlertBadge" class="nav-item-badge badge-rose">Muestra</span>
           </button>
         </div>
 
-        <!-- Grupo 4: Sensores, Modelos & IA -->
-        <div class="sidebar-group">
-          <span class="sidebar-group-title">Sensores, Modelos & IA</span>
-          <button class="sidebar-nav-item nav-tab" data-tab="tab-satelite" data-group="mas" type="button">
-            <span class="nav-item-icon">🛰</span>
-            <span class="nav-item-label">Satélite GOES-16 NASA</span>
-            <span class="nav-item-badge badge-cyan">Banda 13</span>
-          </button>
-          <button class="sidebar-nav-item nav-tab" data-tab="tab-predictivo" data-group="mas" type="button">
-            <span class="nav-item-icon">📊</span>
-            <span class="nav-item-label">Modelos y Verificación</span>
-            <span class="nav-item-badge">CA-03</span>
-          </button>
-          <button class="sidebar-nav-item nav-tab" data-tab="tab-agentes" data-group="mas" type="button">
-            <span class="nav-item-icon">🤖</span>
-            <span class="nav-item-label">Agentes IA (HITL)</span>
-            <span class="nav-item-badge badge-amber">Supervisado</span>
-          </button>
-          <button class="sidebar-nav-item nav-tab" data-tab="tab-fuentes" data-group="mas" type="button">
-            <span class="nav-item-icon">📚</span>
-            <span class="nav-item-label">Fuentes y Criterios</span>
-            <span class="nav-item-badge">CA-01..09</span>
-          </button>
-        </div>
+        <details id="sidebarMoreTools" class="sidebar-tools-disclosure">
+          <summary>Más herramientas</summary>
+          <div class="sidebar-group">
+            <button class="sidebar-nav-item nav-tab" data-tab="tab-lluvia" data-group="pronostico" type="button">
+              <span class="nav-item-icon">🌧</span><span class="nav-item-label">Lluvia e isoterma</span>
+            </button>
+            <button class="sidebar-nav-item nav-tab" data-tab="tab-escenarios" data-group="mas" type="button">
+              <span class="nav-item-icon">🌊</span><span class="nav-item-label">Escenarios de cuenca</span>
+            </button>
+            <button class="sidebar-nav-item nav-tab" data-tab="tab-satelite" data-group="mas" type="button">
+              <span class="nav-item-icon">🛰</span><span class="nav-item-label">Satélite</span>
+            </button>
+            <button class="sidebar-nav-item nav-tab" data-tab="tab-predictivo" data-group="mas" type="button">
+              <span class="nav-item-icon">📊</span><span class="nav-item-label">Modelos y verificación</span>
+            </button>
+            <button class="sidebar-nav-item nav-tab" data-tab="tab-agentes" data-group="mas" type="button">
+              <span class="nav-item-icon">🤖</span><span class="nav-item-label">Agentes IA</span>
+              <span class="nav-item-badge badge-amber">Muestra</span>
+            </button>
+            <button class="sidebar-nav-item nav-tab" data-tab="tab-fuentes" data-group="mas" type="button">
+              <span class="nav-item-icon">📚</span><span class="nav-item-label">Fuentes y criterios</span>
+            </button>
+          </div>
+        </details>
       </div>
 
       <!-- Pie del Menú Lateral -->
@@ -232,94 +210,26 @@
       </a>
     </div>
 
-    <!-- Resumen de Situación de la Comuna Activa (Jerarquía clara sin repetir bloques) -->
-    <!-- Resumen de Situación de la Comuna Activa (Grilla de Tarjetas Apple HIG Frosted Glass) -->
-    <section class="local-situation-strip apple-hero-grid" aria-label="Resumen actual y pronóstico inmediato de la comuna seleccionada">
-      <!-- Tarjeta 1: Clima & Temperatura Actual -->
-      <div class="apple-card weather-hero-card">
-        <div class="card-eyebrow">
-          <span class="eyebrow-pill">TIEMPO ACTUAL</span>
-          <span id="kpiLocationRiskBadge" class="severity-pill sev-EXTREMA">🛑 Alerta Amarilla</span>
-        </div>
-        <div class="card-body-weather">
-          <h2 id="kpiSelectedName" class="apple-card-title">Santiago / San José de Maipo</h2>
-          <div class="apple-temp-display">
-            <span id="heroCurrentTemp" class="apple-big-temp">13.4 °C · 2.4 mm/h</span>
-          </div>
-          <p id="detailConditionBanner" class="apple-condition-sub">Lluvia Moderada · Actualización reciente</p>
-          
-          <!-- Micro scrubber horario de precipitación -->
-          <div id="heroHourlyScrubber" class="apple-hourly-scrubber" aria-label="Pronóstico de las próximas horas"></div>
-        </div>
-      </div>
-
-      <!-- Tarjeta 2: Isoterma 0°C & Hidrología Cordillerana -->
-      <div class="apple-card hydrology-hero-card">
-        <div class="card-eyebrow">
-          <span class="eyebrow-pill">ISOTERMA 0°C & CORDILLERA</span>
-          <span id="dataIntegrityBadge" class="epistemic-badge badge-estimacion">🧪 Demostración</span>
-        </div>
-        <div class="card-body-hydrology">
-          <div class="apple-gauge-display">
-            <div class="apple-gauge-visual">
-              <svg viewBox="0 0 160 90" class="gauge-arc-svg" aria-hidden="true">
-                <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="12" stroke-linecap="round"/>
-                <path id="gaugeArcFill" d="M 20 80 A 60 60 0 0 1 120 45" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round"/>
-                <defs>
-                  <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#38bdf8"/>
-                    <stop offset="60%" stop-color="#f59e0b"/>
-                    <stop offset="100%" stop-color="#ef4444"/>
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div class="gauge-center-text">
-                <span id="heroIsoLevel" class="apple-big-iso">3.050 m s.n.m.</span>
-                <span class="gauge-sublabel">Cota de congelación</span>
-              </div>
-            </div>
-          </div>
-          <div class="hydrology-telemetry-meta">
-            <div class="meta-item">
-              <span class="meta-label">Lluvia 48h (P50–P90)</span>
-              <strong id="heroPrecip48h" class="meta-val">46.5 – 80.5 mm</strong>
-            </div>
-            <div class="meta-item technical-only">
-              <span class="meta-label">Cuenca / Elevación</span>
-              <span id="kpiSelectedMeta" class="meta-val-sub">Cuenca Río Maipo · 527 m s.n.m.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tarjeta 3: Síntesis Ejecutiva y Acciones Rápidas -->
-      <div class="apple-card action-hero-card">
-        <div class="card-eyebrow">
-          <span class="eyebrow-pill">ANTICIPACIÓN Y ACCIÓN</span>
-          <span class="live-pulse-indicator">● Activo</span>
-        </div>
-        <div class="card-body-action">
-          <p id="heroHumanSummary" class="hero-guidance-compact"></p>
-          <div class="apple-action-pills">
-            <button type="button" class="apple-pill-btn" id="btnJumpToRain">🌧 Pronóstico 48h →</button>
-            <button type="button" class="apple-pill-btn" id="btnJumpToAlerts">🚨 Alertas (<span id="kpiActiveAlertsCount">4 Oficiales · 3 App</span>) →</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- ===================================================================== -->
     <!-- SECCIÓN 1: MAPA PROTAGONISTA DE CHILE Y RESUMEN DE COMUNA ACTIVA       -->
     <!-- ===================================================================== -->
     <section id="tab-mapa" class="view-section active" role="tabpanel">
+      <div class="dashboard-heading">
+        <div>
+          <p class="dashboard-eyebrow">CLIMASFLOOD · CHILE</p>
+          <h2>Condiciones y riesgo en tu territorio</h2>
+          <p>Explora el mapa, selecciona una comuna y revisa su pronóstico.</p>
+        </div>
+        <span id="dataIntegrityBadge" class="epistemic-badge badge-estimacion">🧪 Datos de muestra</span>
+      </div>
       <div class="map-workspace-grid">
         <!-- Columna Central Protagonista: Mapa de Chile + Capas Compactas + Línea Temporal -->
         <div class="panel-card map-primary-panel">
           <div class="panel-header map-panel-header">
             <div>
-              <h2>Mapa y Radar de Chile</h2>
+              <h2>Mapa de Chile</h2>
               <p class="panel-subtitle">
-                Radar Doppler, satélite infrarrojo y capas meteorológicas en tiempo real
+                Selecciona un punto o cambia de capa para explorar las condiciones.
               </p>
             </div>
             <div class="map-header-badges">
@@ -374,50 +284,58 @@
           </div>
         </div>
 
-        <!-- Columna Lateral: Detalle Local de la Comuna Seleccionada (Sin duplicar la franja superior) -->
+        <!-- Resumen local de comuna, pronóstico y procedencia -->
         <aside class="local-detail-sidebar" aria-label="Detalle meteorológico de la comuna seleccionada">
-          <div class="panel-card">
-            <div class="panel-header">
+          <section class="local-overview-panel" aria-labelledby="kpiSelectedName">
+            <div class="local-overview-heading">
               <div>
-                <h3 id="detailLocationTitle">Variables Locales en Santiago / San José de Maipo</h3>
-                <div id="detailLocationSubtitle" class="technical-only" style="font-size: 0.76rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.15rem;"></div>
+                <p class="dashboard-eyebrow">EN TU COMUNA</p>
+                <h2 id="kpiSelectedName">Santiago / San José de Maipo</h2>
+                <p id="detailConditionBanner" class="local-condition-line">Condición local · fuente en actualización</p>
+                <p id="detailLocationSubtitle" class="technical-only local-territory-meta"></p>
               </div>
-              <span id="detailRiskPill" class="severity-pill sev-EXTREMA">🛑 Extremo</span>
+              <span id="kpiLocationRiskBadge" class="severity-pill sev-INFORMATIVA">ℹ Muestra</span>
             </div>
 
-            <!-- Grilla de métricas locales (adaptada a modo Ciudadanía o Monitoreo) -->
+            <div class="local-now-line">
+              <span class="local-now-label">Ahora</span>
+              <strong id="heroCurrentTemp">—</strong>
+            </div>
             <div id="obsMetricsGrid" class="obs-metrics-grid"></div>
-
+            <p id="heroHumanSummary" class="local-guidance"></p>
+            <div class="local-actions">
+              <button type="button" class="quick-link-pill" id="btnJumpToRain">🌧 Lluvia 48 h</button>
+              <button type="button" class="quick-link-pill" id="btnJumpToAlerts">⚠ Alertas <span id="kpiActiveAlertsCount">Muestra</span></button>
+            </div>
             <div id="obsProvenanceBar" class="provenance-bar"></div>
-          </div>
+            <span id="kpiSelectedMeta" class="technical-only local-territory-meta"></span>
+          </section>
 
-          <!-- Resumen 72 Horas con Rango P10-P50-P90 -->
-          <div class="panel-card">
-            <div class="panel-header">
+          <section class="local-forecast-panel" aria-labelledby="localForecastTitle">
+            <div class="local-forecast-heading">
               <div>
-                <h3>Pronóstico Próximos 3 Días</h3>
-                <span style="font-size: 0.76rem; color: var(--text-muted);">Mediana esperada (P50) y escenario superior (P90)</span>
+                <p class="dashboard-eyebrow">PRONÓSTICO</p>
+                <h2 id="localForecastTitle">Lluvia en 48 horas</h2>
               </div>
-              <span class="epistemic-badge badge-pronostico">Banda P10–P90</span>
+              <span class="epistemic-badge badge-pronostico">Pronóstico + escenario</span>
+            </div>
+            <div class="rainfall-total">
+              <strong id="heroPrecip48h">—</strong>
+              <span id="heroPrecipLabel">Fuente en actualización</span>
             </div>
             <p id="detailKeyPhenomenon" class="key-phenomenon-note"></p>
-            <div id="miniForecastPreview"></div>
-            <div style="margin-top: 0.65rem; display: flex; justify-content: flex-end;">
-              <button type="button" class="quick-link-pill" id="btnJumpTo7dForecast">📅 Ver tabla completa de 7 días →</button>
+            <div id="miniForecastPreview" class="mini-rain-chart"></div>
+            <div class="mini-chart-legend" aria-label="Leyenda del gráfico">
+              <span><i class="legend-base"></i>Pronóstico base</span>
+              <span><i class="legend-upper"></i>Escenario heurístico</span>
             </div>
-          </div>
+            <button type="button" class="quick-link-pill" id="btnJumpTo7dForecast">Ver pronóstico completo →</button>
+          </section>
 
-          <!-- Alertas asociadas a la comuna seleccionada -->
-          <div class="panel-card">
-            <div class="panel-header">
-              <div>
-                <h3>Alertas en esta Zona</h3>
-                <span style="font-size: 0.75rem; color: var(--text-muted);">Ejemplos de demostración (Oficiales vs. App)</span>
-              </div>
-              <span class="epistemic-badge badge-estimacion">Datos de muestra</span>
-            </div>
+          <details class="local-alerts-disclosure">
+            <summary>Alertas asociadas a esta zona <span class="epistemic-badge badge-estimacion">Muestra</span></summary>
             <div id="locationAlertsPreview"></div>
-          </div>
+          </details>
         </aside>
       </div>
     </section>
@@ -551,10 +469,10 @@
           <div>
             <h2 id="forecast7dTitle">Pronóstico de los Próximos 7 Días (con Rangos de Incertidumbre)</h2>
             <div class="panel-subtitle">
-              Presenta temperatura mínima/máxima (con banda P10–P90), lluvia esperada (mediana P50 y techo húmedo P90), probabilidad, isoterma 0 °C y viento.
+              Presenta temperatura mínima/máxima, lluvia del proveedor, probabilidad de precipitación, escenario superior heurístico, isoterma 0 °C y viento.
             </div>
           </div>
-          <span class="epistemic-badge badge-pronostico">Pronóstico Numérico (P10–P50–P90)</span>
+          <span class="epistemic-badge badge-pronostico">Pronóstico externo</span>
         </div>
 
         <div class="forecast-table-wrapper">
@@ -563,8 +481,8 @@
               <tr>
                 <th>Día</th>
                 <th>Condición</th>
-                <th>Temp. Mín / Máx (Rango P10–P90)</th>
-                <th>Lluvia Mediana P50 (Techo P90)</th>
+                <th>Temp. mínima / máxima</th>
+                <th>Pronóstico de lluvia / escenario alto aprox.</th>
                 <th>Prob. Lluvia</th>
                 <th>Isoterma 0 °C</th>
                 <th>Nieve Andina</th>
@@ -577,9 +495,9 @@
         </div>
 
         <div id="forecast7dProvenanceBar" class="provenance-bar">
-          <span><strong>Fuente:</strong> Consenso Open-Meteo (ECMWF IFS 9 km + NOAA GFS 25 km + DWD ICON)</span>
+          <span><strong>Fuente:</strong> Open-Meteo Forecast API</span>
           <span>•</span>
-          <span><strong>Nota metodológica:</strong> Los rangos expresan la dispersión estadística del pronóstico; se actualizan automáticamente con la corrida vigente de Open-Meteo.</span>
+          <span><strong>Nota metodológica:</strong> El escenario superior es una regla heurística, no una dispersión estadística ni un percentil.</span>
         </div>
       </div>
 
@@ -600,7 +518,7 @@
                 <th>Región / Comuna</th>
                 <th>Temp. (t=0h)</th>
                 <th>Lluvia 24h</th>
-                <th>Lluvia Próximas 48h (P50–P90)</th>
+                <th>Lluvia próxima 48 h</th>
                 <th>Isoterma 0 °C</th>
                 <th>Viento Máx.</th>
                 <th>Nivel de Riesgo</th>
@@ -622,16 +540,16 @@
           <div>
             <h2 id="rainSectionTitle">Pronóstico Horario de Precipitación e Isoterma 0 °C (48 Horas)</h2>
             <div class="panel-subtitle">
-              Evolución horaria de los pulsos de precipitación (mediana P50 vs escenario húmedo P90) y altura de la isoterma 0 °C (límite lluvia/nieve).
+              Evolución horaria del pronóstico de precipitación y un escenario superior heurístico, junto a la altura de la isoterma 0 °C.
             </div>
           </div>
-          <span class="epistemic-badge badge-pronostico">Estimación Probabilística — No es certeza determinista</span>
+          <span class="epistemic-badge badge-pronostico">Pronóstico externo + escenario heurístico</span>
         </div>
 
         <details class="methodology-details">
-          <summary>ℹ Guía de Incertidumbre y Uso Preventivo (P50 vs P90)</summary>
+          <summary>ℹ Cómo leer el pronóstico y el escenario superior</summary>
           <div class="methodology-content">
-            Los montos de precipitación e isoterma 0 °C son estimaciones probabilísticas sujetas a variaciones por topografía andina. Utilice siempre el rango <strong>P50 (escenario central)</strong> a <strong>P90 (escenario húmedo exigente)</strong> para planificación preventiva en cuencas.
+            La lluvia base procede del pronóstico consultado. El escenario superior se calcula con una regla fija y <strong>no es un percentil ni un intervalo calibrado</strong>. La temperatura muestra los valores mínimo y máximo entregados por el proveedor; no se calcula una banda probabilística. Para decisiones preventivas, consulte también las fuentes oficiales.
           </div>
         </details>
 
@@ -679,9 +597,9 @@
         <!-- Barra de Estado Ingesta en Vivo SENAPRED -->
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; margin: 0.8rem 0 0.5rem; padding: 0.5rem 0.75rem; background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: 8px;">
           <div style="display:flex; align-items:center; gap:0.5rem;">
-            <span class="status-indicator-dot online"></span>
+            <span id="senapredStatusDot" class="status-indicator-dot"></span>
             <span id="senapredLiveStatusText" style="font-size:0.8rem; font-weight:600; color:var(--text-primary);">
-              🟢 Ingesta SENAPRED + DMC + SAE activa vía <code>/api/senapred/alertas-live</code>
+              SENAPRED: esperando consulta del portal; los avisos de muestra están separados.
             </span>
           </div>
           <button type="button" id="btnRefreshSenapredAlerts" class="btn btn-sm btn-secondary" style="font-size:0.75rem; padding:0.25rem 0.6rem;">
@@ -799,12 +717,12 @@
         <div class="panel-card">
           <div class="panel-header">
             <div>
-              <h2 id="predictiveModelTitle">Comparación entre Modelos Numéricos (ECMWF vs. GFS vs. ICON)</h2>
+              <h2 id="predictiveModelTitle">Comparación ilustrativa de modelos</h2>
               <div class="panel-subtitle">
-                Diferencias e incertidumbre inter-modelo para las próximas 72 horas en la comuna seleccionada (Datos de muestra).
+                Datos sintéticos para mostrar el diseño; no son salidas consultadas ni una comparación operativa de modelos.
               </div>
             </div>
-            <span class="epistemic-badge badge-pronostico">Dispersión Multimodelo (Muestra)</span>
+            <span class="epistemic-badge badge-estimacion">Ejemplo sintético</span>
           </div>
 
           <div id="modelComparisonContainer"></div>
@@ -813,7 +731,7 @@
             <summary>ℹ Sustento Técnico y Limitaciones Topográficas en los Andes</summary>
             <div class="methodology-content">
               <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-secondary);">
-                <li><strong>Sustento:</strong> Comparación referencial entre las resoluciones de grilla de ECMWF IFS (9 km), DWD ICON (13 km) y NOAA GFS (25 km).</li>
+                <li><strong>Limitación:</strong> Los valores y resoluciones mostrados son ilustrativos; la app no consulta ni compara estos modelos en esta vista.</li>
                 <li><strong>Limitación topográfica en los Andes:</strong> La pendiente entre el valle central y la cordillera (&gt;4.500 m en menos de 60 km) introduce incertidumbre de ±150 m en la cota de la isoterma 0 °C dentro de cajones cordilleranos estrechos.</li>
               </ul>
             </div>
@@ -823,12 +741,12 @@
         <div class="panel-card">
           <div class="panel-header">
             <div>
-              <h2>Auditoría Histórica: Pronóstico vs. Realidad</h2>
+              <h2>Ejemplo de verificación histórica</h2>
               <div class="panel-subtitle">
-                Verificación auditable de predicciones pasadas (-24 h, -48 h, -72 h) contra observaciones reales.
+                Datos sintéticos para ilustrar métricas de verificación; no son predicciones ni observaciones históricas reales.
               </div>
             </div>
-            <span class="epistemic-badge badge-estimacion">Verificación CA-03</span>
+            <span class="epistemic-badge badge-estimacion">Demostración · sin validación operativa</span>
           </div>
 
           <!-- Métricas Resumen MAE y Cobertura -->
@@ -841,13 +759,13 @@
           <details class="methodology-details" style="margin-top: 1rem;">
             <summary>📋 Ver Tabla Tabular de Auditoría Completa (Muestra Histórica)</summary>
             <div class="forecast-table-wrapper" style="margin-top: 0.5rem;">
-              <table class="data-table" aria-label="Tabla de verificación de pronósticos anteriores frente a observaciones reales">
+              <table class="data-table" aria-label="Tabla de ejemplo sintético de verificación histórica; no usa observaciones reales">
                 <thead>
                   <tr>
                     <th>Ubicación</th>
                     <th>Horizonte</th>
-                    <th>Lluvia Predicha P50</th>
-                    <th>Lluvia Real</th>
+                    <th>Lluvia pronosticada (registro de muestra)</th>
+                    <th>Lluvia observada (muestra sintética)</th>
                     <th>Error Abs.</th>
                     <th>Temp. Máx</th>
                     <th>Estado</th>
@@ -898,6 +816,12 @@
         <div class="grid-equal-2col">
           <div>
             <h3 style="margin-top:0;">Agentes Especializados (Escenario de Muestra)</h3>
+            <div class="agent-card" style="margin-bottom:0.8rem;">
+              <strong>Auditor de catálogo de fuentes</strong>
+              <p style="margin:0.35rem 0; color:var(--text-secondary); font-size:0.82rem;">Solo revisa procedencia y vigencia declaradas en el catálogo local. No consulta las fuentes, no cambia datos ni emite alertas.</p>
+              <button id="btnRunSourceAudit" type="button" class="btn btn-sm btn-secondary">Revisar fuentes</button>
+              <div id="sourceAuditReport" role="status" aria-live="polite" style="margin-top:0.65rem;"></div>
+            </div>
             <div id="agentsCardsContainer"></div>
           </div>
 
