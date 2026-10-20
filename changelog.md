@@ -11,6 +11,11 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
   - Detección algorítmica de activaciones del **Sistema de Alerta de Emergencia (SAE)** vía Cell Broadcast (`isSaeActivation: true`, canal `CELL_BROADCAST_SAE`) ante instrucciones de evacuación preventiva por aluvión, crecida o remoción en masa.
 - **Banner de Emergencia SAE Vibrante en la Interfaz (`#saeEmergencyLiveBanner`)**:
   - Tarjeta de alerta crítica con animación visual de pulso perimetral rojo (`.sae-emergency-card`), instrucciones de protección civil y botón interactivo para probar la alarma sonora y despacho de notificación nativa Web Push en escritorio y teléfonos móviles.
+- **Motor de Alarma Sonora de Emergencia con Web Audio API (`audio-alarm.js`)**:
+  - Síntesis acústica autónoma en el navegador del tono de alarma oficial SAE / EAS (dos osciladores en tonos duales estándar de 853 Hz y 960 Hz en onda diente de sierra) con ráfagas pulsantes y modulación de sirena de evacuación.
+  - Integración de locución de protección civil mediante **Web Speech API (`SpeechSynthesis`)** en español ("*Atención: Alerta de emergencia emitida por SENAPRED...*").
+  - Botón de control dinámico para silenciar/detener la sirena inmediatamente (`#btnStopSaeAlarm`).
+  - Funciona 100% offline sin necesidad de descargar archivos MP3 ni sufrir bloqueos de autoplay, activado mediante el gesto de clic del usuario.
 - **Conector de Cliente en Tiempo Real (`fetchLiveSenapredAlerts`)**:
   - Módulo en `public/js/modules/live-api.js` y sincronización automática en `public/js/app.js` cada 10 minutos, sumado a un botón de actualización manual (`#btnRefreshSenapredAlerts`).
   - Coexistencia epistémica estricta: las alertas oficiales en vivo se etiquetan como `🟢 Transmisión Oficial en Vivo`, mientras que las simulaciones mantienen el badge `🧪 Registro de Demostración`, preservando el cumplimiento riguroso del Criterio de Aceptación CA-01.

@@ -27,6 +27,11 @@ import {
   renderHourlyRainChartSVG,
   renderModelComparisonChartSVG
 } from './modules/charts.js';
+import {
+  playSaeAlarm,
+  stopAudioAlarm,
+  isAudioAlarmPlaying
+} from './modules/audio-alarm.js';
 
 const STATE = {
   themePref: 'light', // 'light' | 'dark' | 'system'
@@ -999,8 +1004,11 @@ function renderAlertsSection() {
             </ul>
           </div>
           <div class="sae-actions-bar">
-            <button type="button" id="btnTriggerSaePush" class="btn btn-primary" style="background:#dc2626; border-color:#b91c1c;">
-              🔊 Probar Alarma Sonora y Notificación Nativa en este Dispositivo
+            <button type="button" id="btnTriggerSaePush" class="btn btn-primary" style="background:#dc2626; border-color:#b91c1c; font-weight:700;">
+              🔊 Probar Alarma Sonora SAE (Sirena + Voz)
+            </button>
+            <button type="button" id="btnStopSaeAlarm" class="btn btn-secondary" style="display:none; background:#7f1d1d; color:#ffffff; border-color:#ef4444; font-weight:700;">
+              ⏹ Silenciar Alarma Sonora
             </button>
             <a href="${saeAlert.officialUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
               Portal Oficial SENAPRED ↗
@@ -1010,8 +1018,29 @@ function renderAlertsSection() {
       `;
 
       const btnTrigger = document.getElementById('btnTriggerSaePush');
+      const btnStop = document.getElementById('btnStopSaeAlarm');
+
+      const updateAlarmUiState = () => {
+        const playing = isAudioAlarmPlaying();
+        if (btnTrigger) {
+          btnTrigger.style.display = playing ? 'none' : 'inline-flex';
+        }
+        if (btnStop) {
+          btnStop.style.display = playing ? 'inline-flex' : 'none';
+        }
+      };
+
       if (btnTrigger) {
-        btnTrigger.addEventListener('click', () => {
+        btnTrigger.addEventListener('click', async () => {
+          // 1. Activar Alarma Sonora oficial SAE (Web Audio API + TTS)
+          await playSaeAlarm({
+            title: saeAlert.shortTitle || 'Alerta SAE',
+            speechText: `Atención: Alerta de emergencia emitida por SENAPRED. ${saeAlert.shortTitle || 'Evacuación preventiva'}. ${saeAlert.affectedZonesText}.`,
+            durationSec: 8
+          });
+          updateAlarmUiState();
+
+          // 2. Disparar notificación nativa Web Push en escritorio/móvil
           triggerNativeWebPushNotification({
             title: `🚨 EMERGENCIA SAE: ${saeAlert.shortTitle || 'Alerta SENAPRED'}`,
             body: `${saeAlert.affectedZonesText}. ${saeAlert.whatCouldHappen}`,
@@ -1019,6 +1048,17 @@ function renderAlertsSection() {
           });
         });
       }
+
+      if (btnStop) {
+        btnStop.addEventListener('click', () => {
+          stopAudioAlarm();
+          updateAlarmUiState();
+        });
+      }
+
+      document.addEventListener('sae-alarm-stopped', updateAlarmUiState);
+      document.addEventListener('sae-alarm-started', updateAlarmUiState);
+      updateAlarmUiState();
     } else {
       saeBanner.style.display = 'none';
       saeBanner.innerHTML = '';
@@ -1934,6 +1974,13 @@ function setupEventListeners() {
         title: `FloodChile · Alerta: ${loc.name}`,
         body: `Riesgo ${loc.summaryRisk} (${loc.keyPhenomenon}). Lluvia P50: ${loc.precipP50Mm} mm · Isoterma 0 °C: ${loc.freezingLevelM} m.`,
         tag: `push-commune-${loc.id}`
+      });
+
+      // Disparar audio audible de notificación
+      playSaeAlarm({
+        title: `Alerta: ${loc.name}`,
+        speechText: `Aviso meteorológico para ${loc.name}.`,
+        durationSec: 2.5
       });
     });
   }
