@@ -190,13 +190,35 @@ function activateTab(tabId) {
     sidebarBackdrop.classList.remove('active');
   }
 
-  if (tabId === 'tab-satelite') {
-    renderSatelliteSection();
-  } else if (tabId === 'tab-mapa') {
-    setTimeout(() => {
-      mapControllerSingleton.leafletMap?.invalidateSize();
-    }, 50);
+  // Renderizado dinámico garantizado al activar cada sección
+  try {
+    if (tabId === 'tab-mapa') {
+      renderMapAndDetailView();
+      setTimeout(() => {
+        mapControllerSingleton.leafletMap?.invalidateSize();
+      }, 50);
+    } else if (tabId === 'tab-pronostico') {
+      renderForecast7dAndNationalSection();
+    } else if (tabId === 'tab-lluvia') {
+      renderRainfallSection();
+    } else if (tabId === 'tab-alertas') {
+      renderAlertsSection();
+      loadAndRenderNotifications();
+    } else if (tabId === 'tab-satelite') {
+      renderSatelliteSection();
+    } else if (tabId === 'tab-escenarios') {
+      renderScenariosSection();
+    } else if (tabId === 'tab-predictivo') {
+      renderPredictiveAndVerificationSection();
+    } else if (tabId === 'tab-agentes') {
+      renderAgentsSection();
+    } else if (tabId === 'tab-fuentes') {
+      renderSourcesAndCriteriaSection();
+    }
+  } catch (err) {
+    console.error(`Error activando y renderizando pestaña ${tabId}:`, err);
   }
+
   syncUrlState();
 }
 
@@ -213,9 +235,11 @@ function getEffectiveTimezone() {
 }
 
 function formatUtcInChileTz(utcIsoStr, tzOverride) {
+  if (!utcIsoStr) return 'N/A';
   const tz = tzOverride || getEffectiveTimezone();
   try {
     const dt = new Date(utcIsoStr);
+    if (isNaN(dt.getTime())) return String(utcIsoStr);
     const formatted = new Intl.DateTimeFormat('es-CL', {
       timeZone: tz,
       day: '2-digit',
@@ -235,7 +259,7 @@ function formatUtcInChileTz(utcIsoStr, tzOverride) {
         : 'Chile Cont.';
     return `${formatted} (${shortTz})`;
   } catch {
-    return utcIsoStr;
+    return String(utcIsoStr || '');
   }
 }
 
@@ -1198,7 +1222,13 @@ export function updateWebPushPermissionBadge() {
     return;
   }
 
-  const perm = Notification.permission;
+  let perm = 'default';
+  try {
+    perm = Notification.permission;
+  } catch {
+    perm = 'default';
+  }
+
   if (perm === 'granted') {
     badge.className = 'epistemic-badge badge-observacion';
     badge.textContent = '✓ Web Push: Activado en este Dispositivo';
@@ -1396,21 +1426,26 @@ function renderPredictiveAndVerificationSection() {
   const verMetrics = document.getElementById('verificationSummaryMetrics');
   const verTableBody = document.getElementById('verificationTableBody');
 
-  if (titleEl) {
+  if (titleEl && loc) {
     titleEl.textContent = `Comparación Multimodelo (ECMWF vs GFS vs ICON) — ${loc.name}`;
   }
 
-  renderModelComparisonChartSVG(modelContainer, loc);
+  if (modelContainer && loc) {
+    renderModelComparisonChartSVG(modelContainer, loc);
+  }
+
+  const verList = Array.isArray(VERIFICATION_HISTORY) ? VERIFICATION_HISTORY : [];
+  if (!verList.length) return;
 
   const avgRainErr =
-    VERIFICATION_HISTORY.reduce((acc, v) => acc + v.precipAbsErrorMm, 0) /
-    VERIFICATION_HISTORY.length;
+    verList.reduce((acc, v) => acc + (v.precipAbsErrorMm || 0), 0) /
+    verList.length;
   const avgTempErr =
-    VERIFICATION_HISTORY.reduce((acc, v) => acc + v.tempAbsErrorC, 0) /
-    VERIFICATION_HISTORY.length;
+    verList.reduce((acc, v) => acc + (v.tempAbsErrorC || 0), 0) /
+    verList.length;
   const bandCoverage =
-    (VERIFICATION_HISTORY.filter((v) => v.withinUncertaintyBand).length /
-      VERIFICATION_HISTORY.length) *
+    (verList.filter((v) => v.withinUncertaintyBand).length /
+      verList.length) *
     100;
 
   if (verMetrics) {
@@ -1434,18 +1469,18 @@ function renderPredictiveAndVerificationSection() {
   }
 
   if (verTableBody) {
-    verTableBody.innerHTML = VERIFICATION_HISTORY.map(
+    verTableBody.innerHTML = verList.map(
       (v) => `
         <tr>
           <td><strong>${v.locationName}</strong></td>
           <td>${v.targetDate} (-${v.leadTimeHours}h)</td>
-          <td>${v.predictedPrecipP50Mm.toFixed(1)} mm <span class="uncertainty-range">[${v.predictedPrecipRangeMm}]</span></td>
-          <td><strong>${v.observedPrecipMm.toFixed(1)} mm</strong></td>
-          <td>${v.precipAbsErrorMm.toFixed(1)} mm</td>
+          <td>${Number(v.predictedPrecipP50Mm || 0).toFixed(1)} mm <span class="uncertainty-range">[${v.predictedPrecipRangeMm || ''}]</span></td>
+          <td><strong>${Number(v.observedPrecipMm || 0).toFixed(1)} mm</strong></td>
+          <td>${Number(v.precipAbsErrorMm || 0).toFixed(1)} mm</td>
           <td>${v.predictedTempMaxC}°C / <strong>${v.observedTempMaxC}°C</strong></td>
           <td>
             <span class="epistemic-badge badge-observacion">
-              ✓ Sí (${v.evaluationNote})
+              ✓ Sí (${v.evaluationNote || ''})
             </span>
           </td>
         </tr>
@@ -1459,8 +1494,9 @@ function renderAgentsSection() {
   const hitlContainer = document.getElementById('hitlQueueContainer');
   const evidenceBody = document.getElementById('evidenceTableBody');
 
+  const agentsList = Array.isArray(AI_AGENTS_DATA?.agents) ? AI_AGENTS_DATA.agents : [];
   if (agentsContainer) {
-    agentsContainer.innerHTML = AI_AGENTS_DATA.agents
+    agentsContainer.innerHTML = agentsList
       .map(
         (ag) => `
         <div class="agent-card">
@@ -1474,12 +1510,12 @@ function renderAgentsSection() {
             Rol: ${ag.role} · Permiso: <code>${ag.autonomyLevel}</code>
           </div>
           <ul style="margin:0; padding-left:1.1rem; font-size:0.84rem;">
-            ${ag.findings
+            ${(ag.findings || [])
               .map(
                 (f) => `
                 <li style="margin-bottom:0.4rem;">
                   ${f.text}
-                  ${f.citations
+                  ${(f.citations || [])
                     .map(
                       (cid) =>
                         `<button type="button" class="citation-chip" data-ev-id="${cid}" title="Inspeccionar dato fuente ${cid}">[Ref: ${cid}]</button>`
@@ -1496,8 +1532,9 @@ function renderAgentsSection() {
       .join('');
   }
 
+  const hitlList = Array.isArray(AI_AGENTS_DATA?.hitlQueue) ? AI_AGENTS_DATA.hitlQueue : [];
   if (hitlContainer) {
-    hitlContainer.innerHTML = AI_AGENTS_DATA.hitlQueue
+    hitlContainer.innerHTML = hitlList
       .map((item) => {
         const isSae = Boolean(item.isSaeEmergency);
         const isPending = item.status === 'PENDIENTE_REVISION_HUMANA';
@@ -1531,7 +1568,7 @@ function renderAgentsSection() {
           </div>
           <p class="condition-summary-banner" style="margin:0.4rem 0; ${isSae ? 'border-left-color:#ef4444;' : ''}">
             ${item.proposedSummary}
-            ${item.citations
+            ${(item.citations || [])
               .map(
                 (cid) =>
                   `<button type="button" class="citation-chip" data-ev-id="${cid}">[Ref: ${cid}]</button>`
@@ -1541,7 +1578,7 @@ function renderAgentsSection() {
           <div style="font-size:0.78rem; margin:0.5rem 0;">
             <strong>Verificaciones automáticas de Guardrails antes de revisión humana:</strong>
             <ul style="margin:0.25rem 0; padding-left:1.1rem; color:var(--tag-obs-text);">
-              ${item.guardrailChecks.map((g) => `<li>✓ ${g.rule}</li>`).join('')}
+              ${(item.guardrailChecks || []).map((g) => `<li>✓ ${g.rule}</li>`).join('')}
             </ul>
           </div>
           <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.65rem; align-items:center;">
@@ -1582,7 +1619,9 @@ function renderAgentsSection() {
   }
 
   if (evidenceBody) {
-    const evList = Object.values(AI_AGENTS_DATA.evidenceRegistry);
+    const evList = AI_AGENTS_DATA?.evidenceRegistry
+      ? Object.values(AI_AGENTS_DATA.evidenceRegistry)
+      : [];
     evidenceBody.innerHTML = evList
       .map(
         (ev) => `
@@ -1745,19 +1784,19 @@ function renderSourcesAndCriteriaSection() {
 }
 
 function refreshAllViews() {
-  populateLocationSelectors();
-  updateClockAndHeaderStatus();
-  renderMapAndDetailView();
-  renderSatelliteSection();
-  renderForecast7dAndNationalSection();
-  renderRainfallSection();
-  renderAlertsSection();
-  loadAndRenderNotifications();
-  renderScenariosSection();
-  renderPredictiveAndVerificationSection();
-  renderAgentsSection();
-  renderSourcesAndCriteriaSection();
-  syncUrlState();
+  try { populateLocationSelectors(); } catch (e) { console.error('Error populateLocationSelectors:', e); }
+  try { updateClockAndHeaderStatus(); } catch (e) { console.error('Error updateClockAndHeaderStatus:', e); }
+  try { renderMapAndDetailView(); } catch (e) { console.error('Error renderMapAndDetailView:', e); }
+  try { renderSatelliteSection(); } catch (e) { console.error('Error renderSatelliteSection:', e); }
+  try { renderForecast7dAndNationalSection(); } catch (e) { console.error('Error renderForecast7dAndNationalSection:', e); }
+  try { renderRainfallSection(); } catch (e) { console.error('Error renderRainfallSection:', e); }
+  try { renderAlertsSection(); } catch (e) { console.error('Error renderAlertsSection:', e); }
+  try { loadAndRenderNotifications(); } catch (e) { console.error('Error loadAndRenderNotifications:', e); }
+  try { renderScenariosSection(); } catch (e) { console.error('Error renderScenariosSection:', e); }
+  try { renderPredictiveAndVerificationSection(); } catch (e) { console.error('Error renderPredictiveAndVerificationSection:', e); }
+  try { renderAgentsSection(); } catch (e) { console.error('Error renderAgentsSection:', e); }
+  try { renderSourcesAndCriteriaSection(); } catch (e) { console.error('Error renderSourcesAndCriteriaSection:', e); }
+  try { syncUrlState(); } catch (e) { console.error('Error syncUrlState:', e); }
 }
 
 function setupEventListeners() {
@@ -2399,8 +2438,16 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(syncAllLocationsLive, 30 * 60 * 1000);
 
   // Ingesta oficial en vivo SENAPRED / DMC / SAE
-  loadLiveSenapredAlerts().then(() => renderAlertsSection());
-  setInterval(() => loadLiveSenapredAlerts(true).then(() => renderAlertsSection()), 10 * 60 * 1000);
+  loadLiveSenapredAlerts().then(() => {
+    renderAlertsSection();
+    renderAgentsSection();
+  });
+  setInterval(() => {
+    loadLiveSenapredAlerts(true).then(() => {
+      renderAlertsSection();
+      renderAgentsSection();
+    });
+  }, 10 * 60 * 1000);
 
   // Registro de Service Worker PWA para resiliencia offline durante temporales
   if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {

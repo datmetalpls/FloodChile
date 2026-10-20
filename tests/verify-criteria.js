@@ -134,6 +134,26 @@ assert.ok(
   'Falta integración NASA GIBS GOES-East en satellite-viewer.js'
 );
 
+const appJsPath = path.join(__dirname, '..', 'public', 'js', 'app.js');
+const appJsCode = fs.readFileSync(appJsPath, 'utf8');
+assert.ok(
+  appJsCode.includes("tabId === 'tab-predictivo'") && appJsCode.includes('renderPredictiveAndVerificationSection'),
+  'activateTab debe renderizar explícitamente tab-predictivo'
+);
+assert.ok(
+  appJsCode.includes("tabId === 'tab-agentes'") && appJsCode.includes('renderAgentsSection'),
+  'activateTab debe renderizar explícitamente tab-agentes'
+);
+assert.ok(
+  appJsCode.includes("tabId === 'tab-fuentes'") && appJsCode.includes('renderSourcesAndCriteriaSection'),
+  'activateTab debe renderizar explícitamente tab-fuentes'
+);
+assert.ok(
+  appJsCode.includes('try { renderPredictiveAndVerificationSection(); } catch'),
+  'refreshAllViews debe aislar renderPredictiveAndVerificationSection en try/catch'
+);
+
+console.log('✓ Resiliencia de renderizado dinámico en activateTab y refreshAllViews verificada.');
 console.log('✓ Documentación técnica, PWA offline, proxy Open-Meteo y capas NASA GIBS verificados.\n');
 console.log('🎉 TODAS LAS PRUEBAS Y CRITERIOS DE ACEPTACIÓN PASARON EXITOSAMENTE.');
 

@@ -3,6 +3,16 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-10-20
+
+### Corregido
+- **Resiliencia y Renderizado Dinámico de Secciones (*Modelos y Verificación*, *Agentes IA*, *Fuentes y Criterios*)**:
+  - Se resolvió la incidencia donde las tablas de comparación multimodelo (`tab-predictivo`), el panel de agentes IA con cola HITL (`tab-agentes`) y la matriz de fuentes y criterios CA-01..CA-09 (`tab-fuentes`) aparecían vacías en Safari.
+  - Se agregaron ganchos (*hooks*) de renderizado directo en `activateTab(tabId)` para garantizar que al pulsar cualquier opción del menú lateral o barra superior, la sección objetivo siempre renderice sus componentes al instante, independientemente de si la vista activa es Ciudadanía o Monitoreo Técnico.
+  - Se introdujo aislamiento de fallos (*fault-isolation*) en `refreshAllViews()` mediante bloques `try...catch` independientes para cada componente, asegurando que un fallo transitorio en una llamada de API o sensor no interrumpa la renderización del resto de la interfaz.
+  - Se blindó `formatUtcInChileTz()` con verificación de marcas de tiempo no válidas (`isNaN`) y valores nulos/indefinidos, eliminando excepciones `RangeError` en navegadores WebKit/Safari.
+  - Se protegió la consulta de `Notification.permission` en `updateWebPushPermissionBadge()` ante restricciones de sandbox o contextos HTTP locales.
+
 ## [1.7.0] - 2026-10-20
 
 ### Agregado
