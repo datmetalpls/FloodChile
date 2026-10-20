@@ -3,6 +3,27 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-10-20
+
+### Agregado
+- **Capa y Análisis Predictivo de Tormentas Eléctricas (`tormentas`)**: Nueva 7ª capa meteorológica en Leaflet y esquemas nacionales que evalúa inestabilidad convectiva, energía potencial disponible (CAPE en J/kg), probabilidad de descargas eléctricas y riesgo de granizo.
+- **Alerta Oficial DMC por Tormentas Eléctricas (`ALT-OF-006`)**: Aviso oficial de la Dirección Meteorológica de Chile para zonas precordilleranas y cordilleranas de la Zona Central y Sur.
+- **Alerta Agéntica Temprana por Flash Floods / Crecidas Repentinas (`ALT-APP-007`)**: Detección autónoma por el Agente Guardián `AG-FLA-05` (`FlashFloodWatchAgent`) ante la combinación crítica de isoterma 0 °C elevada (&gt;3.000 m s.n.m.) y precipitaciones intensas en cabeceras de cuencas andinas, con cola de revisión humana supervisada `HITL-202`.
+- **Mapeo y Explicador Algorítmico de Paleta de Colores Banda 13 IR GOES-16**: Explicación interactiva y panel físico de la temperatura de brillo (\(T_b\)) de topes nubosos según la Ley de Planck:
+  - 🟣 Púrpura/Blanco (&lt; -75 °C): Topes convectivos penetrantes (*overshooting tops*) con riesgo de tormenta severa y granizo.
+  - 🔴 Rojo Intenso (-65 °C a -55 °C): Cumulonimbus maduro y frente activo.
+  - 🟡 Amarillo/Ocre (-50 °C a -40 °C): Núcleo de río atmosférico (IVT &gt; 400 kg/m/s) y nimbostratus densos.
+  - 🟢 Cian/Verde (-35 °C a -20 °C): Nubosidad media y alta estratiforme.
+  - 🔵 Azul Frío (-10 °C a 0 °C): Estratocúmulos marinos costeros y camanchaca.
+  - ⚫ Gris Oscuro (&gt; 0 °C): Superficie despejada de tierra y océano.
+  - 📡 Escala de reflectividad de radar (RainViewer dBZ): llovizna (&lt;20 dBZ), moderada (20–35 dBZ), chubascos (35–50 dBZ) y convección severa (&gt;50 dBZ).
+- **Endpoint Proxy con Caché Local para RainViewer (`GET /api/rainviewer/weather-maps`)**: Caché en memoria de 5 minutos en `server.js` que elimina errores de CORS o caídas del navegador cliente al consultar mosaicos satelitales y de radar.
+
+### Modificado y Corregido
+- **Eliminación Total de Mapas CARTO con Dependencia de API Propietaria**: Conforme a las directrices de `agency-geographer`, se removieron los iframes, paneles de incrustación e integraciones propietarias de CARTO en la interfaz, dejando exclusivamente cartografía abierta y de alto rendimiento (OpenStreetMap Standard, OpenTopoMap topográfico, ESRI World Imagery y Positron sin token).
+- **Reparación de la Secuencia de Radar + IR Satelital en Vivo**: Corrección del flujo de frames en `satellite-viewer.js` para consumir el proxy local y cargar la paleta reflectiva calibrada `/2/1_1.png` cuando el satélite infrarrojo no reporte cuadros en el hemisferio sur.
+- **Rediseño Responsivo del Perfil de Isoterma 0 °C (`renderTerrain3DFrame`)**: Reescritura del corte longitudinal de Chile (Pacífico $\rightarrow$ Cordillera de la Costa $\rightarrow$ Depresión Intermedia $\rightarrow$ Precordillera $\rightarrow$ Alta Cordillera Andina), adaptándose fluidamente al ancho y alto del contenedor con áreas coloreadas de acumulación nívea versus escorrentía líquida aluvional.
+
 ---
 
 ## [1.4.0] - 2026-10-20

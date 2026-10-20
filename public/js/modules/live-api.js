@@ -281,11 +281,19 @@ export async function syncLocationViaServerOrDirect(location) {
 
 export async function fetchRainViewerMetadata() {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
   try {
-    const res = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
-      signal: controller.signal
-    });
+    let res = null;
+    try {
+      res = await fetch('/api/rainviewer/weather-maps', { signal: controller.signal });
+    } catch {
+      res = null;
+    }
+    if (!res || !res.ok) {
+      res = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
+        signal: controller.signal
+      });
+    }
     clearTimeout(timeoutId);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();

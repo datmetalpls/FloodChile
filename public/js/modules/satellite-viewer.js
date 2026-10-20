@@ -296,9 +296,8 @@ class FrameBasedSatelliteEngine {
         zoomControl: true
       });
 
-      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        subdomains: 'abcd',
-        attribution: '&copy; OpenStreetMap &copy; CARTO · NASA GIBS · RainViewer',
+      window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors · NASA GIBS · RainViewer',
         maxZoom: 18
       }).addTo(this.liveLeafletMap);
     }
@@ -358,16 +357,21 @@ class FrameBasedSatelliteEngine {
 
     try {
       if (!this.liveIrFrames.length) {
-        const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-        if (res.ok) {
+        let res = await fetch('/api/rainviewer/weather-maps').catch(() => null);
+        if (!res || !res.ok) {
+          res = await fetch('https://api.rainviewer.com/public/weather-maps.json').catch(() => null);
+        }
+        if (res && res.ok) {
           const data = await res.json();
           const irFrames = data?.satellite?.infrared || [];
           const radarFrames = data?.radar?.past || [];
+          const isRadar = !irFrames.length && radarFrames.length > 0;
           const chosen = irFrames.length ? irFrames : radarFrames;
           if (chosen.length) {
+            const host = data.host || 'https://tilecache.rainviewer.com';
             this.liveIrFrames = chosen.map((f) => ({
               time: f.time,
-              url: `${data.host || 'https://tilecache.rainviewer.com'}${f.path}/256/{z}/{x}/{y}/0/0_0.png`
+              url: `${host}${f.path}/256/{z}/{x}/{y}/${isRadar ? '2/1_1.png' : '0/0_0.png'}`
             }));
           }
         }
@@ -651,19 +655,20 @@ class FrameBasedSatelliteEngine {
   }
 
   drawSpectralColorbar(ctx, width, height, channel) {
-    const barW = 290;
-    const barH = 10;
+    const barW = 340;
+    const barH = 12;
     const barX = 14;
-    const barY = height - 22;
+    const barY = height - 24;
 
     const grad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
-    let labelText = 'Temp. Brillo Tope Nuboso IR (°C):  +20°C          -20°C          -50°C          -70°C';
+    let labelText = 'Temp. Brillo Banda 13 IR: >0°C (Suelo)   -20°C   -40°C   -55°C   <-75°C (Convección)';
     if (channel === 'ir_b13') {
-      grad.addColorStop(0, '#334155');
-      grad.addColorStop(0.35, '#38bdf8');
-      grad.addColorStop(0.65, '#facc15');
-      grad.addColorStop(0.85, '#f97316');
-      grad.addColorStop(1, '#dc2626');
+      grad.addColorStop(0.0, '#1e293b'); // > 0°C Superficie cálida / océano
+      grad.addColorStop(0.2, '#3b82f6'); // -10° a 0°C Nubes bajas / camanchaca
+      grad.addColorStop(0.4, '#06b6d4'); // -35° a -20°C Nubes medias / estratos
+      grad.addColorStop(0.65, '#facc15'); // -50° a -40°C Frente activo / río atmosférico
+      grad.addColorStop(0.85, '#ef4444'); // -65° a -55°C Cumulonimbus maduro
+      grad.addColorStop(1.0, '#a855f7'); // < -75°C Convección severa / overshooting tops
     } else if (channel === 'vapor_agua') {
       grad.addColorStop(0, '#1e3a8a');
       grad.addColorStop(0.45, '#06b6d4');
@@ -684,17 +689,17 @@ class FrameBasedSatelliteEngine {
     }
 
     ctx.save();
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.fillRect(barX - 6, barY - 16, barW + 16, 26);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.fillRect(barX - 6, barY - 18, barW + 16, 28);
     ctx.fillStyle = grad;
     ctx.fillRect(barX, barY, barW, barH);
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
     ctx.strokeRect(barX, barY, barW, barH);
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '500 8.5px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(labelText, barX, barY - 4);
+    ctx.fillText(labelText, barX, barY - 5);
     ctx.restore();
   }
 

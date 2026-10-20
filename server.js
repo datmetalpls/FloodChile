@@ -19,6 +19,11 @@ const DOCS_DIR = path.join(__dirname, 'docs');
 const SERVER_SYNC_TTL_MS = 15 * 60 * 1000;
 const serverLocationSyncTimestamps = new Map();
 
+// Caché en memoria para RainViewer API (TTL 5 minutos)
+let rainviewerCache = null;
+let rainviewerCacheTime = 0;
+const RAINVIEWER_CACHE_TTL_MS = 5 * 60 * 1000;
+
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -129,6 +134,27 @@ const server = http.createServer(async (req, res) => {
       buildCartoBuilderGeoJsonClient(CHILE_LOCATIONS, ALERTS_DATA),
       'application/geo+json; charset=utf-8'
     );
+  }
+
+  // Proxy local para mapas meteorológicos de RainViewer con caché y tolerancia a fallos
+  if (pathname === '/api/rainviewer/weather-maps' && req.method === 'GET') {
+    const now = Date.now();
+    if (rainviewerCache && now - rainviewerCacheTime < RAINVIEWER_CACHE_TTL_MS) {
+      return sendJson(res, 200, rainviewerCache);
+    }
+    try {
+      const rvRes = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
+        headers: { 'User-Agent': 'ClimasFlood-Chile/1.4' }
+      });
+      if (rvRes.ok) {
+        rainviewerCache = await rvRes.json();
+        rainviewerCacheTime = now;
+        return sendJson(res, 200, rainviewerCache);
+      }
+    } catch {
+      if (rainviewerCache) return sendJson(res, 200, rainviewerCache);
+    }
+    return sendJson(res, 502, { error: 'Servicio RainViewer no disponible temporalmente' });
   }
 
   if (pathname === '/api/audit-log' && req.method === 'GET') {

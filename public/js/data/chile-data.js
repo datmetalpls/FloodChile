@@ -1215,6 +1215,56 @@ export const ALERTS_DATA = [
     ],
     officialUrl: 'https://agrometeorologia.cl/',
     secondaryUrl: 'https://www.meteochile.gob.cl/'
+  },
+  {
+    id: 'ALT-OF-006',
+    originCategory: 'OFFICIAL_AUTHORITY',
+    originLabel: 'ALERTA OFICIAL (DMC)',
+    issuer: 'Dirección Meteorológica de Chile (DMC)',
+    severity: 'TEMPRANA',
+    eventType: 'TORMENTA_ELECTRICA',
+    title: 'Aviso Meteorológico por Probables Tormentas Eléctricas en Precordillera y Cordillera',
+    regions: ['V', 'RM', 'VI', 'VII'],
+    communesIds: ['santiago', 'rancagua', 'talca', 'valparaiso'],
+    affectedZonesText: 'Sectores de precordillera y valles precordilleranos de Valparaíso, Metropolitana, O’Higgins y Maule.',
+    whatCouldHappen: 'Desarrollo de nubes convectivas profundas (Cumulonimbus) con descargas eléctricas nube-tierra, chubascos intensos focalizados de corta duración, rachas de viento convectivas de 40 a 60 km/h y probabilidad de granizo menudo.',
+    onsetUtc: '2026-10-19T17:00:00Z',
+    expiresUtc: '2026-10-20T04:00:00Z',
+    issuedAtUtc: '2026-10-19T14:30:00Z',
+    confidenceLevel: 'ALTA',
+    confidenceRationale: 'Índices de inestabilidad termodinámica favorables: CAPE superior a 800 J/kg y Lifted Index inferior a -3 °C.',
+    preventiveActions: [
+      'Permanecer en un lugar seguro (construcción sólida) durante el desarrollo de la tormenta eléctrica.',
+      'No refugiarse bajo árboles aislados ni estructuras metálicas en campo abierto.',
+      'Desconectar artefactos electrónicos sensibles y evitar el contacto con agua de tuberías durante la actividad eléctrica.'
+    ],
+    officialUrl: 'https://www.meteochile.gob.cl/PortalDMC-web/index.xhtml',
+    secondaryUrl: 'https://senapred.cl/alertas/'
+  },
+  {
+    id: 'ALT-APP-007',
+    originCategory: 'APP_THRESHOLD_ESTIMATE',
+    originLabel: 'ESTIMACIÓN PREVENTIVA DE LA APP (Alerta Agéntica)',
+    issuer: 'Agente Detector de Crecidas Repentinas (ClimasFlood FlashFloodWatchAgent)',
+    severity: 'EXTREMA',
+    eventType: 'FLASH_FLOOD_AGENTE',
+    title: 'Alerta Agéntica Temprana por Riesgo de Crecida Repentina (Flash Flood) en Quebradas Andinas',
+    regions: ['RM', 'VI'],
+    communesIds: ['santiago', 'rancagua'],
+    affectedZonesText: 'Subcuencas de alta pendiente en Cajón del Maipo (San Alfonso, San Gabriel, El Manzano) y cuenca alta del río Cachapoal (Machalí, Coya).',
+    whatCouldHappen: 'El acoplamiento de un pulso convectivo con tasas puntuales >12 mm/h sobre terreno saturado e isoterma 0 °C en 3.050 m s.n.m. genera tiempo de concentración corto (~45 min) con alto riesgo de flujos de detritos y turbidez severa que obligue a corte preventivo en plantas de agua potable.',
+    onsetUtc: '2026-10-19T15:30:00Z',
+    expiresUtc: '2026-10-20T03:00:00Z',
+    issuedAtUtc: '2026-10-19T15:12:00Z',
+    confidenceLevel: 'ALTA',
+    confidenceRationale: 'Detección automática multivariable cruzada entre pluviometría horaria en cabecera, dispersión de modelos y tope nuboso infrarrojo (-55 °C).',
+    preventiveActions: [
+      'Alerta inmediata a operadores sanitarios para llenado de estanques de reserva de agua potable.',
+      'Evacuación preventiva de campamentos de faenas y turistas en bordes de ríos precordilleranos.',
+      'Monitoreo continuo en tiempo real de niveles fluviométricos telemétricos DGA y avisos SAE.'
+    ],
+    officialUrl: 'https://snia.mop.gob.cl/dga/',
+    secondaryUrl: 'https://senapred.cl/alertas/'
   }
 ];
 
@@ -1448,6 +1498,22 @@ export const AI_AGENTS_DATA = {
       parameter: 'Racha máxima de viento',
       rawValue: '92 km/h dirección Oeste (270°), presión 994.6 hPa',
       dataType: 'OBSERVACION'
+    },
+    'EV-106': {
+      id: 'EV-106',
+      source: 'GOES-16 GLM (Lightning Mapper) + Open-Meteo Inestabilidad CAPE',
+      timestampUtc: '2026-10-19T15:11:00Z',
+      parameter: 'Inestabilidad convectiva y actividad de rayos',
+      rawValue: 'CAPE: 890 J/kg | Lifted Index: -3.8 | Pulsos de rayos detectados en precordillera de Machalí y Cajón del Maipo',
+      dataType: 'OBSERVACION_SATELITAL'
+    },
+    'EV-107': {
+      id: 'EV-107',
+      source: 'Radar Hidrológico y Estación Telemétrica DGA Cabecera Río Colorado',
+      timestampUtc: '2026-10-19T15:12:00Z',
+      parameter: 'Tasa pluvial y tiempo de concentración de cuenca',
+      rawValue: 'Tasa puntual 14.2 mm/h sobre cota 2.850 m s.n.m. con tiempo de concentración estimado en 45 minutos',
+      dataType: 'OBSERVACION'
     }
   },
   agents: [
@@ -1514,6 +1580,24 @@ export const AI_AGENTS_DATA = {
           citations: ['EV-101', 'EV-102', 'EV-103', 'EV-104']
         }
       ]
+    },
+    {
+      id: 'AG-FLA-05',
+      name: 'Agente Guardián de Crecidas Repentinas (FlashFloodWatchAgent)',
+      role: 'Detección temprana y acoplamiento orográfico de pulsos convectivos torrenciales con isoterma 0 °C alta',
+      status: 'ACTIVO',
+      autonomyLevel: 'ALERTA_INTERNA_SUPERVISADA',
+      lastRunUtc: '2026-10-19T15:12:00Z',
+      findings: [
+        {
+          text: 'Alerta agéntica preventiva: Acoplamiento de pulso convectivo (>14 mm/h) con isoterma 0 °C en 3.050 m s.n.m. activa umbral crítico de Flash Flood en subcuencas precordilleranas del Maipo y Mapocho.',
+          citations: ['EV-101', 'EV-107']
+        },
+        {
+          text: 'Inestabilidad convectiva severa (CAPE 890 J/kg, LI -3.8) detectada en sector cordillerano con alta probabilidad de tormentas eléctricas, ráfagas descendentes y granizo focalizado.',
+          citations: ['EV-103', 'EV-106']
+        }
+      ]
     }
   ],
   hitlQueue: [
@@ -1531,6 +1615,22 @@ export const AI_AGENTS_DATA = {
         { rule: 'Cada cifra posee vínculo directo a registro de evidencia [EV-*]', passed: true },
         { rule: 'Expresa probabilidad y evita presentar inferencias como hechos consumados', passed: true },
         { rule: 'Retenido antes de envío de notificación crítica (Requiere firma humana)', passed: true }
+      ]
+    },
+    {
+      id: 'HITL-202',
+      agentId: 'AG-FLA-05',
+      createdAtUtc: '2026-10-19T15:12:30Z',
+      targetAudience: 'COGRID Regional RM, Municipios de San José de Maipo y Machalí',
+      impactLevel: 'ALTO_IMPACTO',
+      status: 'PENDIENTE_REVISION_HUMANA',
+      proposedSummary: 'ALERTA AGÉNTICA TEMPRANA DE FLASH FLOOD (Requiere Validación Humana): Se detecta pulso de lluvia convectiva intensa en cabecera cordillerana con isoterma 0 °C en 3.050 m s.n.m. [EV-101, EV-107] y actividad eléctrica asociada [EV-106]. Se recomienda activar monitoreo presencial de turbidez en bocatomas de agua potable y advertir a comunidades de San Alfonso, San Gabriel y Baños Morales ante riesgo inminente de flujos de detritos.',
+      citations: ['EV-101', 'EV-106', 'EV-107'],
+      guardrailChecks: [
+        { rule: 'No reemplaza canales vinculantes SAE de SENAPRED', passed: true },
+        { rule: 'Vínculo estricto a evidencia hidrológica [EV-101], [EV-106] y [EV-107]', passed: true },
+        { rule: 'Tiempo de respuesta estimado en 45 minutos hacia el valle', passed: true },
+        { rule: 'Bloqueo preventivo de despacho masivo sin confirmación técnica HITL', passed: true }
       ]
     }
   ]

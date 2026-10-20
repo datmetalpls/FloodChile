@@ -92,6 +92,20 @@ export const MAP_LAYERS_META = {
       { label: 'Temprana (▲)', color: '#ea580c', symbol: '▲' },
       { label: 'Extrema (🛑)', color: '#dc2626', symbol: '🛑' }
     ]
+  },
+  tormentas: {
+    id: 'tormentas',
+    label: 'Tormentas Eléctricas y Convección',
+    unit: 'Prob. / CAPE',
+    sourceName: 'Actividad de Rayos y Convección (Open-Meteo CAPE / GOES-16 GLM)',
+    sourceId: 'glm-goes16-convective',
+    description: 'Probabilidad predictiva de tormentas eléctricas, rayos y granizo en precordillera y cordillera.',
+    legend: [
+      { label: '< 10% (Sin actividad eléctrica)', color: '#0d9488', symbol: '○' },
+      { label: '10 – 35% (Inestabilidad baja / Chubascos)', color: '#0284c7', symbol: '⚡' },
+      { label: '36 – 65% (Tormenta eléctrica probable)', color: '#d97706', symbol: '⚡⚡' },
+      { label: '> 65% (Tormenta severa / Granizo / Rayos)', color: '#dc2626', symbol: '🌩' }
+    ]
   }
 };
 
@@ -235,6 +249,42 @@ export function getLocationValueForStep(loc, layerId, hourOffset) {
       display: `${val}% nubes`,
       shortDisplay: `${val}%`,
       numeric: val,
+      color,
+      symbol
+    };
+  }
+
+  if (layerId === 'tormentas') {
+    const rain = hourOffset === 0 ? loc.observation.precip1hMm : stepObj.p50;
+    const isAndean = loc.elevationM > 450 || loc.basin.toLowerCase().includes('maipo') || loc.basin.toLowerCase().includes('cachapoal') || loc.basin.toLowerCase().includes('maule');
+    let prob = 8;
+    let cape = 180;
+    if (rain >= 3.0 && isAndean) {
+      prob = 75;
+      cape = 1150;
+    } else if (rain >= 1.2 || (isAndean && rain > 0.4)) {
+      prob = 45;
+      cape = 680;
+    } else if (rain > 0) {
+      prob = 22;
+      cape = 340;
+    }
+    let color = '#0d9488';
+    let symbol = '○';
+    if (prob > 65) {
+      color = '#dc2626';
+      symbol = '🌩';
+    } else if (prob > 35) {
+      color = '#d97706';
+      symbol = '⚡⚡';
+    } else if (prob > 10) {
+      color = '#0284c7';
+      symbol = '⚡';
+    }
+    return {
+      display: `${prob}% prob. (CAPE ${cape} J/kg)`,
+      shortDisplay: `⚡ ${prob}% · ${cape}J`,
+      numeric: prob,
       color,
       symbol
     };
@@ -391,17 +441,14 @@ class ChileMapController {
         <div class="animated-map-stage">
           <div class="map-mode-toolbar" role="toolbar" aria-label="Modo de visualización del mapa">
             <div class="map-mode-pills">
-              <button type="button" class="btn-map-ctrl ${this.mapMode === 'leaflet' ? 'active' : ''}" id="btnModeLeaflet" title="Mapa cartográfico interactivo con comunas, teselas abiertas y superposición RainViewer">
+              <button type="button" class="btn-map-ctrl ${this.mapMode === 'leaflet' ? 'active' : ''}" id="btnModeLeaflet" title="Mapa cartográfico interactivo con comunas, capas climáticas y superposición satelital">
                 🗺 Mapa Interactivo
               </button>
               <button type="button" class="btn-map-ctrl ${this.mapMode === 'fluid' ? 'active' : ''}" id="btnModeFluid" title="Esquema nacional comparativo de las 16 regiones e isla Rapa Nui">
                 🇨🇱 Esquema Nacional
               </button>
-              <button type="button" class="btn-map-ctrl ${this.mapMode === 'terrain3d' ? 'active' : ''}" id="btnModeTerrain3D" title="Corte topográfico Océano → Cordillera con altitud de Isoterma 0 °C">
+              <button type="button" class="btn-map-ctrl ${this.mapMode === 'terrain3d' ? 'active' : ''}" id="btnModeTerrain3D" title="Corte altitudinal adaptable Océano → Valle → Cordillera con nivel de Isoterma 0 °C">
                 🏔 Perfil Isoterma 0°C
-              </button>
-              <button type="button" class="btn-map-ctrl" id="btnToggleCartoBuilderPanel" title="Exportar GeoJSON o conectar con CARTO Builder">
-                🌐 CARTO Builder / GeoJSON
               </button>
             </div>
             <div class="map-camera-pills">
@@ -414,24 +461,23 @@ class ChileMapController {
             </div>
           </div>
 
-          <!-- Barra de Mapa Base Abierto y Fotogramas RainViewer / NASA GIBS (en modo Mapa Interactivo) -->
+          <!-- Barra de Mapa Base Abierto y Capas Satelitales (en modo Mapa Interactivo) -->
           <div id="leafletRadarToolbar" class="map-radar-subbar ${this.mapMode === 'leaflet' ? '' : 'hidden'}" role="region" aria-label="Proveedor de mapa base abierto y capa satelital/radar">
             <label for="basemapProviderSelect" style="font-size:0.74rem; font-weight:700; color:var(--text-secondary);">
               Mapa base:
             </label>
             <select id="basemapProviderSelect" style="font-size:0.75rem; padding:0.24rem 0.48rem;">
-              <option value="carto_voyager" selected>CARTO Voyager — Vector/Raster Abierto (Recomendado)</option>
-              <option value="carto_auto">CARTO Positron / Dark Matter (Automático Claro / Oscuro)</option>
-              <option value="opentopomap">OpenTopoMap — Curvas de Nivel y Topografía Andina (Abierto)</option>
-              <option value="esri_satellite">ESRI World Imagery — Satélite Abierto Alta Resolución</option>
-              <option value="osm_chile">OpenStreetMap Chile — Vial y Urbano (Abierto)</option>
+              <option value="osm_standard" selected>OpenStreetMap Estándar (Cartografía Abierta)</option>
+              <option value="opentopomap">OpenTopoMap — Relieve y Curvas de Nivel Andinas (Abierto)</option>
+              <option value="esri_satellite">ESRI World Imagery — Satelital de Alta Resolución</option>
+              <option value="positron_dark">Contraste Oscuro / Positron (Minimalista)</option>
             </select>
 
             <label for="satelliteOverlaySelect" style="font-size:0.74rem; font-weight:700; color:var(--text-secondary);">
-              Satélite real:
+              Satélite / Radar:
             </label>
             <select id="satelliteOverlaySelect" style="font-size:0.75rem; padding:0.24rem 0.48rem;" title="Selecciona la capa satelital en vivo superpuesta sobre Chile">
-              <option value="rainviewer" selected>RainViewer — Secuencia IR + Radar (En vivo)</option>
+              <option value="rainviewer" selected>RainViewer — Mosaico Radar + IR (En vivo)</option>
               <option value="gibs_goes_ir">NASA GIBS — GOES-East Banda 13 Infrarrojo (En vivo 10m)</option>
               <option value="gibs_goes_geocolor">NASA GIBS — GOES-East GeoColor (Color Real Día + IR Noche)</option>
               <option value="gibs_viirs_truecolor">NASA GIBS — VIIRS Suomi NPP Color Verdadero (250m)</option>
@@ -442,7 +488,7 @@ class ChileMapController {
               ▶ Fotogramas IR/Radar
             </button>
             <span id="radarFrameStatus" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--text-secondary);">
-              RainViewer: Consultando...
+              Radar: Listo
             </span>
             <label style="display:inline-flex; align-items:center; gap:0.35rem; font-size:0.74rem; margin-left:auto;">
               <span>Opacidad (<strong id="radarOpacityVal">65%</strong>):</span>
@@ -450,65 +496,19 @@ class ChileMapController {
             </label>
           </div>
 
-          <!-- Panel de Integración CARTO Builder y Capas GeoJSON Abiertas -->
-          <div id="cartoBuilderIntegrationPanel" class="map-radar-subbar hidden" role="region" aria-label="Flujo de trabajo CARTO Builder y GeoJSON abierto" style="flex-direction:column; align-items:stretch; gap:0.55rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-              <div>
-                <strong style="font-size:0.8rem; color:var(--text-primary);">🌐 Flujo de Trabajo CARTO Builder &amp; API GeoJSON Abierta (EPSG:4326)</strong>
-                <div style="font-size:0.74rem; color:var(--text-secondary);">
-                  Exporta las 15 comunas con variables en vivo (Open-Meteo + Caudal GloFAS + Oleaje Marine) hacia <strong>CARTO Builder</strong> o carga una capa GeoJSON externa.
-                </div>
-              </div>
-              <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-                <button type="button" class="btn btn-sm btn-primary" id="btnDownloadCartoGeoJson" title="Descarga archivo .geojson listo para importar en CARTO Builder">
-                  ⬇ Descargar .geojson para CARTO Builder
-                </button>
-                <a href="/api/carto/chile-meteo.geojson" target="_blank" rel="noopener noreferrer" class="btn btn-sm" title="Endpoint GeoJSON abierto servido por ClimasFlood con CORS habilitado">
-                  🔗 Endpoint /api/carto/chile-meteo.geojson ↗
-                </a>
-              </div>
-            </div>
-
-            <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center; padding-top:0.35rem; border-top:1px solid var(--border-subtle);">
-              <label for="cartoInputUrl" style="font-size:0.74rem; font-weight:700; color:var(--text-secondary);">
-                Conectar URL (GeoJSON o Mapa Público CARTO Builder):
-              </label>
-              <input
-                type="url"
-                id="cartoInputUrl"
-                placeholder="Ej: /api/carto/chile-meteo.geojson o https://climas.app.carto.com/map/..."
-                value="/api/carto/chile-meteo.geojson"
-                style="flex:1; min-width:220px; font-size:0.75rem; padding:0.28rem 0.5rem; border-radius:6px; border:1px solid var(--border-strong); background:var(--bg-card); color:var(--text-primary);"
-              />
-              <button type="button" class="btn btn-sm" id="btnLoadExternalGeoJson" title="Superpone un archivo o endpoint GeoJSON sobre el mapa Leaflet">
-                ➕ Superponer Capa GeoJSON
-              </button>
-              <button type="button" class="btn btn-sm" id="btnEmbedCartoMap" title="Incrusta un mapa público publicado en CARTO Builder (iframe)">
-                🖼 Incrustar Mapa CARTO Builder
-              </button>
-              <span id="cartoLayerStatus" style="font-size:0.72rem; font-family:var(--font-mono); color:var(--accent-text);"></span>
-            </div>
-          </div>
-
-          <!-- Barra de ángulo de cámara (en modo Perfil Isoterma 0 °C) -->
-          <div id="terrain3DToolbar" class="map-radar-subbar hidden" role="region" aria-label="Controles de ángulo del perfil topográfico">
+          <!-- Barra de controles del Perfil Isoterma 0 °C -->
+          <div id="terrain3DToolbar" class="map-radar-subbar hidden" role="region" aria-label="Controles del perfil altitudinal">
             <span style="font-size:0.75rem; font-weight:700; color:var(--accent-text);">
-              🏔 Corte Transversal de Cuenca: Océano Pacífico → Cordillera de los Andes
+              🏔 Corte Altitudinal de Cuenca: Océano Pacífico → Depresión Intermedia → Alta Cordillera
             </span>
-            <label style="display:inline-flex; align-items:center; gap:0.35rem; font-size:0.74rem; margin-left:auto;">
-              <span>Rotación:</span>
-              <input type="range" id="yaw3DSlider" min="-80" max="80" value="-32" style="width:85px;" />
-            </label>
-            <label style="display:inline-flex; align-items:center; gap:0.35rem; font-size:0.74rem;">
-              <span>Inclinación:</span>
-              <input type="range" id="pitch3DSlider" min="25" max="85" value="58" style="width:80px;" />
-            </label>
+            <span style="font-size:0.72rem; color:var(--text-secondary); margin-left:auto;">
+              Nivel de congelación determinista según paso temporal (+0h a +48h)
+            </span>
           </div>
 
           <div class="map-viewport-wrapper">
             <div id="chileLeafletMapContainer" class="leaflet-stage ${this.mapMode === 'leaflet' ? '' : 'hidden'}" aria-label="Mapa cartográfico interactivo de Chile"></div>
-            <div id="cartoBuilderEmbedStage" class="leaflet-stage hidden" aria-label="Visor incrustado de CARTO Builder" style="display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg-card-elevated);"></div>
-            <canvas id="chileDynamicMapCanvas" width="560" height="680" tabindex="0"
+            <canvas id="chileDynamicMapCanvas" width="720" height="560" tabindex="0"
                     class="${this.mapMode === 'leaflet' ? 'hidden' : ''}"
                     role="img"
                     aria-label="Esquema nacional de Chile y perfil altitudinal de isoterma cero grados"></canvas>
@@ -518,7 +518,7 @@ class ChileMapController {
       this.canvas = container.querySelector('#chileDynamicMapCanvas');
       this.ctx = this.canvas.getContext('2d');
       this.leafletContainer = container.querySelector('#chileLeafletMapContainer');
-      this.cartoEmbedContainer = container.querySelector('#cartoBuilderEmbedStage');
+      this.cartoEmbedContainer = null;
       this.bindCanvasEvents(container);
 
       if (this.mapMode === 'leaflet') {
@@ -1129,6 +1129,18 @@ class ChileMapController {
   renderTerrain3DFrame() {
     if (!this.ctx || !this.canvas) return;
     const ctx = this.ctx;
+
+    // Ajustar dimensiones internas del canvas dinámicamente al contenedor
+    const container = this.canvas.parentElement;
+    if (container && container.clientWidth > 100) {
+      const targetW = container.clientWidth;
+      const targetH = Math.min(560, Math.max(380, Math.round(targetW * 0.65)));
+      if (this.canvas.width !== targetW || this.canvas.height !== targetH) {
+        this.canvas.width = targetW;
+        this.canvas.height = targetH;
+      }
+    }
+
     const width = this.canvas.width;
     const height = this.canvas.height;
     const isLight = document.documentElement.getAttribute('data-theme') !== 'dark';
@@ -1139,193 +1151,233 @@ class ChileMapController {
       loc.hourlyRain48h.find((s) => s.hourOffset === this.hourOffset) || loc.hourlyRain48h[0];
     const iso0M = this.hourOffset === 0 ? loc.observation.freezingLevelM : stepObj.iso0;
     const rainMmH = this.hourOffset === 0 ? loc.observation.precip1hMm : stepObj.p50;
+    const isHighRiskIso = iso0M >= 2750 && rainMmH >= 1.5;
 
     ctx.save();
+    ctx.clearRect(0, 0, width, height);
+
+    // Fondo degradado atmosférico
     const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
     if (isLight) {
       bgGrad.addColorStop(0, '#e0f2fe');
-      bgGrad.addColorStop(0.6, '#f1f5f9');
-      bgGrad.addColorStop(1, '#e2e8f0');
+      bgGrad.addColorStop(0.5, '#f8fafc');
+      bgGrad.addColorStop(1, '#f1f5f9');
     } else {
-      bgGrad.addColorStop(0, '#07101e');
-      bgGrad.addColorStop(0.6, '#0d1b2e');
-      bgGrad.addColorStop(1, '#091322');
+      bgGrad.addColorStop(0, '#040d1a');
+      bgGrad.addColorStop(0.5, '#0b1628');
+      bgGrad.addColorStop(1, '#08101e');
     }
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, width, height);
 
-    const yaw = this.cameraYaw3D;
-    const pitch = this.cameraPitch3D;
-    const project3D = (u, v, altM) => {
-      const nx = (u - 0.5) * 340;
-      const ny = (v - 0.5) * 210;
-      const nz = (altM / 5000) * 230;
+    // Márgenes responsivos
+    const padL = width < 500 ? 46 : 64;
+    const padR = width < 500 ? 18 : 28;
+    const padT = 68;
+    const padB = width < 500 ? 38 : 46;
+    const plotW = width - padL - padR;
+    const plotH = height - padT - padB;
 
-      const rx = nx * Math.cos(yaw) - ny * Math.sin(yaw);
-      const ry = nx * Math.sin(yaw) + ny * Math.cos(yaw);
-
-      const sx = width * 0.5 + rx;
-      const sy = height * 0.68 + ry * pitch - nz;
-      return { x: sx, y: sy };
+    const maxAlt = 5000;
+    const yForAlt = (altM) => {
+      const clamped = Math.max(0, Math.min(maxAlt, altM));
+      return padT + plotH * (1 - clamped / maxAlt);
     };
+    const xForU = (u) => padL + plotW * u;
 
-    const maxAndesPeak = loc.lat > -38 ? 4650 : 2850;
-    const getElevationM = (u, v) => {
-      if (u < 0.16) return 0;
-      const coastalRange = Math.exp(-Math.pow((u - 0.27) / 0.08, 2)) * 880;
-      const centralValley = u > 0.32 && u < 0.55 ? 520 : 0;
-      const andesRise =
-        u > 0.48
-          ? Math.pow((u - 0.48) / 0.52, 1.55) *
-            maxAndesPeak *
-            (0.88 + 0.16 * Math.sin(v * Math.PI * 3))
-          : 0;
-      const canyonCut = 1 - 0.22 * Math.exp(-Math.pow((v - 0.5) / 0.18, 2));
-      return Math.max(0, (coastalRange + centralValley + andesRise) * canyonCut);
-    };
+    // 1. Grilla de altitud
+    ctx.strokeStyle = isLight ? 'rgba(148, 163, 184, 0.28)' : 'rgba(51, 65, 85, 0.45)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.fillStyle = isLight ? '#64748b' : '#94a3b8';
+    ctx.font = `600 ${width < 500 ? 8.5 : 9.5}px "JetBrains Mono", monospace`;
+    ctx.textAlign = 'right';
 
-    const cols = 22;
-    const rows = 12;
-    for (let r = rows - 1; r >= 0; r--) {
-      for (let c = 0; c < cols; c++) {
-        const u0 = c / cols;
-        const u1 = (c + 1) / cols;
-        const v0 = r / rows;
-        const v1 = (r + 1) / rows;
+    [0, 1000, 2000, 3000, 4000, 5000].forEach((alt) => {
+      const y = yForAlt(alt);
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL + plotW, y);
+      ctx.stroke();
+      ctx.fillText(`${alt}m`, padL - 6, y + 3.5);
+    });
+    ctx.setLineDash([]);
 
-        const a00 = getElevationM(u0, v0);
-        const a10 = getElevationM(u1, v0);
-        const a11 = getElevationM(u1, v1);
-        const a01 = getElevationM(u0, v1);
-        const avgAlt = (a00 + a10 + a11 + a01) * 0.25;
+    // 2. Perfil Geomorfológico Real de Chile (Océano -> Costa -> Depresión Intermedia -> Precordillera -> Andes)
+    const andesPeakM = loc.lat > -36 ? 4850 : loc.lat > -42 ? 3100 : 2400;
+    const coastalPeakM = loc.lat > -36 ? 1400 : 900;
+    const valleyAltM = Math.max(80, Math.min(650, loc.elevationM));
 
-        const p00 = project3D(u0, v0, a00);
-        const p10 = project3D(u1, v0, a10);
-        const p11 = project3D(u1, v1, a11);
-        const p01 = project3D(u0, v1, a01);
+    const terrainPoints = [
+      { u: 0.00, alt: 0 },              // Océano Pacífico
+      { u: 0.12, alt: 0 },              // Costa / Playa
+      { u: 0.22, alt: coastalPeakM },   // Cordillera de la Costa
+      { u: 0.32, alt: valleyAltM },     // Depresión Intermedia / Valle
+      { u: 0.48, alt: valleyAltM },     // Comuna / Valle Central
+      { u: 0.65, alt: 2200 },           // Precordillera
+      { u: 0.85, alt: andesPeakM * 0.88 }, // Macizo Andino
+      { u: 0.98, alt: andesPeakM },     // Cumbres Andinas
+      { u: 1.00, alt: andesPeakM }
+    ];
 
-        ctx.beginPath();
-        ctx.moveTo(p00.x, p00.y);
-        ctx.lineTo(p10.x, p10.y);
-        ctx.lineTo(p11.x, p11.y);
-        ctx.lineTo(p01.x, p01.y);
-        ctx.closePath();
+    const isoY = yForAlt(iso0M);
 
-        if (u0 < 0.16) {
-          ctx.fillStyle = isLight ? 'rgba(2, 132, 199, 0.45)' : 'rgba(3, 105, 161, 0.55)';
-        } else if (avgAlt >= iso0M) {
-          ctx.fillStyle = isLight ? 'rgba(241, 245, 249, 0.95)' : 'rgba(226, 232, 240, 0.85)';
-        } else if (avgAlt >= 1800) {
-          ctx.fillStyle =
-            iso0M >= 2750 && rainMmH >= 1.5
-              ? 'rgba(234, 88, 12, 0.62)'
-              : isLight
-              ? 'rgba(148, 163, 184, 0.75)'
-              : 'rgba(71, 85, 105, 0.75)';
-        } else {
-          ctx.fillStyle = isLight ? 'rgba(16, 185, 129, 0.35)' : 'rgba(15, 118, 110, 0.48)';
-        }
-        ctx.fill();
-        ctx.strokeStyle = isLight ? 'rgba(15, 23, 42, 0.14)' : 'rgba(148, 163, 184, 0.18)';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-      }
+    // 3. Polígono de terreno
+    ctx.beginPath();
+    ctx.moveTo(xForU(terrainPoints[0].u), padT + plotH);
+    terrainPoints.forEach((pt) => {
+      ctx.lineTo(xForU(pt.u), yForAlt(pt.alt));
+    });
+    ctx.lineTo(xForU(1.0), padT + plotH);
+    ctx.closePath();
+
+    const terrainGrad = ctx.createLinearGradient(0, yForAlt(andesPeakM), 0, padT + plotH);
+    if (isLight) {
+      terrainGrad.addColorStop(0, '#cbd5e1');
+      terrainGrad.addColorStop(0.35, '#94a3b8');
+      terrainGrad.addColorStop(0.7, '#65a30d');
+      terrainGrad.addColorStop(1, '#3b82f6');
+    } else {
+      terrainGrad.addColorStop(0, '#e2e8f0');
+      terrainGrad.addColorStop(0.25, '#64748b');
+      terrainGrad.addColorStop(0.65, '#1e3a1f');
+      terrainGrad.addColorStop(1, '#0c2340');
+    }
+    ctx.fillStyle = terrainGrad;
+    ctx.fill();
+    ctx.strokeStyle = isLight ? '#334155' : '#94a3b8';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 4. Sombrado de Zona de Nieve (sobre la Isoterma 0 °C)
+    if (iso0M < andesPeakM) {
+      ctx.save();
+      ctx.beginPath();
+      terrainPoints.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(xForU(pt.u), yForAlt(pt.alt));
+        else ctx.lineTo(xForU(pt.u), yForAlt(pt.alt));
+      });
+      ctx.lineTo(xForU(1.0), padT);
+      ctx.lineTo(xForU(0.0), padT);
+      ctx.closePath();
+      ctx.clip();
+
+      ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.88)' : 'rgba(241, 245, 249, 0.78)';
+      ctx.fillRect(padL, padT, plotW, isoY - padT);
+      ctx.restore();
     }
 
-    // Plano de la Isoterma 0 °C según el paso temporal seleccionado
-    const isoC0 = project3D(0.05, 0, iso0M);
-    const isoC1 = project3D(1.0, 0, iso0M);
-    const isoC2 = project3D(1.0, 1, iso0M);
-    const isoC3 = project3D(0.05, 1, iso0M);
-
+    // 5. Línea Horizontal de COTA ISOTERMA 0 °C
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(isoC0.x, isoC0.y);
-    ctx.lineTo(isoC1.x, isoC1.y);
-    ctx.lineTo(isoC2.x, isoC2.y);
-    ctx.lineTo(isoC3.x, isoC3.y);
-    ctx.closePath();
-    const isHighRiskIso = iso0M >= 2750 && rainMmH >= 1.5;
-    ctx.fillStyle = isHighRiskIso
-      ? 'rgba(220, 38, 38, 0.18)'
-      : 'rgba(245, 158, 11, 0.18)';
-    ctx.fill();
-    ctx.strokeStyle = isHighRiskIso ? '#dc2626' : '#d97706';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
+    ctx.moveTo(padL, isoY);
+    ctx.lineTo(padL + plotW, isoY);
+    ctx.strokeStyle = isHighRiskIso ? '#dc2626' : '#f59e0b';
+    ctx.lineWidth = isHighRiskIso ? 3 : 2;
+    ctx.setLineDash([7, 4]);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
 
+    // Etiqueta de la Isoterma 0 °C
+    const badgeW = width < 500 ? 190 : 255;
+    const badgeH = 22;
+    const badgeX = padL + 8;
+    const badgeY = Math.max(padT + 4, Math.min(padT + plotH - badgeH - 4, isoY - badgeH - 4));
+
     ctx.fillStyle = isHighRiskIso ? '#dc2626' : '#d97706';
-    ctx.font = '700 11px "JetBrains Mono", monospace';
-    ctx.fillText(
-      `── COTA ISOTERMA 0 °C (${this.hourOffset === 0 ? 't=0h' : `+${this.hourOffset}h`}): ${iso0M} m s.n.m.`,
-      22,
-      Math.max(82, isoC0.y - 8)
-    );
-
-    const oceanLabelPt = project3D(0.08, 0.5, 0);
-    const cityLabelPt = project3D(0.44, 0.5, loc.elevationM);
-    const andesLabelPt = project3D(0.92, 0.5, maxAndesPeak);
-
-    const draw3DPin = (pt, title, sub, color) => {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      ctx.fillStyle = isLight ? 'rgba(255,255,255,0.94)' : 'rgba(15,23,42,0.92)';
-      ctx.beginPath();
-      ctx.roundRect(pt.x - 62, pt.y - 36, 124, 26, 5);
-      ctx.fill();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-
-      ctx.fillStyle = isLight ? '#0f172a' : '#f8fafc';
-      ctx.font = '700 9.5px "Plus Jakarta Sans", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(title, pt.x, pt.y - 24);
-      ctx.fillStyle = isLight ? '#334155' : '#93c5fd';
-      ctx.font = '500 8.5px "JetBrains Mono", monospace';
-      ctx.fillText(sub, pt.x, pt.y - 14);
-    };
-
-    draw3DPin(oceanLabelPt, 'Océano Pacífico', '0 m s.n.m.', '#0284c7');
-    draw3DPin(
-      cityLabelPt,
-      loc.name.split('/')[0].trim(),
-      `Alt: ${loc.elevationM}m · ${rainMmH.toFixed(1)} mm/h`,
-      '#0d9488'
-    );
-    draw3DPin(andesLabelPt, 'Cumbre Andina', `~${maxAndesPeak} m s.n.m.`, '#6366f1');
-
-    ctx.fillStyle = isLight ? 'rgba(255,255,255,0.94)' : 'rgba(15,23,42,0.92)';
-    ctx.strokeStyle = isLight ? '#cbd5e1' : 'rgba(148,163,184,0.28)';
     ctx.beginPath();
-    ctx.roundRect(14, 14, width - 28, 54, 8);
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${width < 500 ? 9 : 10.5}px "JetBrains Mono", monospace`;
+    ctx.textAlign = 'left';
+    ctx.fillText(
+      `ISOTERMA 0 °C (${this.hourOffset === 0 ? 't=0h' : `+${this.hourOffset}h`}): ${iso0M} m`,
+      badgeX + 8,
+      badgeY + 15
+    );
+
+    // 6. Marcador de la Comuna Seleccionada en el perfil
+    const cityU = 0.44;
+    const cityX = xForU(cityU);
+    const cityY = yForAlt(loc.elevationM);
+
+    ctx.save();
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.arc(cityX, cityY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cityX, cityY);
+    ctx.lineTo(cityX, cityY - 26);
+    ctx.strokeStyle = '#0284c7';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const shortLocName = loc.name.split('/')[0].trim();
+    const cityBoxW = Math.max(90, shortLocName.length * 7 + 30);
+    ctx.fillStyle = isLight ? 'rgba(255,255,255,0.96)' : 'rgba(15,23,42,0.94)';
+    ctx.strokeStyle = '#0284c7';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(cityX - cityBoxW / 2, cityY - 48, cityBoxW, 22, 5);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = isLight ? '#0f172a' : '#f8fafc';
+    ctx.font = '700 9px "Plus Jakarta Sans", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${shortLocName} (${loc.elevationM}m)`, cityX, cityY - 33);
+    ctx.restore();
+
+    // 7. Rótulos Geográficos en el Eje X
+    ctx.fillStyle = isLight ? '#64748b' : '#94a3b8';
+    ctx.font = `600 ${width < 500 ? 8 : 9}px "Plus Jakarta Sans", sans-serif`;
+    ctx.textAlign = 'center';
+
+    const geoLabels = [
+      { u: 0.06, text: 'Océano Pacífico' },
+      { u: 0.22, text: 'C. de la Costa' },
+      { u: 0.44, text: 'Depresión Intermedia' },
+      { u: 0.65, text: 'Precordillera' },
+      { u: 0.94, text: 'Alta Cordillera' }
+    ];
+    geoLabels.forEach((gl) => {
+      ctx.fillText(gl.text, xForU(gl.u), padT + plotH + 18);
+    });
+
+    // 8. Cabecera Informativa Superior del Perfil
+    ctx.save();
+    ctx.fillStyle = isLight ? 'rgba(255,255,255,0.92)' : 'rgba(15,23,42,0.92)';
+    ctx.strokeStyle = isHighRiskIso ? '#dc2626' : (isLight ? '#cbd5e1' : 'rgba(148,163,184,0.25)');
+    ctx.lineWidth = isHighRiskIso ? 1.5 : 1;
+    ctx.beginPath();
+    ctx.roundRect(14, 12, width - 28, 44, 7);
     ctx.fill();
     ctx.stroke();
 
     ctx.textAlign = 'left';
-    ctx.fillStyle = isLight ? '#0f172a' : '#f8fafc';
-    ctx.font = '700 11.5px "Space Grotesk", sans-serif';
+    ctx.fillStyle = isHighRiskIso ? '#dc2626' : (isLight ? '#0f172a' : '#f8fafc');
+    ctx.font = `700 ${width < 500 ? 10 : 11.5}px "Space Grotesk", sans-serif`;
     ctx.fillText(
-      `🏔 PERFIL ALTITUDINAL ESQUEMÁTICO: ${loc.basin.toUpperCase()} (${loc.name})`,
-      26,
-      34
+      `🏔 CORTE ALTITUDINAL: CUENCA ${loc.basin.toUpperCase()} (${loc.name})`,
+      24,
+      28
     );
-    ctx.fillStyle = isLight ? '#475569' : '#cbd5e1';
-    ctx.font = '500 10px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(
-      `Sobre ${iso0M} m s.n.m. se espera nieve; bajo ${iso0M} m s.n.m. precipitación líquida (${loc.observation.isLiveSynced ? 'Open-Meteo' : 'Datos de muestra'}).`,
-      26,
-      52
-    );
+
+    ctx.fillStyle = isLight ? '#475569' : '#94a3b8';
+    ctx.font = `500 ${width < 500 ? 8 : 9.5}px "JetBrains Mono", monospace`;
+    const diagText = isHighRiskIso
+      ? `🛑 ALERTA ALUVIONAL: Isoterma elevada (${iso0M} m) + Lluvia (${rainMmH.toFixed(1)} mm/h) genera escorrentía líquida en alta pendiente.`
+      : `✓ Cota ${iso0M} m s.n.m. · Precipitación estimada: ${rainMmH.toFixed(1)} mm/h · Acumulación sólida sobre cumbre.`;
+    ctx.fillText(diagText, 24, 44);
+    ctx.restore();
 
     ctx.restore();
   }
