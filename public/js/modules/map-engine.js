@@ -432,8 +432,9 @@ class ChileMapController {
             </label>
             <select id="satelliteOverlaySelect" style="font-size:0.75rem; padding:0.24rem 0.48rem;" title="Selecciona la capa satelital en vivo superpuesta sobre Chile">
               <option value="rainviewer" selected>RainViewer — Secuencia IR + Radar (En vivo)</option>
-              <option value="gibs_goes_ir">NASA GIBS — GOES-East Banda 13 Infrarrojo (En vivo)</option>
-              <option value="gibs_viirs_truecolor">NASA GIBS — VIIRS Color Verdadero (En vivo)</option>
+              <option value="gibs_goes_ir">NASA GIBS — GOES-East Banda 13 Infrarrojo (En vivo 10m)</option>
+              <option value="gibs_goes_geocolor">NASA GIBS — GOES-East GeoColor (Color Real Día + IR Noche)</option>
+              <option value="gibs_viirs_truecolor">NASA GIBS — VIIRS Suomi NPP Color Verdadero (250m)</option>
               <option value="none">Sin superposición satelital</option>
             </select>
 
@@ -615,10 +616,26 @@ class ChileMapController {
           maxNativeZoom: 6,
           maxZoom: 18,
           zIndex: 15,
-          attribution: 'NASA GIBS / NOAA GOES-East ABI Band 13 Clean IR'
+          attribution: 'NASA GIBS / NOAA GOES-East ABI Band 13 Clean IR (10.3 µm)'
         }
       ).addTo(this.leafletMap);
-      if (statusEl) statusEl.textContent = '● NASA GIBS: GOES-East Banda 13 IR (Tiempo casi real)';
+      if (statusEl) statusEl.textContent = '● NASA GIBS: GOES-East Banda 13 IR Limpio (Tiempo casi real, 10m)';
+      return;
+    }
+
+    if (this.satelliteOverlayMode === 'gibs_goes_geocolor') {
+      if (btnPlay) btnPlay.disabled = true;
+      this.leafletRadarLayer = window.L.tileLayer(
+        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GOES-East_ABI_GeoColor/default/default/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png',
+        {
+          opacity: this.radarOpacity,
+          maxNativeZoom: 7,
+          maxZoom: 18,
+          zIndex: 15,
+          attribution: 'NASA GIBS / NOAA GOES-East ABI GeoColor'
+        }
+      ).addTo(this.leafletMap);
+      if (statusEl) statusEl.textContent = '● NASA GIBS: GOES-East GeoColor (Color real día + IR multiespectral noche)';
       return;
     }
 
@@ -631,10 +648,10 @@ class ChileMapController {
           maxNativeZoom: 9,
           maxZoom: 18,
           zIndex: 15,
-          attribution: 'NASA GIBS / Suomi NPP VIIRS True Color'
+          attribution: 'NASA GIBS / Suomi NPP VIIRS Color Verdadero (250m)'
         }
       ).addTo(this.leafletMap);
-      if (statusEl) statusEl.textContent = '● NASA GIBS: VIIRS Color Verdadero (Mosaico diario)';
+      if (statusEl) statusEl.textContent = '● NASA GIBS: VIIRS Suomi NPP Color Verdadero (Mosaico diario de alta resolución)';
       return;
     }
 

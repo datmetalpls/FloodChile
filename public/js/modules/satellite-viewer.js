@@ -227,9 +227,10 @@ class FrameBasedSatelliteEngine {
           🌎 Satélite en Vivo (NASA GIBS GOES-East + RainViewer)
         </button>
         <select id="satLiveSourceSelect" class="select-compact hidden" aria-label="Fuente satelital en vivo">
-          <option value="gibs_goes_ir">NASA GIBS · GOES-East Banda 13 IR (En vivo)</option>
+          <option value="gibs_goes_ir">NASA GIBS · GOES-East Banda 13 IR (En vivo 10m)</option>
+          <option value="gibs_goes_geocolor">NASA GIBS · GOES-East GeoColor (Color real día + IR noche)</option>
           <option value="rainviewer">RainViewer · Mosaico IR / Radar (En vivo)</option>
-          <option value="gibs_viirs_truecolor">NASA GIBS · VIIRS Color Verdadero</option>
+          <option value="gibs_viirs_truecolor">NASA GIBS · VIIRS Color Verdadero (250m)</option>
         </select>
       </div>
       <div class="sat-hint-text" id="satInteractiveHint">
@@ -321,7 +322,21 @@ class FrameBasedSatelliteEngine {
           maxNativeZoom: 6,
           maxZoom: 18,
           zIndex: 12,
-          attribution: 'NASA EOSDIS GIBS · NOAA GOES-East ABI Band 13 Clean IR'
+          attribution: 'NASA EOSDIS GIBS · NOAA GOES-East ABI Band 13 Clean IR (10.3 µm)'
+        }
+      ).addTo(this.liveLeafletMap);
+      return;
+    }
+
+    if (sourceKey === 'gibs_goes_geocolor') {
+      this.liveIrLayer = window.L.tileLayer(
+        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GOES-East_ABI_GeoColor/default/default/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png',
+        {
+          opacity: 0.78,
+          maxNativeZoom: 7,
+          maxZoom: 18,
+          zIndex: 12,
+          attribution: 'NASA EOSDIS GIBS · NOAA GOES-East ABI GeoColor'
         }
       ).addTo(this.liveLeafletMap);
       return;
@@ -335,7 +350,7 @@ class FrameBasedSatelliteEngine {
           maxNativeZoom: 9,
           maxZoom: 18,
           zIndex: 12,
-          attribution: 'NASA EOSDIS GIBS · Suomi NPP VIIRS TrueColor'
+          attribution: 'NASA EOSDIS GIBS · Suomi NPP VIIRS TrueColor (250m)'
         }
       ).addTo(this.liveLeafletMap);
       return;
