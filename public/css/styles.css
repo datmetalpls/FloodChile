@@ -163,81 +163,142 @@
    - Tipografía refinada, radio amplio (border-radius: 16px - 22px)
    ========================================================================== */
 [data-theme="apple"] {
-  --bg-primary: #0b1528;
-  --bg-secondary: rgba(22, 36, 62, 0.75);
-  --bg-card: rgba(24, 43, 77, 0.65);
-  --bg-card-elevated: rgba(30, 58, 98, 0.72);
+  --bg-primary: #0a1324;
+  --bg-secondary: rgba(15, 28, 52, 0.75);
+  --bg-card: rgba(18, 35, 66, 0.62);
+  --bg-card-elevated: rgba(26, 49, 90, 0.68);
   --bg-subtle: rgba(255, 255, 255, 0.08);
-  --bg-glass: rgba(18, 34, 62, 0.65);
+  --bg-glass: rgba(14, 27, 50, 0.7);
 
   --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.82);
-  --text-muted: rgba(255, 255, 255, 0.58);
+  --text-secondary: rgba(240, 246, 255, 0.88);
+  --text-muted: rgba(200, 220, 255, 0.65);
 
-  --border-subtle: rgba(255, 255, 255, 0.15);
+  --border-subtle: rgba(255, 255, 255, 0.14);
   --border-strong: rgba(255, 255, 255, 0.28);
-  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.25);
-  --shadow-card: 0 12px 36px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
-  --elevation-1: 0 4px 14px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-  --elevation-2: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
-  --elevation-3: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.22) inset;
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.16) inset;
+  --elevation-1: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  --elevation-2: 0 14px 34px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+  --elevation-3: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.25) inset;
 
-  --accent-primary: #0ea5e9;
-  --accent-secondary: #38bdf8;
-  --accent-soft-bg: rgba(14, 165, 233, 0.18);
+  --accent-primary: #38bdf8;
+  --accent-secondary: #0284c7;
+  --accent-soft-bg: rgba(56, 189, 248, 0.2);
   --accent-text: #7dd3fc;
 
-  --sev-info-bg: rgba(14, 165, 233, 0.22);
+  --sev-info-bg: rgba(14, 165, 233, 0.25);
   --sev-info-border: #38bdf8;
   --sev-info-text: #e0f2fe;
 
-  --sev-prev-bg: rgba(245, 158, 11, 0.22);
+  --sev-prev-bg: rgba(245, 158, 11, 0.25);
   --sev-prev-border: #fcd34d;
   --sev-prev-text: #fef3c7;
 
-  --sev-temp-bg: rgba(249, 115, 22, 0.24);
+  --sev-temp-bg: rgba(249, 115, 22, 0.28);
   --sev-temp-border: #fdba74;
   --sev-temp-text: #ffedd5;
 
-  --sev-extr-bg: rgba(239, 68, 68, 0.28);
+  --sev-extr-bg: rgba(239, 68, 68, 0.32);
   --sev-extr-border: #fca5a5;
   --sev-extr-text: #fee2e2;
 
-  --tag-obs-bg: rgba(16, 185, 129, 0.24);
+  --tag-obs-bg: rgba(16, 185, 129, 0.28);
   --tag-obs-text: #a7f3d0;
   --tag-obs-border: #34d399;
 
-  --tag-fcst-bg: rgba(59, 130, 246, 0.24);
+  --tag-fcst-bg: rgba(59, 130, 246, 0.28);
   --tag-fcst-text: #bfdbfe;
   --tag-fcst-border: #60a5fa;
 
-  --tag-est-bg: rgba(168, 85, 247, 0.24);
+  --tag-est-bg: rgba(168, 85, 247, 0.28);
   --tag-est-text: #e9d5ff;
   --tag-est-border: #c084fc;
 
-  --tag-official-bg: rgba(239, 68, 68, 0.32);
+  --tag-official-bg: rgba(239, 68, 68, 0.38);
   --tag-official-text: #fee2e2;
   --tag-official-border: #f87171;
 
-  --tag-app-bg: rgba(139, 92, 246, 0.3);
+  --tag-app-bg: rgba(139, 92, 246, 0.35);
   --tag-app-text: #ede9fe;
   --tag-app-border: #a78bfa;
 }
 
+/* Fondo atmosférico profundo Apple HIG */
 [data-theme="apple"] body {
-  background: radial-gradient(circle at 50% 0%, #173259 0%, #0b1528 75%, #050b14 100%);
-  background-attachment: fixed;
+  background: radial-gradient(circle at 50% 0%, #1a3a6b 0%, #0d1e38 45%, #050b16 100%) !important;
+  background-attachment: fixed !important;
+  color: #ffffff;
 }
 
-[data-theme="apple"] .card,
-[data-theme="apple"] .sidebar,
-[data-theme="apple"] .brand-header,
+[data-theme="apple"] .app-main-content {
+  background: transparent !important;
+}
+
+/* Superficies de cristal líquido Apple Weather */
 [data-theme="apple"] .top-status-bar,
+[data-theme="apple"] .brand-header,
+[data-theme="apple"] .app-sidebar,
+[data-theme="apple"] .local-situation-strip,
+[data-theme="apple"] .panel-card,
+[data-theme="apple"] .animated-map-stage,
 [data-theme="apple"] .map-viewport-wrapper,
+[data-theme="apple"] .methodology-details,
+[data-theme="apple"] .scenario-matrix-card,
+[data-theme="apple"] .agent-hitl-card,
+[data-theme="apple"] .model-perf-card,
 [data-theme="apple"] .modal-dialog {
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 16px;
+  background: rgba(18, 35, 66, 0.58) !important;
+  backdrop-filter: blur(24px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+[data-theme="apple"] .top-status-bar {
+  border-radius: 0 0 16px 16px !important;
+  margin-bottom: 0.4rem;
+}
+
+[data-theme="apple"] .brand-header {
+  border-radius: 16px !important;
+  margin: 0.35rem 1rem 0;
+}
+
+[data-theme="apple"] .territory-controls,
+[data-theme="apple"] .situation-key-figures,
+[data-theme="apple"] .map-radar-subbar,
+[data-theme="apple"] .map-legend-box,
+[data-theme="apple"] .clock-mono {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+[data-theme="apple"] select,
+[data-theme="apple"] input[type="search"],
+[data-theme="apple"] .quick-commune-chip,
+[data-theme="apple"] .btn-map-ctrl,
+[data-theme="apple"] .btn {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-theme="apple"] .quick-commune-chip:hover,
+[data-theme="apple"] .quick-commune-chip.active,
+[data-theme="apple"] .btn-map-ctrl.active,
+[data-theme="apple"] .btn-primary {
+  background: #38bdf8 !important;
+  color: #0b1528 !important;
+  border-color: #7dd3fc !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.4) !important;
 }
 
 /* ==========================================================================
@@ -249,83 +310,131 @@
 [data-theme="retro"] {
   --bg-primary: #020904;
   --bg-secondary: #051408;
-  --bg-card: #081a0b;
-  --bg-card-elevated: #0d2411;
+  --bg-card: #06180a;
+  --bg-card-elevated: #0a240f;
   --bg-subtle: #0f3316;
-  --bg-glass: rgba(8, 26, 11, 0.95);
+  --bg-glass: rgba(6, 24, 10, 0.95);
 
   --text-primary: #4ade80;
   --text-secondary: #86efac;
   --text-muted: #22c55e;
 
-  --border-subtle: rgba(74, 222, 128, 0.25);
+  --border-subtle: rgba(74, 222, 128, 0.35);
   --border-strong: #22c55e;
-  --shadow-sm: 0 0 6px rgba(34, 197, 94, 0.25);
-  --shadow-card: 0 0 14px rgba(34, 197, 94, 0.2), inset 0 0 10px rgba(34, 197, 94, 0.08);
-  --elevation-1: 0 0 8px rgba(34, 197, 94, 0.2);
-  --elevation-2: 0 0 16px rgba(34, 197, 94, 0.35);
-  --elevation-3: 0 0 24px rgba(34, 197, 94, 0.5);
+  --shadow-sm: 0 0 8px rgba(34, 197, 94, 0.35);
+  --shadow-card: 0 0 16px rgba(34, 197, 94, 0.25), inset 0 0 12px rgba(34, 197, 94, 0.12);
+  --elevation-1: 0 0 10px rgba(34, 197, 94, 0.3);
+  --elevation-2: 0 0 20px rgba(34, 197, 94, 0.45);
+  --elevation-3: 0 0 30px rgba(34, 197, 94, 0.65);
 
   --accent-primary: #00ff66;
   --accent-secondary: #4ade80;
-  --accent-soft-bg: rgba(0, 255, 102, 0.14);
+  --accent-soft-bg: rgba(0, 255, 102, 0.18);
   --accent-text: #86efac;
 
-  --sev-info-bg: rgba(34, 197, 94, 0.16);
+  --sev-info-bg: rgba(34, 197, 94, 0.2);
   --sev-info-border: #4ade80;
   --sev-info-text: #bbf7d0;
 
-  --sev-prev-bg: rgba(251, 191, 36, 0.16);
+  --sev-prev-bg: rgba(251, 191, 36, 0.2);
   --sev-prev-border: #f59e0b;
   --sev-prev-text: #fef08a;
 
-  --sev-temp-bg: rgba(249, 115, 22, 0.2);
+  --sev-temp-bg: rgba(249, 115, 22, 0.24);
   --sev-temp-border: #f97316;
   --sev-temp-text: #ffedd5;
 
-  --sev-extr-bg: rgba(239, 68, 68, 0.22);
+  --sev-extr-bg: rgba(239, 68, 68, 0.26);
   --sev-extr-border: #ef4444;
   --sev-extr-text: #fee2e2;
 
-  --tag-obs-bg: rgba(0, 255, 102, 0.18);
+  --tag-obs-bg: rgba(0, 255, 102, 0.2);
   --tag-obs-text: #86efac;
   --tag-obs-border: #22c55e;
 
-  --tag-fcst-bg: rgba(34, 197, 94, 0.12);
+  --tag-fcst-bg: rgba(34, 197, 94, 0.16);
   --tag-fcst-text: #86efac;
   --tag-fcst-border: #16a34a;
 
-  --tag-est-bg: rgba(251, 191, 36, 0.14);
+  --tag-est-bg: rgba(251, 191, 36, 0.18);
   --tag-est-text: #fef08a;
   --tag-est-border: #d97706;
 
-  --tag-official-bg: rgba(239, 68, 68, 0.24);
+  --tag-official-bg: rgba(239, 68, 68, 0.28);
   --tag-official-text: #fca5a5;
   --tag-official-border: #dc2626;
 
-  --tag-app-bg: rgba(34, 197, 94, 0.18);
+  --tag-app-bg: rgba(34, 197, 94, 0.2);
   --tag-app-text: #86efac;
   --tag-app-border: #22c55e;
 
-  --font-sans: 'JetBrains Mono', monospace;
-  --font-display: 'JetBrains Mono', monospace;
+  --font-sans: 'JetBrains Mono', ui-monospace, monospace;
+  --font-display: 'JetBrains Mono', ui-monospace, monospace;
 }
 
+/* Efecto Scanlines CRT y terminal militar */
 [data-theme="retro"] body {
-  background-color: #020904;
-  background-image: linear-gradient(rgba(0, 255, 102, 0.03) 50%, rgba(0, 0, 0, 0.25) 50%),
-                    linear-gradient(90deg, rgba(0, 255, 102, 0.02), rgba(0, 0, 0, 0.15));
-  background-size: 100% 4px, 4px 100%;
+  background-color: #020904 !important;
+  background-image: linear-gradient(rgba(0, 255, 102, 0.04) 50%, rgba(0, 0, 0, 0.4) 50%),
+                    linear-gradient(90deg, rgba(0, 255, 102, 0.02), rgba(0, 0, 0, 0.2)) !important;
+  background-size: 100% 3px, 3px 100% !important;
+  color: #4ade80 !important;
+  font-family: 'JetBrains Mono', monospace !important;
 }
 
-[data-theme="retro"] .card,
-[data-theme="retro"] .sidebar,
-[data-theme="retro"] .brand-header,
+[data-theme="retro"] .app-main-content {
+  background: transparent !important;
+}
+
 [data-theme="retro"] .top-status-bar,
-[data-theme="retro"] .map-viewport-wrapper {
-  border: 1px solid rgba(0, 255, 102, 0.35) !important;
-  box-shadow: 0 0 12px rgba(0, 255, 102, 0.15) !important;
+[data-theme="retro"] .brand-header,
+[data-theme="retro"] .app-sidebar,
+[data-theme="retro"] .local-situation-strip,
+[data-theme="retro"] .panel-card,
+[data-theme="retro"] .animated-map-stage,
+[data-theme="retro"] .map-viewport-wrapper,
+[data-theme="retro"] .methodology-details,
+[data-theme="retro"] .scenario-matrix-card,
+[data-theme="retro"] .agent-hitl-card,
+[data-theme="retro"] .model-perf-card,
+[data-theme="retro"] .modal-dialog {
+  background: #06180a !important;
+  border: 1px solid #22c55e !important;
+  box-shadow: 0 0 14px rgba(0, 255, 102, 0.18), inset 0 0 8px rgba(0, 255, 102, 0.08) !important;
   border-radius: 4px !important;
+}
+
+[data-theme="retro"] .territory-controls,
+[data-theme="retro"] .situation-key-figures,
+[data-theme="retro"] .map-radar-subbar,
+[data-theme="retro"] .map-legend-box,
+[data-theme="retro"] .clock-mono {
+  background: #0a240f !important;
+  border: 1px solid #16a34a !important;
+  border-radius: 2px !important;
+}
+
+[data-theme="retro"] select,
+[data-theme="retro"] input[type="search"],
+[data-theme="retro"] .quick-commune-chip,
+[data-theme="retro"] .btn-map-ctrl,
+[data-theme="retro"] .btn {
+  background: #051408 !important;
+  border: 1px solid #22c55e !important;
+  color: #4ade80 !important;
+  border-radius: 2px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+[data-theme="retro"] .quick-commune-chip:hover,
+[data-theme="retro"] .quick-commune-chip.active,
+[data-theme="retro"] .btn-map-ctrl.active,
+[data-theme="retro"] .btn-primary {
+  background: #00ff66 !important;
+  color: #020904 !important;
+  border-color: #4ade80 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 12px rgba(0, 255, 102, 0.7) !important;
 }
 
 [data-theme="retro"] h1,
@@ -334,8 +443,8 @@
 [data-theme="retro"] h4,
 [data-theme="retro"] .obs-metric-val,
 [data-theme="retro"] .key-figure-val {
-  text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
-  letter-spacing: 0.04em;
+  text-shadow: 0 0 8px rgba(0, 255, 102, 0.7) !important;
+  letter-spacing: 0.04em !important;
 }
 
 /* ==========================================================================
