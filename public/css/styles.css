@@ -157,6 +157,188 @@
 }
 
 /* ==========================================================================
+   TEMA 1: APPLE HIG / FROSTED GLASS (Estilo Apple Weather & Flighty)
+   - Profundidad translúcida, desenfoque multicapa (backdrop-filter: blur(20px))
+   - Bordes de cristal líquido suaves, micro-gradientes atmosféricos
+   - Tipografía refinada, radio amplio (border-radius: 16px - 22px)
+   ========================================================================== */
+[data-theme="apple"] {
+  --bg-primary: #0b1528;
+  --bg-secondary: rgba(22, 36, 62, 0.75);
+  --bg-card: rgba(24, 43, 77, 0.65);
+  --bg-card-elevated: rgba(30, 58, 98, 0.72);
+  --bg-subtle: rgba(255, 255, 255, 0.08);
+  --bg-glass: rgba(18, 34, 62, 0.65);
+
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.82);
+  --text-muted: rgba(255, 255, 255, 0.58);
+
+  --border-subtle: rgba(255, 255, 255, 0.15);
+  --border-strong: rgba(255, 255, 255, 0.28);
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --shadow-card: 0 12px 36px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  --elevation-1: 0 4px 14px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  --elevation-2: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+  --elevation-3: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.22) inset;
+
+  --accent-primary: #0ea5e9;
+  --accent-secondary: #38bdf8;
+  --accent-soft-bg: rgba(14, 165, 233, 0.18);
+  --accent-text: #7dd3fc;
+
+  --sev-info-bg: rgba(14, 165, 233, 0.22);
+  --sev-info-border: #38bdf8;
+  --sev-info-text: #e0f2fe;
+
+  --sev-prev-bg: rgba(245, 158, 11, 0.22);
+  --sev-prev-border: #fcd34d;
+  --sev-prev-text: #fef3c7;
+
+  --sev-temp-bg: rgba(249, 115, 22, 0.24);
+  --sev-temp-border: #fdba74;
+  --sev-temp-text: #ffedd5;
+
+  --sev-extr-bg: rgba(239, 68, 68, 0.28);
+  --sev-extr-border: #fca5a5;
+  --sev-extr-text: #fee2e2;
+
+  --tag-obs-bg: rgba(16, 185, 129, 0.24);
+  --tag-obs-text: #a7f3d0;
+  --tag-obs-border: #34d399;
+
+  --tag-fcst-bg: rgba(59, 130, 246, 0.24);
+  --tag-fcst-text: #bfdbfe;
+  --tag-fcst-border: #60a5fa;
+
+  --tag-est-bg: rgba(168, 85, 247, 0.24);
+  --tag-est-text: #e9d5ff;
+  --tag-est-border: #c084fc;
+
+  --tag-official-bg: rgba(239, 68, 68, 0.32);
+  --tag-official-text: #fee2e2;
+  --tag-official-border: #f87171;
+
+  --tag-app-bg: rgba(139, 92, 246, 0.3);
+  --tag-app-text: #ede9fe;
+  --tag-app-border: #a78bfa;
+}
+
+[data-theme="apple"] body {
+  background: radial-gradient(circle at 50% 0%, #173259 0%, #0b1528 75%, #050b14 100%);
+  background-attachment: fixed;
+}
+
+[data-theme="apple"] .card,
+[data-theme="apple"] .sidebar,
+[data-theme="apple"] .brand-header,
+[data-theme="apple"] .top-status-bar,
+[data-theme="apple"] .map-viewport-wrapper,
+[data-theme="apple"] .modal-dialog {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 16px;
+}
+
+/* ==========================================================================
+   TEMA 2: RETRO-TERMINAL / TACTICAL CRT RADAR (Military NOAA Storm Ops)
+   - Negro fósforo (#020a04), líneas de escaneo tenues interactivas
+   - Resplandor verde fósforo (#00ff66) y ámbar táctico (#ffb000)
+   - Tipografía monospace matricial (JetBrains Mono tabular), bordes tácticos
+   ========================================================================== */
+[data-theme="retro"] {
+  --bg-primary: #020904;
+  --bg-secondary: #051408;
+  --bg-card: #081a0b;
+  --bg-card-elevated: #0d2411;
+  --bg-subtle: #0f3316;
+  --bg-glass: rgba(8, 26, 11, 0.95);
+
+  --text-primary: #4ade80;
+  --text-secondary: #86efac;
+  --text-muted: #22c55e;
+
+  --border-subtle: rgba(74, 222, 128, 0.25);
+  --border-strong: #22c55e;
+  --shadow-sm: 0 0 6px rgba(34, 197, 94, 0.25);
+  --shadow-card: 0 0 14px rgba(34, 197, 94, 0.2), inset 0 0 10px rgba(34, 197, 94, 0.08);
+  --elevation-1: 0 0 8px rgba(34, 197, 94, 0.2);
+  --elevation-2: 0 0 16px rgba(34, 197, 94, 0.35);
+  --elevation-3: 0 0 24px rgba(34, 197, 94, 0.5);
+
+  --accent-primary: #00ff66;
+  --accent-secondary: #4ade80;
+  --accent-soft-bg: rgba(0, 255, 102, 0.14);
+  --accent-text: #86efac;
+
+  --sev-info-bg: rgba(34, 197, 94, 0.16);
+  --sev-info-border: #4ade80;
+  --sev-info-text: #bbf7d0;
+
+  --sev-prev-bg: rgba(251, 191, 36, 0.16);
+  --sev-prev-border: #f59e0b;
+  --sev-prev-text: #fef08a;
+
+  --sev-temp-bg: rgba(249, 115, 22, 0.2);
+  --sev-temp-border: #f97316;
+  --sev-temp-text: #ffedd5;
+
+  --sev-extr-bg: rgba(239, 68, 68, 0.22);
+  --sev-extr-border: #ef4444;
+  --sev-extr-text: #fee2e2;
+
+  --tag-obs-bg: rgba(0, 255, 102, 0.18);
+  --tag-obs-text: #86efac;
+  --tag-obs-border: #22c55e;
+
+  --tag-fcst-bg: rgba(34, 197, 94, 0.12);
+  --tag-fcst-text: #86efac;
+  --tag-fcst-border: #16a34a;
+
+  --tag-est-bg: rgba(251, 191, 36, 0.14);
+  --tag-est-text: #fef08a;
+  --tag-est-border: #d97706;
+
+  --tag-official-bg: rgba(239, 68, 68, 0.24);
+  --tag-official-text: #fca5a5;
+  --tag-official-border: #dc2626;
+
+  --tag-app-bg: rgba(34, 197, 94, 0.18);
+  --tag-app-text: #86efac;
+  --tag-app-border: #22c55e;
+
+  --font-sans: 'JetBrains Mono', monospace;
+  --font-display: 'JetBrains Mono', monospace;
+}
+
+[data-theme="retro"] body {
+  background-color: #020904;
+  background-image: linear-gradient(rgba(0, 255, 102, 0.03) 50%, rgba(0, 0, 0, 0.25) 50%),
+                    linear-gradient(90deg, rgba(0, 255, 102, 0.02), rgba(0, 0, 0, 0.15));
+  background-size: 100% 4px, 4px 100%;
+}
+
+[data-theme="retro"] .card,
+[data-theme="retro"] .sidebar,
+[data-theme="retro"] .brand-header,
+[data-theme="retro"] .top-status-bar,
+[data-theme="retro"] .map-viewport-wrapper {
+  border: 1px solid rgba(0, 255, 102, 0.35) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 102, 0.15) !important;
+  border-radius: 4px !important;
+}
+
+[data-theme="retro"] h1,
+[data-theme="retro"] h2,
+[data-theme="retro"] h3,
+[data-theme="retro"] h4,
+[data-theme="retro"] .obs-metric-val,
+[data-theme="retro"] .key-figure-val {
+  text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
    Base, Accesibilidad y Preferencia de Movimiento Reducido
    ========================================================================== */
 *,
@@ -1461,6 +1643,51 @@ canvas:focus-visible {
 
 [data-theme="light"] .leaflet-custom-pin .pin-text small {
   color: #0284c7;
+}
+
+/* Adaptación del Pin para Tema Apple Frosted */
+[data-theme="apple"] .leaflet-custom-pin {
+  background: rgba(18, 34, 62, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+[data-theme="apple"] .leaflet-custom-pin.selected {
+  border: 1.5px solid #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35), 0 10px 28px rgba(0, 0, 0, 0.55);
+}
+
+/* Adaptación del Pin para Tema Retro-Terminal CRT */
+[data-theme="retro"] .leaflet-custom-pin {
+  background: #051408;
+  border: 1px solid #22c55e;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+[data-theme="retro"] .leaflet-custom-pin .pin-text strong {
+  font-family: 'JetBrains Mono', monospace;
+  color: #4ade80;
+  text-shadow: 0 0 5px rgba(0, 255, 102, 0.5);
+}
+
+[data-theme="retro"] .leaflet-custom-pin .pin-text small {
+  color: #86efac;
+}
+
+[data-theme="retro"] .leaflet-custom-pin .pin-badge {
+  border-radius: 2px;
+  border: 1px solid #00ff66;
+}
+
+[data-theme="retro"] .leaflet-custom-pin.selected {
+  border: 2px solid #00ff66;
+  box-shadow: 0 0 16px rgba(0, 255, 102, 0.8);
 }
 
 .map-legend-box {

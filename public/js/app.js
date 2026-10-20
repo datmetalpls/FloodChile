@@ -129,13 +129,13 @@ function applyViewMode(mode) {
 }
 
 function initPreferencesFromStorage() {
-  let savedTheme = 'light';
+  let savedTheme = 'apple';
   let savedViewMode = 'citizen';
   try {
-    savedTheme = localStorage.getItem('climasflood_theme') || 'light';
+    savedTheme = localStorage.getItem('climasflood_theme') || 'apple';
     savedViewMode = localStorage.getItem('climasflood_view_mode') || 'citizen';
   } catch {
-    savedTheme = 'light';
+    savedTheme = 'apple';
     savedViewMode = 'citizen';
   }
   applyThemePreference(savedTheme);

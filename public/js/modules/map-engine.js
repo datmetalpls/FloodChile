@@ -693,7 +693,8 @@ class ChileMapController {
 
   updateLeafletThemeTiles() {
     if (!this.leafletMap || typeof window.L === 'undefined') return;
-    const isLight = document.documentElement.getAttribute('data-theme') !== 'dark';
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const isLight = currentTheme === 'light';
 
     const providers = {
       carto_voyager: {
@@ -1395,11 +1396,22 @@ class ChileMapController {
     const ctx = this.ctx;
     const width = this.canvas.width;
     const height = this.canvas.height;
-    const isLight = document.documentElement.getAttribute('data-theme') !== 'dark';
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const isLight = currentTheme === 'light';
+    const isApple = currentTheme === 'apple';
+    const isRetro = currentTheme === 'retro';
 
     ctx.save();
     const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-    if (isLight) {
+    if (isRetro) {
+      bgGrad.addColorStop(0, '#020904');
+      bgGrad.addColorStop(0.5, '#051408');
+      bgGrad.addColorStop(1, '#020904');
+    } else if (isApple) {
+      bgGrad.addColorStop(0, '#0a1628');
+      bgGrad.addColorStop(0.5, '#112340');
+      bgGrad.addColorStop(1, '#0b1626');
+    } else if (isLight) {
       bgGrad.addColorStop(0, '#f1f5f9');
       bgGrad.addColorStop(1, '#e2e8f0');
     } else {
@@ -1409,10 +1421,22 @@ class ChileMapController {
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, width, height);
 
-    ctx.strokeStyle = isLight ? 'rgba(15, 23, 42, 0.08)' : 'rgba(148, 163, 184, 0.12)';
+    ctx.strokeStyle = isRetro
+      ? 'rgba(0, 255, 102, 0.15)'
+      : isApple
+      ? 'rgba(255, 255, 255, 0.08)'
+      : isLight
+      ? 'rgba(15, 23, 42, 0.08)'
+      : 'rgba(148, 163, 184, 0.12)';
     ctx.lineWidth = 1;
     ctx.font = '500 10px "JetBrains Mono", monospace';
-    ctx.fillStyle = isLight ? '#475569' : 'rgba(148, 163, 184, 0.65)';
+    ctx.fillStyle = isRetro
+      ? '#22c55e'
+      : isApple
+      ? 'rgba(255, 255, 255, 0.65)'
+      : isLight
+      ? '#475569'
+      : 'rgba(148, 163, 184, 0.65)';
 
     for (const lat of [-20, -25, -30, -35, -40, -45, -50, -55]) {
       const minLat = -55.8;
