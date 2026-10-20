@@ -896,8 +896,8 @@ class ChileMapController {
       const divIcon = window.L.divIcon({
         className: 'climasflood-leaflet-divicon',
         html: iconHtml,
-        iconSize: [148, 36],
-        iconAnchor: [16, 18]
+        iconSize: [160, 28],
+        iconAnchor: [12, 14]
       });
 
       const existing = this.leafletMarkerMap.get(loc.id);
@@ -1480,69 +1480,137 @@ class ChileMapController {
     ctx.restore();
 
     this.nodePositions = [];
-    this.locations.forEach((loc) => {
-      const { x, y } = this.project(loc, width, height);
-      if (y < 20 || y > height - 20) return;
+    const leftAnchorIds = new Set(['valparaiso', 'rancagua', 'concepcion', 'valdivia', 'puertomontt']);
 
+    // Precalcular posiciones proyectadas y separar en dos flujos (izq / der) para anti-colisión
+    const rawItems = this.locations.map((loc) => {
+      const p = this.project(loc, width, height);
+      const isLeft = loc.id === 'rapanui' ? false : leftAnchorIds.has(loc.id);
+      return {
+        loc,
+        x: p.x,
+        y: p.y,
+        isLeft,
+        isInsular: loc.id === 'rapanui',
+        targetY: p.y
+      };
+    }).filter((it) => it.y >= 10 && it.y <= height - 10);
+
+    const leftGroup = rawItems.filter((it) => it.isLeft);
+    const rightGroup = rawItems.filter((it) => !it.isLeft && !it.isInsular);
+
+    const relaxGroup = (group, minDist = 28) => {
+      group.sort((a, b) => a.y - b.y);
+      for (let i = 1; i < group.length; i++) {
+        if (group[i].targetY < group[i - 1].targetY + minDist) {
+          group[i].targetY = group[i - 1].targetY + minDist;
+        }
+      }
+      for (let i = group.length - 2; i >= 0; i--) {
+        if (group[i].targetY > group[i + 1].targetY - minDist) {
+          group[i].targetY = group[i + 1].targetY - minDist;
+        }
+      }
+    };
+
+    relaxGroup(leftGroup, 30);
+    relaxGroup(rightGroup, 30);
+
+    rawItems.forEach((item) => {
+      const { loc, x, y, isLeft, isInsular, targetY } = item;
       const isSelected = loc.id === this.selectedLocationId;
       const isHovered = loc.id === this.hoveredLocationId;
       const metric = getLocationValueForStep(loc, this.activeLayer, this.hourOffset);
 
+      // Anillo de selección alrededor del punto geográfico
       if (isSelected) {
         ctx.beginPath();
-        ctx.arc(x, y, 15, 0, Math.PI * 2);
+        ctx.arc(x, y, 14, 0, Math.PI * 2);
         ctx.strokeStyle = '#0284c7';
         ctx.lineWidth = 2.4;
         ctx.stroke();
       }
 
+      // Punto geográfico (pin circular con símbolo)
       ctx.beginPath();
-      ctx.arc(x, y, isSelected || isHovered ? 11 : 9, 0, Math.PI * 2);
+      ctx.arc(x, y, isSelected || isHovered ? 10 : 8, 0, Math.PI * 2);
       ctx.fillStyle = metric.color;
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = isSelected ? 2.8 : 1.8;
+      ctx.lineWidth = isSelected ? 2.5 : 1.6;
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = '700 9.5px "Plus Jakarta Sans", sans-serif';
+      ctx.font = '700 8.5px "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(metric.symbol, x, y + 3.5);
+      ctx.fillText(metric.symbol, x, y + 3);
 
-      const labelOnLeft = ['valparaiso', 'concepcion', 'valdivia'].includes(loc.id);
-      const boxW = 172;
-      const boxH = 28;
-      const boxX = labelOnLeft ? x - 16 - boxW : x + 16;
-      const boxY = y - 14;
+      // Dimensiones de tarjeta traslúcida optimizada
+      const boxW = 168;
+      const boxH = 26;
+      let boxX;
+      let boxY;
 
+      if (isInsular) {
+        boxX = 22;
+        boxY = y - 13;
+      } else if (isLeft) {
+        boxX = x - 18 - boxW;
+        boxY = targetY - boxH / 2;
+      } else {
+        boxX = x + 18;
+        boxY = targetY - boxH / 2;
+      }
+
+      // Línea conectora fina (leader line) si la tarjeta se desplazó para evitar colisión
+      if (!isInsular && Math.abs(targetY - y) > 3) {
+        ctx.beginPath();
+        ctx.moveTo(isLeft ? x - 8 : x + 8, y);
+        const anchorX = isLeft ? boxX + boxW : boxX;
+        ctx.lineTo(anchorX, targetY);
+        ctx.strokeStyle = isLight ? 'rgba(15, 23, 42, 0.22)' : 'rgba(148, 163, 184, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Fondo Glassmorphic / Traslúcido con opacidad agradable
+      ctx.save();
       ctx.fillStyle = isSelected
-        ? '#0f172a'
-        : isLight
-        ? 'rgba(255, 255, 255, 0.96)'
-        : 'rgba(15, 23, 42, 0.92)';
+        ? (isLight ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.92)')
+        : (isLight ? 'rgba(255, 255, 255, 0.82)' : 'rgba(15, 23, 42, 0.72)');
       ctx.strokeStyle = isSelected
         ? '#0284c7'
         : isHovered
-        ? '#64748b'
-        : isLight
-        ? 'rgba(15, 23, 42, 0.18)'
-        : 'rgba(148, 163, 184, 0.28)';
+        ? (isLight ? '#0284c7' : '#38bdf8')
+        : (isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.14)');
       ctx.lineWidth = isSelected ? 2 : 1;
 
       ctx.beginPath();
-      ctx.roundRect(boxX, boxY, boxW, boxH, 6);
+      ctx.roundRect(boxX, boxY, boxW, boxH, 9999);
       ctx.fill();
       ctx.stroke();
 
-      ctx.textAlign = 'left';
-      ctx.fillStyle = isLight && !isSelected ? '#0f172a' : '#f8fafc';
-      ctx.font = '700 10px "Plus Jakarta Sans", sans-serif';
-      const shortName = loc.name.split('/')[0].trim();
-      ctx.fillText(`${loc.regionCode} · ${shortName}`, boxX + 7, boxY + 11);
+      // Indicador circular de color de severidad dentro de la tarjeta
+      const dotX = boxX + 9;
+      const dotY = boxY + boxH / 2;
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+      ctx.fillStyle = metric.color;
+      ctx.fill();
 
-      ctx.fillStyle = isLight && !isSelected ? '#0369a1' : '#7dd3fc';
-      ctx.font = '500 9.5px "JetBrains Mono", monospace';
-      ctx.fillText(metric.display, boxX + 7, boxY + 22);
+      // Texto de Ciudad y Métrica
+      ctx.textAlign = 'left';
+      ctx.fillStyle = isLight ? '#0f172a' : '#f8fafc';
+      ctx.font = '700 9.5px "Plus Jakarta Sans", sans-serif';
+      const shortName = loc.name.split('/')[0].trim();
+      ctx.fillText(`${loc.regionCode} · ${shortName}`, boxX + 18, boxY + 11);
+
+      ctx.fillStyle = isLight ? '#0369a1' : '#38bdf8';
+      ctx.font = '600 9px "JetBrains Mono", monospace';
+      ctx.fillText(metric.shortDisplay, boxX + 18, boxY + 21);
+      ctx.restore();
 
       this.nodePositions.push({
         id: loc.id,

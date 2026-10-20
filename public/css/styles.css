@@ -1370,47 +1370,96 @@ canvas:focus-visible {
 .leaflet-custom-pin {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border: 1.5px solid var(--border-strong);
-  border-radius: 8px;
-  padding: 0.18rem 0.44rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  gap: 0.38rem;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  padding: 0.2rem 0.55rem 0.2rem 0.25rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(0, 0, 0, 0.2);
   font-family: var(--font-sans);
   white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.18s ease,
+              border-color 0.18s ease;
+}
+
+[data-theme="light"] .leaflet-custom-pin {
+  background: rgba(255, 255, 255, 0.85);
+  color: #0f172a;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.leaflet-custom-pin:hover {
+  transform: translateY(-2px) scale(1.04);
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  z-index: 1000 !important;
+}
+
+[data-theme="light"] .leaflet-custom-pin:hover {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(15, 23, 42, 0.24);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
 }
 
 .leaflet-custom-pin.selected {
-  border: 2px solid var(--accent-primary);
+  background: rgba(15, 23, 42, 0.94);
+  border: 1.5px solid var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.32), 0 8px 22px rgba(0, 0, 0, 0.5);
+  transform: scale(1.06);
+}
+
+[data-theme="light"] .leaflet-custom-pin.selected {
+  background: #ffffff;
+  border: 1.5px solid var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25), 0 8px 22px rgba(15, 23, 42, 0.2);
 }
 
 .leaflet-custom-pin .pin-badge {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   color: #ffffff;
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 800;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .leaflet-custom-pin .pin-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.32rem;
+  line-height: 1.2;
 }
 
 .leaflet-custom-pin .pin-text strong {
-  font-size: 0.71rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .leaflet-custom-pin .pin-text small {
   font-family: var(--font-mono);
-  font-size: 0.67rem;
-  color: var(--accent-text);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #38bdf8;
+  opacity: 0.95;
+}
+
+[data-theme="light"] .leaflet-custom-pin .pin-text small {
+  color: #0284c7;
 }
 
 .map-legend-box {
