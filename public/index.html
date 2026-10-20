@@ -589,12 +589,18 @@
       <div class="panel-card">
         <div class="panel-header">
           <div>
-            <h3>Configuración de Notificaciones Locales por Comuna y Severidad</h3>
+            <h3>Configuración de Notificaciones Web Push por Comuna y Severidad</h3>
             <div class="panel-subtitle">
-              Guarda tus preferencias en este navegador (<code>localStorage</code>). Las alertas críticas nunca son emitidas autónomamente por IA.
+              Suscripción local en tu dispositivo con notificaciones nativas de escritorio/móvil (Web Push). Las alertas críticas requieren verificación humana supervisada (HITL).
             </div>
           </div>
-          <span class="epistemic-badge badge-observacion">Preferencias Locales</span>
+          <span class="epistemic-badge badge-observacion">Web Push PWA</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; margin:0.6rem 0 0.9rem 0; padding:0.6rem 0.8rem; background:var(--bg-card-elevated); border:1px solid var(--border-subtle); border-radius:8px;">
+          <span id="webPushPermissionBadge" class="epistemic-badge badge-estimacion">🔔 Permiso Web Push: Consultando...</span>
+          <button type="button" id="btnRequestPushPermission" class="btn btn-sm btn-secondary">🔔 Activar Notificaciones Nativas en este Navegador</button>
+          <span style="font-size:0.75rem; color:var(--text-muted); margin-left:auto;">Funciona en Chrome, Edge, Firefox, Android y Safari/iOS</span>
         </div>
 
         <form id="notificationForm" class="sat-controls-grid" style="margin-top:0;">
@@ -626,7 +632,7 @@
           </div>
 
           <button type="submit" class="btn btn-primary">+ Guardar Suscripción</button>
-          <button type="button" id="btnTestNotification" class="btn">🔔 Probar Alerta Simulada</button>
+          <button type="button" id="btnTestNotification" class="btn">🔔 Disparar Notificación Web Push Nativa</button>
         </form>
 
         <div id="savedNotificationsContainer" style="margin-top: 0.9rem;"></div>

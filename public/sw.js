@@ -67,3 +67,43 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+
+// Soporte de Notificaciones Web Push Nativas
+self.addEventListener('push', (event) => {
+  let payload = { title: 'FloodChile · Alerta Hidrometeorológica', body: 'Nuevo evento reportado.' };
+  if (event.data) {
+    try {
+      payload = event.data.json();
+    } catch {
+      payload.body = event.data.text();
+    }
+  }
+  const title = payload.title || 'FloodChile · Alerta Preventiva';
+  const options = {
+    body: payload.body,
+    tag: payload.tag || 'floodchile-push',
+    icon: '/manifest.json',
+    badge: '/manifest.json',
+    vibrate: [200, 100, 200],
+    data: { url: payload.url || '/' }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+

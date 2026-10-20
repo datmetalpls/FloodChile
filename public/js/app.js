@@ -1003,7 +1003,101 @@ function renderAlertsSection() {
     .join('');
 }
 
+export function updateWebPushPermissionBadge() {
+  const badge = document.getElementById('webPushPermissionBadge');
+  const btn = document.getElementById('btnRequestPushPermission');
+  if (!badge) return;
+
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    badge.className = 'epistemic-badge badge-estimacion';
+    badge.textContent = '⚠️ Web Push: No soportado en este navegador';
+    if (btn) btn.disabled = true;
+    return;
+  }
+
+  const perm = Notification.permission;
+  if (perm === 'granted') {
+    badge.className = 'epistemic-badge badge-observacion';
+    badge.textContent = '✓ Web Push: Activado en este Dispositivo';
+    if (btn) {
+      btn.textContent = '✓ Permiso Concedido';
+      btn.disabled = true;
+    }
+  } else if (perm === 'denied') {
+    badge.className = 'epistemic-badge badge-peligro';
+    badge.textContent = '✕ Web Push: Bloqueado por el Usuario';
+    if (btn) {
+      btn.textContent = '⚠️ Permiso Bloqueado en Ajustes';
+      btn.disabled = true;
+    }
+  } else {
+    badge.className = 'epistemic-badge badge-estimacion';
+    badge.textContent = '🔔 Web Push: Pendiente de Activación';
+    if (btn) {
+      btn.textContent = '🔔 Activar Notificaciones Nativas en este Navegador';
+      btn.disabled = false;
+    }
+  }
+}
+
+export async function triggerNativeWebPushNotification({ title, body, tag = 'floodchile-alert', url = '/' }) {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return { ok: false, reason: 'unsupported' };
+  }
+
+  let perm = Notification.permission;
+  if (perm === 'default') {
+    try {
+      perm = await Notification.requestPermission();
+    } catch {
+      // ignore
+    }
+  }
+
+  updateWebPushPermissionBadge();
+
+  if (perm !== 'granted') {
+    return { ok: false, reason: 'permission_denied' };
+  }
+
+  // 1. Service Worker registration showNotification
+  try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && typeof reg.showNotification === 'function') {
+        await reg.showNotification(title, {
+          body,
+          tag,
+          icon: '/manifest.json',
+          vibrate: [200, 100, 200],
+          data: { url }
+        });
+        return { ok: true, channel: 'serviceWorker' };
+      }
+    }
+  } catch (err) {
+    console.warn('Fallback a Notification de ventana:', err);
+  }
+
+  // 2. Direct Notification fallback
+  try {
+    const notif = new Notification(title, {
+      body,
+      tag,
+      icon: '/manifest.json'
+    });
+    notif.onclick = () => {
+      window.focus();
+      notif.close();
+    };
+    return { ok: true, channel: 'windowNotification' };
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+}
+
 function loadAndRenderNotifications() {
+  updateWebPushPermissionBadge();
   try {
     const raw = localStorage.getItem('climasflood_notifications');
     if (raw) {
@@ -1294,6 +1388,15 @@ function renderAgentsSection() {
       if (item) {
         item.status = decision;
         renderAgentsSection();
+
+        if (decision === 'APROBADO_POR_SUPERVISOR_HUMANO') {
+          triggerNativeWebPushNotification({
+            title: '🛡️ FloodChile · Boletín Supervisado Aprobado (HITL)',
+            body: item.proposedSummary.replace(/\[Ref:\s*[^\]]+\]/g, '').slice(0, 150) + '...',
+            tag: `hitl-approved-${item.id}`
+          });
+        }
+
         try {
           await fetch('/api/audit-log', {
             method: 'POST',
@@ -1659,16 +1762,39 @@ function setupEventListeners() {
     });
   }
 
+  const btnReqPush = document.getElementById('btnRequestPushPermission');
+  if (btnReqPush) {
+    btnReqPush.addEventListener('click', async () => {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        const perm = await Notification.requestPermission();
+        updateWebPushPermissionBadge();
+        if (perm === 'granted') {
+          await triggerNativeWebPushNotification({
+            title: 'FloodChile · Notificaciones Nativas Activadas',
+            body: '¡Permiso concedido! Recibirás avisos meteorológicos nativos cuando se superen umbrales o se aprueben boletines.',
+            tag: 'floodchile-welcome'
+          });
+        }
+      }
+    });
+  }
+
   const btnTestNotif = document.getElementById('btnTestNotification');
   if (btnTestNotif) {
-    btnTestNotif.addEventListener('click', () => {
+    btnTestNotif.addEventListener('click', async () => {
       const loc = getSelectedLocation();
       const banner = document.getElementById('staleWarningBanner');
       const text = document.getElementById('staleWarningText');
       if (banner && text) {
         banner.classList.remove('hidden');
-        text.innerHTML = `🔔 <strong>Prueba de Notificación Simulada para ${loc.name}:</strong> Nivel ${loc.summaryRisk} — ${loc.keyPhenomenon} (Demostración de regla local suscrita).`;
+        text.innerHTML = `🔔 <strong>Notificación Web Push Nativa para ${loc.name}:</strong> Nivel ${loc.summaryRisk} — ${loc.keyPhenomenon} (Lluvia 48h: ${loc.precipP50Mm} mm).`;
       }
+
+      await triggerNativeWebPushNotification({
+        title: `FloodChile · Alerta: ${loc.name}`,
+        body: `Riesgo ${loc.summaryRisk} (${loc.keyPhenomenon}). Lluvia P50: ${loc.precipP50Mm} mm · Isoterma 0 °C: ${loc.freezingLevelM} m.`,
+        tag: `push-commune-${loc.id}`
+      });
     });
   }
 
