@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b132b"/>
+      <stop offset="100%" stop-color="#1c2541"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="blueGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="580" fill="url(#bg)" rx="16"/>
+
+  <!-- Title Header -->
+  <text x="50" y="50" fill="#38bdf8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="14" letter-spacing="2">ARQUITECTURA DEL SISTEMA</text>
+  <text x="50" y="82" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="24">Flujo de Datos Hidrometeorológicos y Capas Operacionales</text>
+
+  <!-- COLUMN 1: Fuentes de Datos Externas -->
+  <rect x="50" y="120" width="260" height="410" rx="12" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="50" y="120" width="260" height="42" rx="12" fill="#1e293b"/>
+  <circle cx="74" cy="141" r="5" fill="#38bdf8"/>
+  <text x="90" y="146" fill="#f8fafc" font-family="sans-serif" font-weight="700" font-size="14">1. Fuentes Oficiales &amp; APIs</text>
+
+  <!-- Item 1.1 -->
+  <rect x="68" y="180" width="224" height="66" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="82" y="202" fill="#38bdf8" font-family="sans-serif" font-weight="700" font-size="12">Open-Meteo Weather API</text>
+  <text x="82" y="222" fill="#94a3b8" font-family="sans-serif" font-size="10.5">Precipitación P10/P50/P90, T°, Viento,</text>
+  <text x="82" y="236" fill="#94a3b8" font-family="sans-serif" font-size="10.5">Isoterma 0 °C horaria y diaria a 7d</text>
+
+  <!-- Item 1.2 -->
+  <rect x="68" y="260" width="224" height="66" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="82" y="282" fill="#10b981" font-family="sans-serif" font-weight="700" font-size="12">GloFAS River Discharge</text>
+  <text x="82" y="302" fill="#94a3b8" font-family="sans-serif" font-size="10.5">Caudal de cuencas (m³/s), crecidas</text>
+  <text x="82" y="316" fill="#94a3b8" font-family="sans-serif" font-size="10.5">y riesgo de desborde hidrológico</text>
+
+  <!-- Item 1.3 -->
+  <rect x="68" y="340" width="224" height="66" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="82" y="362" fill="#f59e0b" font-family="sans-serif" font-weight="700" font-size="12">NASA GIBS WMTS (epsg3857)</text>
+  <text x="82" y="382" fill="#94a3b8" font-family="sans-serif" font-size="10.5">NOAA GOES-East Banda 13 IR Limpio</text>
+  <text x="82" y="396" fill="#94a3b8" font-family="sans-serif" font-size="10.5">y Suomi NPP VIIRS Color Verdadero</text>
+
+  <!-- Item 1.4 -->
+  <rect x="68" y="420" width="224" height="66" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="82" y="442" fill="#ec4899" font-family="sans-serif" font-weight="700" font-size="12">RainViewer Weather API</text>
+  <text x="82" y="462" fill="#94a3b8" font-family="sans-serif" font-size="10.5">Mosaico de Radar y Satélite en vivo</text>
+  <text x="82" y="476" fill="#94a3b8" font-family="sans-serif" font-size="10.5">con serie temporal de fotogramas</text>
+
+  <!-- COLUMN 2: Servidor Node.js y Cache Proxy -->
+  <rect x="370" y="120" width="260" height="410" rx="12" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="370" y="120" width="260" height="42" rx="12" fill="#1e293b"/>
+  <circle cx="394" cy="141" r="5" fill="#10b981"/>
+  <text x="410" y="146" fill="#f8fafc" font-family="sans-serif" font-weight="700" font-size="14">2. Servidor Backend Node.js</text>
+
+  <rect x="388" y="180" width="224" height="90" rx="8" fill="#0f172a" stroke="#10b981" stroke-width="1.2"/>
+  <text x="402" y="204" fill="#10b981" font-family="sans-serif" font-weight="700" font-size="12">Proxy con Caché TTL (15 min)</text>
+  <text x="402" y="222" fill="#f8fafc" font-family="monospace" font-size="10">GET /api/open-meteo/sync</text>
+  <text x="402" y="242" fill="#94a3b8" font-family="sans-serif" font-size="10.5">• Agrupa consultas concurrentes</text>
+  <text x="402" y="258" fill="#94a3b8" font-family="sans-serif" font-size="10.5">• Elimina bloqueos por IP y CORS</text>
+
+  <rect x="388" y="290" width="224" height="90" rx="8" fill="#0f172a" stroke="#6366f1" stroke-width="1.2"/>
+  <text x="402" y="314" fill="#818cf8" font-family="sans-serif" font-weight="700" font-size="12">Conector GeoJSON Dinámico</text>
+  <text x="402" y="332" fill="#f8fafc" font-family="monospace" font-size="10">GET /api/carto/chile-meteo.geojson</text>
+  <text x="402" y="352" fill="#94a3b8" font-family="sans-serif" font-size="10.5">• FeatureCollection de 15 comunas</text>
+  <text x="402" y="368" fill="#94a3b8" font-family="sans-serif" font-size="10.5">• Listo para CARTO Builder / QGIS</text>
+
+  <rect x="388" y="400" width="224" height="100" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="402" y="424" fill="#38bdf8" font-family="sans-serif" font-weight="700" font-size="12">Servidor de Estáticos &amp; PWA</text>
+  <text x="402" y="444" fill="#94a3b8" font-family="sans-serif" font-size="10.5">• Cero dependencias npm en runtime</text>
+  <text x="402" y="460" fill="#94a3b8" font-family="sans-serif" font-size="10.5">• Servidor HTTP puro nativo Node.js</text>
+  <text x="402" y="476" fill="#94a3b8" font-family="sans-serif" font-size="10.5">• Headers de seguridad &amp; mime types</text>
+
+  <!-- COLUMN 3: Cliente Frontend PWA -->
+  <rect x="690" y="120" width="260" height="410" rx="12" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="690" y="120" width="260" height="42" rx="12" fill="#1e293b"/>
+  <circle cx="714" cy="141" r="5" fill="#f43f5e"/>
+  <text x="730" y="146" fill="#f8fafc" font-family="sans-serif" font-weight="700" font-size="14">3. Cliente PWA &amp; Map Engine</text>
+
+  <rect x="708" y="180" width="224" height="74" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="722" y="202" fill="#38bdf8" font-family="sans-serif" font-weight="700" font-size="12">Mapa Nacional (Leaflet + Canvas)</text>
+  <text x="722" y="220" fill="#94a3b8" font-family="sans-serif" font-size="10.5">6 capas operacionales con scrubber</text>
+  <text x="722" y="234" fill="#94a3b8" font-family="sans-serif" font-size="10.5">temporal continuo (+0h a +72h)</text>
+
+  <rect x="708" y="270" width="224" height="74" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="722" y="292" fill="#f59e0b" font-family="sans-serif" font-weight="700" font-size="12">Visor Satelital Antes/Ahora</text>
+  <text x="722" y="310" fill="#94a3b8" font-family="sans-serif" font-size="10.5">Cortina interactiva de comparación</text>
+  <text x="722" y="324" fill="#94a3b8" font-family="sans-serif" font-size="10.5">Banda 13 IR, VIIRS y fotogramas</text>
+
+  <rect x="708" y="360" width="224" height="74" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="722" y="382" fill="#10b981" font-family="sans-serif" font-weight="700" font-size="12">Alertas &amp; Honestidad Epistémica</text>
+  <text x="722" y="400" fill="#94a3b8" font-family="sans-serif" font-size="10.5">Separación Alertas SENAPRED/DMC</text>
+  <text x="722" y="414" fill="#94a3b8" font-family="sans-serif" font-size="10.5">vs. Estimaciones por Umbral App</text>
+
+  <rect x="708" y="450" width="224" height="60" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="722" y="470" fill="#a855f7" font-family="sans-serif" font-weight="700" font-size="12">Soporte Offline &amp; Deep Linking</text>
+  <text x="722" y="488" fill="#94a3b8" font-family="sans-serif" font-size="10.5">Service Worker (sw.js) + URL state</text>
+
+  <!-- Connectors / Arrows -->
+  <path d="M 310 220 L 370 220" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,4"/>
+  <polygon points="368,217 376,220 368,223" fill="#38bdf8"/>
+
+  <path d="M 310 370 L 340 370 L 340 250 L 370 250" stroke="#f59e0b" stroke-width="2" fill="none"/>
+  <polygon points="368,247 376,250 368,253" fill="#f59e0b"/>
+
+  <path d="M 630 220 L 690 220" stroke="#10b981" stroke-width="2" stroke-dasharray="4,4"/>
+  <polygon points="688,217 696,220 688,223" fill="#10b981"/>
+
+  <path d="M 630 330 L 690 330" stroke="#818cf8" stroke-width="2"/>
+  <polygon points="688,327 696,330 688,333" fill="#818cf8"/>
+</svg>
