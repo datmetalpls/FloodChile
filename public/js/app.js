@@ -1814,26 +1814,90 @@ function setupEventListeners() {
     });
   });
 
-  // Control de apertura/cierre del Menú Lateral (Drawer) y Backdrop
+  // Control de apertura/cierre del Menú Lateral (Desktop Collapse + Mobile Drawer)
+  const appShell = document.querySelector('.app-shell');
   const sidebar = document.getElementById('appSidebar');
   const sidebarBackdrop = document.getElementById('sidebarBackdrop');
   const btnSidebarToggle = document.getElementById('btnSidebarToggle');
 
+  const updateSidebarAriaAndState = () => {
+    const isMobile = window.innerWidth <= 1024;
+    if (isMobile) {
+      const isOpen = sidebar?.classList.contains('sidebar-open');
+      btnSidebarToggle?.setAttribute('aria-expanded', String(isOpen));
+      btnSidebarToggle?.setAttribute('title', isOpen ? 'Cerrar menú lateral' : 'Abrir menú lateral');
+      if (sidebarBackdrop) {
+        sidebarBackdrop.classList.toggle('active', Boolean(isOpen));
+      }
+    } else {
+      const isCollapsed = appShell?.classList.contains('sidebar-collapsed');
+      btnSidebarToggle?.setAttribute('aria-expanded', String(!isCollapsed));
+      btnSidebarToggle?.setAttribute(
+        'title',
+        isCollapsed ? 'Expandir menú lateral (Atajo: [ )' : 'Colapsar menú lateral (Atajo: [ )'
+      );
+      if (sidebarBackdrop) {
+        sidebarBackdrop.classList.remove('active');
+      }
+    }
+  };
+
   if (btnSidebarToggle && sidebar) {
     btnSidebarToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('sidebar-open');
-      if (sidebarBackdrop) {
-        sidebarBackdrop.classList.toggle('active', sidebar.classList.contains('sidebar-open'));
+      const isMobile = window.innerWidth <= 1024;
+      if (isMobile) {
+        sidebar.classList.toggle('sidebar-open');
+      } else {
+        appShell?.classList.toggle('sidebar-collapsed');
+        try {
+          const isCollapsed = appShell?.classList.contains('sidebar-collapsed');
+          localStorage.setItem('climasflood_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+        } catch {
+          // ignore storage error
+        }
       }
+      updateSidebarAriaAndState();
     });
   }
+
+  // Atajo de teclado: tecla '[' para colapsar/expandir el sidebar
+  window.addEventListener('keydown', (e) => {
+    if (
+      e.key === '[' &&
+      !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)
+    ) {
+      e.preventDefault();
+      btnSidebarToggle?.click();
+    }
+  });
 
   if (sidebarBackdrop && sidebar) {
     sidebarBackdrop.addEventListener('click', () => {
       sidebar.classList.remove('sidebar-open');
-      sidebarBackdrop.classList.remove('active');
+      updateSidebarAriaAndState();
     });
   }
+
+  // En móvil/tablet, al hacer clic en cualquier opción del sidebar, cerrar el drawer automáticamente
+  document.querySelectorAll('.sidebar-nav-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 1024 && sidebar?.classList.contains('sidebar-open')) {
+        sidebar.classList.remove('sidebar-open');
+        updateSidebarAriaAndState();
+      }
+    });
+  });
+
+  // Restaurar estado colapsado guardado en desktop
+  try {
+    if (window.innerWidth > 1024 && localStorage.getItem('climasflood_sidebar_collapsed') === 'true') {
+      appShell?.classList.add('sidebar-collapsed');
+    }
+  } catch {
+    // ignore
+  }
+  updateSidebarAriaAndState();
+  window.addEventListener('resize', updateSidebarAriaAndState);
 
   const sidebarLocSelect = document.getElementById('sidebarLocationSelect');
   if (sidebarLocSelect) {

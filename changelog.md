@@ -23,6 +23,10 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 - **Conector de Cliente en Tiempo Real (`fetchLiveSenapredAlerts`)**:
   - Módulo en `public/js/modules/live-api.js` y sincronización automática en `public/js/app.js` cada 10 minutos, sumado a un botón de actualización manual (`#btnRefreshSenapredAlerts`).
   - Coexistencia epistémica estricta: las alertas oficiales en vivo se etiquetan como `🟢 Transmisión Oficial en Vivo`, mientras que las simulaciones mantienen el badge `🧪 Registro de Demostración`, preservando el cumplimiento riguroso del Criterio de Aceptación CA-01.
+- **Corrección y Activación del Botón Hamburguesa (`#btnSidebarToggle`)**:
+  - **Alineación Visual**: Reestructuración flex de `.brand-title-group` en `index.html` y `styles.css` para alinear el botón `☰` verticalmente junto al título `🇨🇱 ClimasFlood Chile`, eliminando el salto de línea y espacio huérfano.
+  - **Colapso en Desktop (`.sidebar-collapsed`)**: Al hacer clic en pantallas de escritorio (>1024px), el sidebar se oculta suavemente permitiendo que los mapas, visualizadores de radar e hidrogramas ocupen el 100% del ancho de pantalla. Incluye atajo de teclado (`[`).
+  - **Drawer Móvil y Persistencia**: En pantallas móviles/tablets (<=1024px) despliega el cajón lateral con backdrop oscuro con autocierre al seleccionar cualquier opción, persistiendo la preferencia en `localStorage`.
 
 ---
 
