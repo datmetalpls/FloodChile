@@ -34,7 +34,7 @@ import {
 } from './modules/audio-alarm.js';
 
 const STATE = {
-  themePref: 'light', // 'light' | 'dark' | 'system'
+  themePref: 'apple', // 'apple' | 'retro' | 'light' | 'dark' | 'system'
   viewMode: 'citizen', // 'citizen' | 'technical'
   activeNavGroup: 'mapa', // 'mapa' | 'pronostico' | 'alertas' | 'mas'
   activeTabId: 'tab-mapa',
@@ -94,6 +94,7 @@ const SEVERITY_META = {
 function applyThemePreference(pref) {
   STATE.themePref = pref;
   try {
+    localStorage.setItem('climasflood_theme_v2', pref);
     localStorage.setItem('climasflood_theme', pref);
   } catch {
     // ignore storage errors
@@ -132,7 +133,7 @@ function initPreferencesFromStorage() {
   let savedTheme = 'apple';
   let savedViewMode = 'citizen';
   try {
-    savedTheme = localStorage.getItem('climasflood_theme') || 'apple';
+    savedTheme = localStorage.getItem('climasflood_theme_v2') || 'apple';
     savedViewMode = localStorage.getItem('climasflood_view_mode') || 'citizen';
   } catch {
     savedTheme = 'apple';
@@ -373,6 +374,41 @@ function updateClockAndHeaderStatus() {
   }
   if (heroGuidance) {
     heroGuidance.innerHTML = buildFriendlyCitizenGuidance(loc);
+  }
+
+  // Micro-scrubber horario de Apple Weather
+  const heroHourlyScrubber = document.getElementById('heroHourlyScrubber');
+  if (heroHourlyScrubber && loc.hourlyRain48h) {
+    const nextHours = loc.hourlyRain48h.slice(0, 5);
+    heroHourlyScrubber.innerHTML = nextHours
+      .map((h, i) => {
+        const label = i === 0 ? 'Ahora' : `+${h.hourOffset}h`;
+        const rain = (h.p50 || 0).toFixed(1);
+        const icon = (h.p50 || 0) > 1.5 ? '🌧' : (h.p50 || 0) > 0 ? '🌦' : '⛅';
+        return `
+          <div class="hourly-scrub-pill ${i === 0 ? 'active' : ''}">
+            <span class="scrub-hour">${label}</span>
+            <span class="scrub-icon" aria-hidden="true">${icon}</span>
+            <span class="scrub-temp">${h.temp ? h.temp.toFixed(0) : loc.observation.tempC.toFixed(0)}°</span>
+            <span class="scrub-rain">${rain} mm</span>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  // Visualización dinámica del arco de elevación de la Isoterma 0°C
+  const gaugeArcFill = document.getElementById('gaugeArcFill');
+  if (gaugeArcFill) {
+    const isoVal = loc.observation.freezingLevelM || 3000;
+    const clampedPct = Math.max(0.12, Math.min(0.96, (isoVal - 800) / 3800));
+    const radius = 60;
+    const cx = 80;
+    const cy = 80;
+    const angle = Math.PI - (Math.PI * clampedPct);
+    const endX = (cx + radius * Math.cos(angle)).toFixed(1);
+    const endY = (cy - radius * Math.sin(angle)).toFixed(1);
+    gaugeArcFill.setAttribute('d', `M 20 80 A 60 60 0 0 1 ${endX} ${endY}`);
   }
 
   document.querySelectorAll('.quick-commune-chip').forEach((chip) => {

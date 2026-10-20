@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es-CL" data-theme="light">
+<html lang="es-CL" data-theme="apple">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -65,7 +65,7 @@
             <span class="epistemic-badge badge-pronostico">Meteorología y Riesgo Hidrometeorológico</span>
           </h1>
           <p class="brand-subtitle">
-            Diferenciación explícita entre <strong>Observación</strong>, <strong>Pronóstico con Incertidumbre (P10–P90)</strong>, <strong>Estimación de la App</strong> y <strong>Alerta Oficial</strong>.
+            Meteorología de Alta Resolución y Alerta Temprana · Chile
           </p>
         </div>
       </div>
@@ -237,45 +237,76 @@
     </div>
 
     <!-- Resumen de Situación de la Comuna Activa (Jerarquía clara sin repetir bloques) -->
-    <section class="local-situation-strip" aria-label="Resumen actual y pronóstico inmediato de la comuna seleccionada">
-      <div class="situation-main">
-        <div class="hero-eyebrow-row">
-          <span id="dataIntegrityBadge" class="epistemic-badge badge-estimacion">🧪 Datos de muestra (Demostración)</span>
-          <span id="kpiLocationRiskBadge" class="severity-pill sev-EXTREMA">🛑 Riesgo Extremo (Muestra)</span>
-          <span id="kpiSelectedMeta" class="situation-tech-meta technical-only">
-            CUT 13101 · Cuenca Río Maipo · 527 m s.n.m.
-          </span>
+    <!-- Resumen de Situación de la Comuna Activa (Grilla de Tarjetas Apple HIG Frosted Glass) -->
+    <section class="local-situation-strip apple-hero-grid" aria-label="Resumen actual y pronóstico inmediato de la comuna seleccionada">
+      <!-- Tarjeta 1: Clima & Temperatura Actual -->
+      <div class="apple-card weather-hero-card">
+        <div class="card-eyebrow">
+          <span class="eyebrow-pill">TIEMPO ACTUAL</span>
+          <span id="kpiLocationRiskBadge" class="severity-pill sev-EXTREMA">🛑 Alerta Amarilla</span>
         </div>
-
-        <div class="situation-headline-row">
-          <div>
-            <h2 id="kpiSelectedName">Santiago / San José de Maipo</h2>
-            <p id="detailConditionBanner" class="situation-condition-line">
-              Cubierto con lluvia moderada e isoterma 0 °C elevada en sector cordillerano (3.050 m s.n.m.)
-            </p>
+        <div class="card-body-weather">
+          <h2 id="kpiSelectedName" class="apple-card-title">Santiago / San José de Maipo</h2>
+          <div class="apple-temp-display">
+            <span id="heroCurrentTemp" class="apple-big-temp">13.4 °C · 2.4 mm/h</span>
           </div>
+          <p id="detailConditionBanner" class="apple-condition-sub">Lluvia Moderada · Actualización reciente</p>
+          
+          <!-- Micro scrubber horario de precipitación -->
+          <div id="heroHourlyScrubber" class="apple-hourly-scrubber" aria-label="Pronóstico de las próximas horas"></div>
+        </div>
+      </div>
 
-          <div class="situation-key-figures">
-            <div class="key-figure-item">
-              <span class="key-figure-label">Ahora (t = 0 h)</span>
-              <strong id="heroCurrentTemp" class="key-figure-val">13.4 °C · 2.4 mm/h</strong>
+      <!-- Tarjeta 2: Isoterma 0°C & Hidrología Cordillerana -->
+      <div class="apple-card hydrology-hero-card">
+        <div class="card-eyebrow">
+          <span class="eyebrow-pill">ISOTERMA 0°C & CORDILLERA</span>
+          <span id="dataIntegrityBadge" class="epistemic-badge badge-estimacion">🧪 Demostración</span>
+        </div>
+        <div class="card-body-hydrology">
+          <div class="apple-gauge-display">
+            <div class="apple-gauge-visual">
+              <svg viewBox="0 0 160 90" class="gauge-arc-svg" aria-hidden="true">
+                <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="12" stroke-linecap="round"/>
+                <path id="gaugeArcFill" d="M 20 80 A 60 60 0 0 1 120 45" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round"/>
+                <defs>
+                  <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#38bdf8"/>
+                    <stop offset="60%" stop-color="#f59e0b"/>
+                    <stop offset="100%" stop-color="#ef4444"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="gauge-center-text">
+                <span id="heroIsoLevel" class="apple-big-iso">3.050 m s.n.m.</span>
+                <span class="gauge-sublabel">Cota de congelación</span>
+              </div>
             </div>
-            <div class="key-figure-item">
-              <span class="key-figure-label">Lluvia 48h (P50–P90)</span>
-              <strong id="heroPrecip48h" class="key-figure-val">46.5 – 80.5 mm</strong>
+          </div>
+          <div class="hydrology-telemetry-meta">
+            <div class="meta-item">
+              <span class="meta-label">Lluvia 48h (P50–P90)</span>
+              <strong id="heroPrecip48h" class="meta-val">46.5 – 80.5 mm</strong>
             </div>
-            <div class="key-figure-item">
-              <span class="key-figure-label">Isoterma 0 °C</span>
-              <strong id="heroIsoLevel" class="key-figure-val">3.050 m s.n.m.</strong>
+            <div class="meta-item technical-only">
+              <span class="meta-label">Cuenca / Elevación</span>
+              <span id="kpiSelectedMeta" class="meta-val-sub">Cuenca Río Maipo · 527 m s.n.m.</span>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="situation-action-row">
-          <p id="heroHumanSummary" class="hero-human-guidance"></p>
-          <div class="situation-next-steps">
-            <button type="button" class="quick-link-pill" id="btnJumpToRain">🌧 Pronóstico 48h →</button>
-            <button type="button" class="quick-link-pill" id="btnJumpToAlerts">⚠ Alertas (<span id="kpiActiveAlertsCount">4 Oficiales · 3 App</span>) →</button>
+      <!-- Tarjeta 3: Síntesis Ejecutiva y Acciones Rápidas -->
+      <div class="apple-card action-hero-card">
+        <div class="card-eyebrow">
+          <span class="eyebrow-pill">ANTICIPACIÓN Y ACCIÓN</span>
+          <span class="live-pulse-indicator">● Activo</span>
+        </div>
+        <div class="card-body-action">
+          <p id="heroHumanSummary" class="hero-guidance-compact"></p>
+          <div class="apple-action-pills">
+            <button type="button" class="apple-pill-btn" id="btnJumpToRain">🌧 Pronóstico 48h →</button>
+            <button type="button" class="apple-pill-btn" id="btnJumpToAlerts">🚨 Alertas (<span id="kpiActiveAlertsCount">4 Oficiales · 3 App</span>) →</button>
           </div>
         </div>
       </div>
@@ -290,9 +321,9 @@
         <div class="panel-card map-primary-panel">
           <div class="panel-header map-panel-header">
             <div>
-              <h2>Mapa Meteorológico de Chile</h2>
+              <h2>Mapa y Radar de Chile</h2>
               <p class="panel-subtitle">
-                Selecciona una comuna en el mapa o cambia de capa para inspeccionar observación y pronóstico.
+                Radar Doppler, satélite infrarrojo y capas meteorológicas en tiempo real
               </p>
             </div>
             <div class="map-header-badges">

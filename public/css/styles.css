@@ -224,14 +224,23 @@
   --tag-app-border: #a78bfa;
 }
 
-/* Fondo atmosférico profundo Apple HIG */
-[data-theme="apple"] body {
-  background: radial-gradient(circle at 50% 0%, #1a3a6b 0%, #0d1e38 45%, #050b16 100%) !important;
+/* Fondo atmosférico fotográfico y degradado profundo estilo Apple HIG */
+/* Fondo atmosférico fotográfico y degradado profundo estilo Apple HIG */
+html[data-theme="apple"],
+html[data-theme="apple"] body,
+body[data-theme="apple"],
+[data-theme="apple"] {
+  background: linear-gradient(rgba(10, 19, 36, 0.72), rgba(10, 19, 36, 0.86)),
+              url('/images/andes-backdrop.jpg') center top / cover no-repeat fixed !important;
   background-attachment: fixed !important;
-  color: #ffffff;
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  letter-spacing: -0.01em;
 }
 
-[data-theme="apple"] .app-main-content {
+[data-theme="apple"] .app-shell,
+[data-theme="apple"] .app-main-content,
+[data-theme="apple"] .app-container {
   background: transparent !important;
 }
 
@@ -239,7 +248,6 @@
 [data-theme="apple"] .top-status-bar,
 [data-theme="apple"] .brand-header,
 [data-theme="apple"] .app-sidebar,
-[data-theme="apple"] .local-situation-strip,
 [data-theme="apple"] .panel-card,
 [data-theme="apple"] .animated-map-stage,
 [data-theme="apple"] .map-viewport-wrapper,
@@ -249,33 +257,45 @@
 [data-theme="apple"] .model-perf-card,
 [data-theme="apple"] .modal-dialog {
   background: rgba(18, 35, 66, 0.58) !important;
-  backdrop-filter: blur(24px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-radius: 16px !important;
+  backdrop-filter: blur(26px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 20px !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
 }
 
 [data-theme="apple"] .top-status-bar {
-  border-radius: 0 0 16px 16px !important;
+  border-radius: 0 0 18px 18px !important;
   margin-bottom: 0.4rem;
+  padding: 0.45rem 1.4rem;
 }
 
 [data-theme="apple"] .brand-header {
-  border-radius: 16px !important;
+  border-radius: 20px !important;
   margin: 0.35rem 1rem 0;
+  padding: 0.85rem 1.4rem 0.75rem;
+}
+
+[data-theme="apple"] .brand-title-group h1 {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+[data-theme="apple"] .brand-subtitle {
+  color: rgba(220, 235, 255, 0.75);
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 [data-theme="apple"] .territory-controls,
-[data-theme="apple"] .situation-key-figures,
-[data-theme="apple"] .map-radar-subbar,
 [data-theme="apple"] .map-legend-box,
 [data-theme="apple"] .clock-mono {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 14px !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }
 
 [data-theme="apple"] select,
@@ -283,11 +303,12 @@
 [data-theme="apple"] .quick-commune-chip,
 [data-theme="apple"] .btn-map-ctrl,
 [data-theme="apple"] .btn {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   color: #ffffff !important;
   border-radius: 999px !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  backdrop-filter: blur(12px) !important;
 }
 
 [data-theme="apple"] .quick-commune-chip:hover,
@@ -298,7 +319,347 @@
   color: #0b1528 !important;
   border-color: #7dd3fc !important;
   font-weight: 700 !important;
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.4) !important;
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.45) !important;
+}
+
+/* ==========================================================================
+   Grilla Hero Apple HIG: Tarjetas Translúcidas Frosted Glass (Weather / Hydrology / Action)
+   ========================================================================== */
+.apple-hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 1100px) {
+  .apple-hero-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.apple-card {
+  background: rgba(18, 35, 66, 0.58);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 22px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.apple-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.card-eyebrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.eyebrow-pill {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(220, 235, 255, 0.75);
+}
+
+.apple-card-title {
+  margin: 0;
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.apple-temp-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0.35rem 0 0.15rem;
+}
+
+.apple-big-temp {
+  font-size: clamp(2.2rem, 3.2vw, 2.85rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #ffffff;
+  line-height: 1.05;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", sans-serif;
+}
+
+.apple-condition-sub {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: rgba(220, 235, 255, 0.82);
+}
+
+.apple-hourly-scrubber {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-top: 0.3rem;
+  scrollbar-width: none;
+}
+
+.apple-hourly-scrubber::-webkit-scrollbar {
+  display: none;
+}
+
+.hourly-scrub-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 0.38rem 0.55rem;
+  min-width: 48px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.hourly-scrub-pill.active {
+  background: rgba(56, 189, 248, 0.24);
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.25);
+}
+
+.scrub-hour {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 600;
+}
+
+.scrub-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.scrub-temp {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.scrub-rain {
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+/* Indicador de Gauge semicircular de Isoterma 0°C */
+.apple-gauge-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.2rem 0;
+}
+
+.apple-gauge-visual {
+  position: relative;
+  width: 160px;
+  height: 90px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.gauge-arc-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.gauge-center-text {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.apple-big-iso {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  line-height: 1.1;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", sans-serif;
+}
+
+.gauge-sublabel {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hydrology-telemetry-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 0.55rem;
+  margin-top: 0.45rem;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.meta-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(220, 235, 255, 0.65);
+  font-weight: 700;
+}
+
+.meta-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.meta-val-sub {
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.hero-guidance-compact {
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 0.85rem;
+}
+
+.apple-action-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.apple-pill-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 0.38rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  backdrop-filter: blur(12px);
+}
+
+.apple-pill-btn:hover {
+  background: #38bdf8;
+  color: #0b1528;
+  border-color: #7dd3fc;
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.4);
+}
+
+.live-pulse-indicator {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Micro-tarjetas de métricas locales en panel lateral */
+[data-theme="apple"] .obs-metric-box {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(16px) !important;
+  padding: 0.75rem 0.9rem !important;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+[data-theme="apple"] .obs-metric-box:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+[data-theme="apple"] .obs-metric-label {
+  font-size: 0.7rem !important;
+  letter-spacing: 0.06em !important;
+  color: rgba(220, 235, 255, 0.7) !important;
+  text-transform: uppercase !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="apple"] .obs-metric-val {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", sans-serif !important;
+  margin: 0.2rem 0 !important;
+}
+
+[data-theme="apple"] .obs-metric-sub {
+  font-size: 0.76rem !important;
+  color: rgba(200, 225, 255, 0.68) !important;
+}
+
+/* Compatibilidad retro para la grilla de tarjetas */
+[data-theme="retro"] .apple-hero-grid .apple-card {
+  background: #06180a !important;
+  border: 1px solid #22c55e !important;
+  border-radius: 4px !important;
+  box-shadow: 0 0 14px rgba(0, 255, 102, 0.2) !important;
+  color: #4ade80 !important;
+}
+
+[data-theme="retro"] .apple-card-title,
+[data-theme="retro"] .apple-big-temp,
+[data-theme="retro"] .apple-big-iso {
+  color: #4ade80 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+[data-theme="retro"] .hourly-scrub-pill {
+  background: #0a240f !important;
+  border: 1px solid #16a34a !important;
+  border-radius: 2px !important;
+}
+
+[data-theme="retro"] .hourly-scrub-pill.active {
+  background: #14532d !important;
+  border-color: #22c55e !important;
+}
+
+[data-theme="retro"] .apple-pill-btn {
+  background: #051408 !important;
+  border: 1px solid #22c55e !important;
+  color: #4ade80 !important;
+  border-radius: 2px !important;
+  font-family: 'JetBrains Mono', monospace !important;
 }
 
 /* ==========================================================================
