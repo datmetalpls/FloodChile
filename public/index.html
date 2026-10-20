@@ -48,21 +48,6 @@
       <button id="btnLiveSync" class="btn btn-sm btn-primary" type="button" title="Vuelve a consultar Open-Meteo (pronóstico, GloFAS y oleaje) para todas las comunas. Se ejecuta automáticamente al abrir la app.">
         ↻ Actualizar datos en vivo
       </button>
-
-      <!-- Menú compacto de pruebas de accesibilidad y degradación -->
-      <details class="tools-dropdown">
-        <summary class="btn btn-sm" title="Opciones de verificación de accesibilidad y estado de fuentes">
-          ⚙ Verificación
-        </summary>
-        <div class="tools-dropdown-menu">
-          <button id="btnToggleGrayscale" class="btn btn-sm" type="button" aria-pressed="false" title="Activa escala de grises para comprobar que las alertas e intensidades no dependen solo del color (CA-06)">
-            ◐ Escala de Grises (A11y)
-          </button>
-          <button id="btnSimulateStale" class="btn btn-sm btn-warning" type="button" aria-pressed="false" title="Simula retraso/caída de una fuente para comprobar la advertencia de dato desactualizado (CA-05)">
-            ⚠ Simular Fuente Desactualizada
-          </button>
-        </div>
-      </details>
     </div>
   </div>
 
@@ -82,26 +67,28 @@
         </p>
       </div>
 
-      <div class="territory-controls" role="search" aria-label="Selector de región, comuna, macrozona y huso horario">
-        <div class="control-group">
+      <div class="territory-controls" role="search" aria-label="Búsqueda y selección territorial">
+        <div class="control-group search-group-primary">
           <label for="communeSearchInput">Buscar Comuna o Cuenca</label>
-          <input
-            type="search"
-            id="communeSearchInput"
-            list="communeSearchDatalist"
-            placeholder="🔍 Ej: Maipo, Biobío, Valdivia..."
-            aria-label="Buscar comuna, región o cuenca hidrográfica"
-            style="min-width:195px;"
-          />
-          <datalist id="communeSearchDatalist"></datalist>
+          <div class="search-input-wrapper">
+            <span class="search-icon-symbol">🔍</span>
+            <input
+              type="search"
+              id="communeSearchInput"
+              list="communeSearchDatalist"
+              placeholder="Ej: Santiago, Maipo, Biobío, Valdivia..."
+              aria-label="Buscar comuna, región o cuenca hidrográfica"
+            />
+            <datalist id="communeSearchDatalist"></datalist>
+          </div>
         </div>
 
         <div class="control-group control-group-primary">
-          <label for="locationSelect">Región / Comuna Activa</label>
+          <label for="locationSelect">Comuna Activa</label>
           <select id="locationSelect" aria-label="Seleccionar región y comuna de Chile"></select>
         </div>
 
-        <div class="control-group">
+        <div class="control-group technical-only">
           <label for="macrozoneSelect">Macrozona</label>
           <select id="macrozoneSelect" aria-label="Filtrar por macrozona de Chile">
             <option value="ALL">Todo Chile (16 Regiones)</option>
@@ -284,8 +271,8 @@
         <div class="situation-action-row">
           <p id="heroHumanSummary" class="hero-human-guidance"></p>
           <div class="situation-next-steps">
-            <button type="button" class="btn btn-sm" id="btnJumpToRain">Ver lluvia horaria 48h →</button>
-            <button type="button" class="btn btn-sm" id="btnJumpToAlerts">Ver alertas (<span id="kpiActiveAlertsCount">3 Oficiales · 2 App</span>) →</button>
+            <button type="button" class="quick-link-pill" id="btnJumpToRain">🌧 Pronóstico 48h →</button>
+            <button type="button" class="quick-link-pill" id="btnJumpToAlerts">⚠ Alertas (<span id="kpiActiveAlertsCount">4 Oficiales · 3 App</span>) →</button>
           </div>
         </div>
       </div>
@@ -386,7 +373,7 @@
             <p id="detailKeyPhenomenon" class="key-phenomenon-note"></p>
             <div id="miniForecastPreview"></div>
             <div style="margin-top: 0.65rem; display: flex; justify-content: flex-end;">
-              <button type="button" class="btn btn-sm" id="btnJumpTo7dForecast">Ver tabla completa de 7 días →</button>
+              <button type="button" class="quick-link-pill" id="btnJumpTo7dForecast">📅 Ver tabla completa de 7 días →</button>
             </div>
           </div>
 
@@ -426,7 +413,7 @@
         <div class="sat-controls-grid">
           <button id="btnSatPlayPause" class="btn btn-primary" type="button">▶ Reproducir Secuencia</button>
 
-          <div class="control-group" style="min-width: 210px;">
+          <div class="control-group" id="satChannelSelectGroup" style="min-width: 210px;">
             <label for="satChannelSelect">Canal Espectral GOES-16 / Radar</label>
             <select id="satChannelSelect">
               <option value="ir_b13">Banda 13 (10.3 µm Infrarrojo Limpio - Topes Nubosos)</option>
@@ -441,7 +428,7 @@
             <input id="satFrameRange" type="range" min="0" max="6" step="1" value="6" />
           </div>
 
-          <div class="control-group">
+          <div class="control-group" id="satCompareToggleGroup">
             <label for="satCompareToggle">Modo Comparación Antes / Ahora</label>
             <button id="satCompareToggle" class="btn" type="button" aria-pressed="true">
               ⇄ Cortina Comparadora: ACTIVA
@@ -936,6 +923,27 @@
         <div class="panel-card">
           <h3>Matriz de Criterios de Aceptación (CA-01 a CA-09)</h3>
           <div id="acceptanceCriteriaContainer" style="font-size: 0.84rem;"></div>
+        </div>
+      </div>
+
+      <!-- Herramientas de Auditoría Operacional y Verificación Técnica (CA-05 & CA-06) -->
+      <div class="panel-card" style="margin-top: 1rem;">
+        <div class="panel-header">
+          <div>
+            <h3>Herramientas de Auditoría, Simulación y Accesibilidad (CA-05 & CA-06)</h3>
+            <div class="panel-subtitle">
+              Permite auditar el comportamiento del sistema ante condiciones degradadas y verificar accesibilidad universal.
+            </div>
+          </div>
+          <span class="epistemic-badge badge-pronostico">Auditoría Operacional</span>
+        </div>
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:0.6rem;">
+          <button id="btnToggleGrayscale" class="btn btn-sm" type="button" aria-pressed="false" title="Activa escala de grises para comprobar que las alertas e intensidades no dependen solo del color (CA-06)">
+            ◐ Escala de Grises (A11y CA-06)
+          </button>
+          <button id="btnSimulateStale" class="btn btn-sm btn-warning" type="button" aria-pressed="false" title="Simula retraso/caída de una fuente para comprobar la advertencia de dato desactualizado (CA-05)">
+            ⚠ Simular Fuente Desactualizada (CA-05)
+          </button>
         </div>
       </div>
     </section>

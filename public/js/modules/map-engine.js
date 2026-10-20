@@ -564,17 +564,21 @@ class ChileMapController {
 
     const statusEl = document.getElementById('radarFrameStatus');
     try {
-      const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-      if (res.ok) {
+      let res = await fetch('/api/rainviewer/weather-maps').catch(() => null);
+      if (!res || !res.ok) {
+        res = await fetch('https://api.rainviewer.com/public/weather-maps.json').catch(() => null);
+      }
+      if (res && res.ok) {
         const data = await res.json();
-        const frames = [
-          ...(data?.satellite?.infrared || []),
-          ...(data?.radar?.past || [])
-        ].slice(-6);
+        const irFrames = data?.satellite?.infrared || [];
+        const radarFrames = data?.radar?.past || [];
+        const isRadar = !irFrames.length && radarFrames.length > 0;
+        const frames = (irFrames.length ? irFrames : radarFrames).slice(-8);
         if (frames.length) {
+          const host = data.host || 'https://tilecache.rainviewer.com';
           this.radarFrames = frames.map((f) => ({
             time: f.time,
-            url: `${data.host || 'https://tilecache.rainviewer.com'}${f.path}/256/{z}/{x}/{y}/2/1_1.png`
+            url: `${host}${f.path}/256/{z}/{x}/{y}/${isRadar ? '2/1_1.png' : '0/0_0.png'}`
           }));
           this.radarFrameIdx = this.radarFrames.length - 1;
           this.applySatelliteOverlayMode();

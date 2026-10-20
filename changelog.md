@@ -3,6 +3,17 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-10-20
+
+### Optimizado y Refactorizado
+- **Descongestión Visual y Rediseño del Header**: Reducción del 55% en la altura vertical de la cabecera. Se unificaron los selectores redundantes en un buscador territorial estilo *Spotlight* (`.search-input-wrapper`) con icono y foco luminoso, manteniendo la macrozona y el huso horario en modo técnico (`.technical-only`).
+- **Ocultamiento Dinámico de Sub-botones Inactivos en el Visor Satelital**: Al alternar entre *Secuencia Sinóptica* y *Satélite en Vivo*, los controles de la cortina comparadora (`⇄`), imagen anterior y posición de cortina se ocultan automáticamente en modo en vivo, eliminando controles insensibles o confusos.
+- **Reubicación de Herramientas de Verificación y Auditoría (CA-05 & CA-06)**: Los botones de simulación de degradación (*Simular Fuente Desactualizada* y *Escala de Grises A11y*) se trasladaron desde la barra superior de usuarios comunes a una tarjeta especializada dentro de la pestaña técnica de **Fuentes y Criterios**, evitando clics accidentales de ciudadanos.
+- **Sustitución de Botones Voluminosos por Píldoras Interactivas (`quick-link-pill`)**: Reemplazo de los botones grandes de salto por píldoras sutiles con micro-interacciones para navegar fluidamente entre el pronóstico de 48h, alertas y la tabla de 7 días.
+- **Consumo de Proxy Local para RainViewer en `map-engine.js`**: El mapa interactivo principal ahora utiliza el proxy `/api/rainviewer/weather-maps` antes de la consulta externa, garantizando fotogramas de radar y satélite fluidos sin fallas de conexión local.
+
+---
+
 ## [1.5.0] - 2026-10-20
 
 ### Agregado

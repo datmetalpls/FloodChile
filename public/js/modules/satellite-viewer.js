@@ -258,6 +258,9 @@ class FrameBasedSatelliteEngine {
       sourceSelect?.classList.add('hidden');
       this.canvas.classList.remove('hidden');
       this.liveMapContainer?.classList.add('hidden');
+      document.querySelectorAll('#satCompareToggleGroup, #satCompareSelectGroup, #satSplitSliderGroup, #satChannelSelectGroup').forEach((el) => {
+        el.classList.remove('hidden');
+      });
       if (hintEl) {
         hintEl.innerHTML =
           'Arrastra la línea <strong>⇄</strong> para comparar el fotograma anterior con el seleccionado';
@@ -273,6 +276,9 @@ class FrameBasedSatelliteEngine {
       sourceSelect?.classList.remove('hidden');
       this.canvas.classList.add('hidden');
       this.liveMapContainer?.classList.remove('hidden');
+      document.querySelectorAll('#satCompareToggleGroup, #satCompareSelectGroup, #satSplitSliderGroup, #satChannelSelectGroup').forEach((el) => {
+        el.classList.add('hidden');
+      });
       if (hintEl) {
         hintEl.innerHTML =
           'Mosaico satelital real en vivo (NASA Earthdata GIBS WMTS / RainViewer API)';

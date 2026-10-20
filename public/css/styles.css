@@ -499,6 +499,61 @@ canvas:focus-visible {
   font-weight: 700;
 }
 
+/* Enlaces rápidos minimalistas y limpios entre secciones */
+.quick-link-pill {
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: var(--bg-card-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+}
+
+.quick-link-pill:hover {
+  background: var(--accent-soft-bg);
+  border-color: var(--accent-primary);
+  color: var(--accent-text);
+  transform: translateY(-1px);
+}
+
+/* Buscador territorial unificado estilo Spotlight */
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-wrapper input[type="search"] {
+  padding-left: 1.85rem;
+  width: 100%;
+  min-width: 220px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.search-input-wrapper input[type="search"]:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-soft-bg);
+}
+
+.search-icon-symbol {
+  position: absolute;
+  left: 0.55rem;
+  pointer-events: none;
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+
 /* ==========================================================================
    Píldoras Epistemológicas y de Severidad
    ========================================================================== */
