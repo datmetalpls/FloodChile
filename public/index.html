@@ -17,14 +17,14 @@
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body data-view-mode="citizen">
-  <!-- Barra superior de integridad de datos, hora local, modo de vista y tema -->
+  <!-- Barra superior unificada y compacta -->
   <div class="top-status-bar" role="region" aria-label="Estado de los datos, hora local de Chile y preferencias de visualización">
     <div class="status-left">
       <span id="systemStatusBadge" class="epistemic-badge badge-estimacion" title="Los datos iniciales provienen del conjunto local de demostración. Se actualiza automáticamente desde Open-Meteo al abrir la app.">
-        🧪 Demostración (Datos de muestra locales)
+        🧪 Muestra Local
       </span>
-      <span id="chileClockDisplay" class="clock-mono" aria-live="polite">Hora Local Chile: Cargando...</span>
-      <span id="activeTerritoryBadge" class="territory-pill-indicator technical-only">Zona: Chile Continental (UTC-3)</span>
+      <span id="chileClockDisplay" class="clock-mono" aria-live="polite">Chile: Cargando...</span>
+      <span id="activeTerritoryBadge" class="territory-pill-indicator technical-only">Chile Continental (UTC-3)</span>
     </div>
 
     <div class="status-right">
@@ -38,16 +38,16 @@
         </button>
       </div>
 
-      <!-- Conmutador de Tema (Apple Frosted / Retro CRT / Oscuro / Claro / Auto) -->
+      <!-- Conmutador de Tema -->
       <div class="theme-toggle" role="group" aria-label="Selector de tema visual">
-        <button type="button" data-theme-opt="apple" class="active" title="Estilo Apple HIG / Frosted Glass">🍏 Apple Frosted</button>
-        <button type="button" data-theme-opt="retro" title="Estilo Retro-Terminal CRT Radar">📟 Retro CRT</button>
+        <button type="button" data-theme-opt="apple" class="active" title="Estilo Apple HIG / Frosted Glass">🍏 Apple</button>
+        <button type="button" data-theme-opt="retro" title="Estilo Retro-Terminal CRT Radar">📟 Retro</button>
         <button type="button" data-theme-opt="dark" title="Tema Oscuro Estándar">🌙 Oscuro</button>
         <button type="button" data-theme-opt="light" title="Tema Claro">☀ Claro</button>
       </div>
 
       <button id="btnLiveSync" class="btn btn-sm btn-primary" type="button" title="Vuelve a consultar Open-Meteo (pronóstico, GloFAS y oleaje) para todas las comunas. Se ejecuta automáticamente al abrir la app.">
-        ↻ Actualizar datos en vivo
+        ↻ En Vivo
       </button>
     </div>
   </div>
@@ -61,25 +61,24 @@
         </button>
         <div class="brand-title-text">
           <h1>
-            <span>🇨🇱 ClimasFlood Chile</span>
-            <span class="epistemic-badge badge-pronostico">Meteorología y Riesgo Hidrometeorológico</span>
+            <span>🇨🇱 ClimasFlood</span>
+            <span class="epistemic-badge badge-pronostico">Chile</span>
           </h1>
           <p class="brand-subtitle">
-            Meteorología de Alta Resolución y Alerta Temprana · Chile
+            Meteorología de Alta Resolución y Alerta Temprana
           </p>
         </div>
       </div>
 
       <div class="territory-controls" role="search" aria-label="Búsqueda y selección territorial">
         <div class="control-group search-group-primary">
-          <label for="communeSearchInput">Buscar Comuna o Cuenca</label>
           <div class="search-input-wrapper">
             <span class="search-icon-symbol">🔍</span>
             <input
               type="search"
               id="communeSearchInput"
               list="communeSearchDatalist"
-              placeholder="Ej: Santiago, Maipo, Biobío, Valdivia..."
+              placeholder="Buscar comuna o cuenca..."
               aria-label="Buscar comuna, región o cuenca hidrográfica"
             />
             <datalist id="communeSearchDatalist"></datalist>
@@ -87,14 +86,12 @@
         </div>
 
         <div class="control-group control-group-primary">
-          <label for="locationSelect">Comuna Activa</label>
           <select id="locationSelect" aria-label="Seleccionar región y comuna de Chile"></select>
         </div>
 
         <div class="control-group technical-only">
-          <label for="macrozoneSelect">Macrozona</label>
           <select id="macrozoneSelect" aria-label="Filtrar por macrozona de Chile">
-            <option value="ALL">Todo Chile (16 Regiones)</option>
+            <option value="ALL">Todo Chile</option>
             <option value="Norte Grande">Norte Grande</option>
             <option value="Norte Chico">Norte Chico</option>
             <option value="Zona Central">Zona Central</option>
@@ -106,13 +103,12 @@
         </div>
 
         <div class="control-group technical-only">
-          <label for="timezoneSelect">Huso Horario</label>
           <select id="timezoneSelect" aria-label="Huso horario de visualización">
-            <option value="AUTO">Automático según comuna</option>
-            <option value="America/Santiago">Chile Continental (America/Santiago)</option>
-            <option value="America/Punta_Arenas">Magallanes / Aysén (America/Punta_Arenas)</option>
-            <option value="Pacific/Easter">Rapa Nui Insular (Pacific/Easter)</option>
-            <option value="UTC">Tiempo Universal Coordinado (UTC)</option>
+            <option value="AUTO">Huso Auto</option>
+            <option value="America/Santiago">Chile Continental (UTC-3)</option>
+            <option value="America/Punta_Arenas">Magallanes / Aysén (UTC-3)</option>
+            <option value="Pacific/Easter">Rapa Nui (UTC-5)</option>
+            <option value="UTC">UTC</option>
           </select>
         </div>
       </div>
@@ -123,7 +119,7 @@
       <span class="quick-bar-label">Acceso rápido:</span>
       <button type="button" class="quick-commune-chip active" data-quick-loc="santiago">Santiago / Maipo</button>
       <button type="button" class="quick-commune-chip" data-quick-loc="valparaiso">Valparaíso</button>
-      <button type="button" class="quick-commune-chip" data-quick-loc="talca">Talca / Maule</button>
+      <button type="button" class="quick-commune-chip" data-quick-loc="talca">Talca</button>
       <button type="button" class="quick-commune-chip" data-quick-loc="concepcion">Concepción</button>
       <button type="button" class="quick-commune-chip" data-quick-loc="puertomontt">Puerto Montt</button>
       <button type="button" class="quick-commune-chip" data-quick-loc="puntaarenas">Punta Arenas</button>
@@ -827,32 +823,40 @@
         <div class="panel-card">
           <div class="panel-header">
             <div>
-              <h2>Registro de Predicciones Anteriores vs. Lo Ocurrido (Verificación)</h2>
+              <h2>Auditoría Histórica: Pronóstico vs. Realidad</h2>
               <div class="panel-subtitle">
-                Contraste auditable entre pronósticos pasados (-24 h, -48 h, -72 h) y observaciones medidas (Conjunto de demostración CA-03).
+                Verificación auditable de predicciones pasadas (-24 h, -48 h, -72 h) contra observaciones reales.
               </div>
             </div>
-            <span class="epistemic-badge badge-estimacion">Auditoría Histórica (Muestra)</span>
+            <span class="epistemic-badge badge-estimacion">Verificación CA-03</span>
           </div>
 
+          <!-- Métricas Resumen MAE y Cobertura -->
           <div id="verificationSummaryMetrics" class="obs-metrics-grid" style="margin-top:0;"></div>
 
-          <div class="forecast-table-wrapper">
-            <table class="data-table" aria-label="Tabla de verificación de pronósticos anteriores frente a observaciones reales">
-              <thead>
-                <tr>
-                  <th>Ubicación</th>
-                  <th>Fecha Evaluada (Horizonte)</th>
-                  <th>Lluvia Predicha P50 (Banda)</th>
-                  <th>Lluvia Observada Real</th>
-                  <th>Error Abs. (mm)</th>
-                  <th>Temp. Máx Pred. / Obs.</th>
-                  <th>Dentro de Banda</th>
-                </tr>
-              </thead>
-              <tbody id="verificationTableBody"></tbody>
-            </table>
-          </div>
+          <!-- Tarjetas de Auditoría Histórica -->
+          <div id="verificationCardsContainer" class="verification-cards-grid" style="margin-top: 0.85rem;"></div>
+
+          <!-- Tabla Tabular Completa Colapsable -->
+          <details class="methodology-details" style="margin-top: 1rem;">
+            <summary>📋 Ver Tabla Tabular de Auditoría Completa (Muestra Histórica)</summary>
+            <div class="forecast-table-wrapper" style="margin-top: 0.5rem;">
+              <table class="data-table" aria-label="Tabla de verificación de pronósticos anteriores frente a observaciones reales">
+                <thead>
+                  <tr>
+                    <th>Ubicación</th>
+                    <th>Horizonte</th>
+                    <th>Lluvia Predicha P50</th>
+                    <th>Lluvia Real</th>
+                    <th>Error Abs.</th>
+                    <th>Temp. Máx</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="verificationTableBody"></tbody>
+              </table>
+            </div>
+          </details>
         </div>
       </div>
     </section>

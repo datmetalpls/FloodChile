@@ -1460,10 +1460,11 @@ function renderPredictiveAndVerificationSection() {
   const titleEl = document.getElementById('predictiveModelTitle');
   const modelContainer = document.getElementById('modelComparisonContainer');
   const verMetrics = document.getElementById('verificationSummaryMetrics');
+  const verCards = document.getElementById('verificationCardsContainer');
   const verTableBody = document.getElementById('verificationTableBody');
 
   if (titleEl && loc) {
-    titleEl.textContent = `Comparación Multimodelo (ECMWF vs GFS vs ICON) — ${loc.name}`;
+    titleEl.textContent = `Comparación Multimodelo (ECMWF · GFS · ICON) — ${loc.name}`;
   }
 
   if (modelContainer && loc) {
@@ -1487,21 +1488,58 @@ function renderPredictiveAndVerificationSection() {
   if (verMetrics) {
     verMetrics.innerHTML = `
       <div class="obs-metric-box">
-        <div class="obs-metric-label">MAE Precipitación (Muestra)</div>
+        <div class="obs-metric-label">MAE Precipitación</div>
         <div class="obs-metric-val">±${avgRainErr.toFixed(1)} mm</div>
         <div class="obs-metric-sub">Error medio absoluto</div>
       </div>
       <div class="obs-metric-box">
-        <div class="obs-metric-label">MAE Temp. Máx (Muestra)</div>
+        <div class="obs-metric-label">MAE Temp. Máx</div>
         <div class="obs-metric-val">±${avgTempErr.toFixed(1)} °C</div>
         <div class="obs-metric-sub">Error medio 24–72h</div>
       </div>
       <div class="obs-metric-box">
-        <div class="obs-metric-label">Cobertura Banda P10–P90</div>
+        <div class="obs-metric-label">Cobertura P10–P90</div>
         <div class="obs-metric-val" style="color:var(--tag-obs-text);">${bandCoverage.toFixed(0)}%</div>
-        <div class="obs-metric-sub">Casos de muestra en rango</div>
+        <div class="obs-metric-sub">Acierto dentro de banda</div>
       </div>
     `;
+  }
+
+  if (verCards) {
+    verCards.innerHTML = verList.map((v) => `
+      <div class="verif-card ${v.withinUncertaintyBand ? 'in-band' : 'out-band'}">
+        <div class="verif-card-header">
+          <div>
+            <strong class="verif-card-loc">${v.locationName}</strong>
+            <span class="verif-lead-pill">-${v.leadTimeHours}h (${v.targetDate})</span>
+          </div>
+          <span class="eval-status-badge ${v.withinUncertaintyBand ? 'in-band' : 'out-band'}">
+            ${v.withinUncertaintyBand ? '✓ En Rango' : '✕ Fuera'}
+          </span>
+        </div>
+        <div class="verif-card-grid">
+          <div class="verif-stat-box">
+            <span class="verif-stat-label">Lluvia Pred. vs Real</span>
+            <div class="verif-stat-val">
+              <span>${v.predictedPrecipP50Mm.toFixed(1)}</span>
+              <span class="verif-arrow">→</span>
+              <strong>${v.observedPrecipMm.toFixed(1)} mm</strong>
+            </div>
+            <span class="verif-delta-sub">Error: ±${v.precipAbsErrorMm.toFixed(1)} mm</span>
+          </div>
+          <div class="verif-stat-box">
+            <span class="verif-stat-label">Temp. Pred. vs Real</span>
+            <div class="verif-stat-val">
+              <span>${v.predictedTempMaxC}°</span>
+              <span class="verif-arrow">→</span>
+              <strong>${v.observedTempMaxC}°C</strong>
+            </div>
+            <span class="verif-delta-sub">Error: ±${v.tempAbsErrorC.toFixed(1)} °C</span>
+          </div>
+        </div>
+        <div class="verif-note-text">${v.evaluationNote || ''}</div>
+      </div>
+    `).join('');
   }
 
   if (verTableBody) {
@@ -1515,12 +1553,9 @@ function renderPredictiveAndVerificationSection() {
           <td><span class="mono-err">±${Number(v.precipAbsErrorMm || 0).toFixed(1)} mm</span></td>
           <td>${v.predictedTempMaxC}° / <strong>${v.observedTempMaxC}°C</strong></td>
           <td>
-            <div class="eval-result-cell">
-              <span class="eval-status-badge ${v.withinUncertaintyBand ? 'in-band' : 'out-band'}">
-                ${v.withinUncertaintyBand ? '✓ En Rango' : '✕ Fuera'}
-              </span>
-              <span class="eval-compact-note">${v.evaluationNote || ''}</span>
-            </div>
+            <span class="eval-status-badge ${v.withinUncertaintyBand ? 'in-band' : 'out-band'}">
+              ${v.withinUncertaintyBand ? '✓ En Rango' : '✕ Fuera'}
+            </span>
           </td>
         </tr>
       `
@@ -1906,6 +1941,7 @@ function renderSourcesAndCriteriaSection() {
           .join('')}
       </div>
     `;
+  }
 }
 
 function refreshAllViews() {
