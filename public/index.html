@@ -643,6 +643,22 @@
           </div>
         </details>
 
+        <!-- Banner de Emergencia SAE en Vivo (Cell Broadcast) -->
+        <div id="saeEmergencyLiveBanner" style="display:none; margin: 1rem 0;"></div>
+
+        <!-- Barra de Estado Ingesta en Vivo SENAPRED -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; margin: 0.8rem 0 0.5rem; padding: 0.5rem 0.75rem; background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: 8px;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <span class="status-indicator-dot online"></span>
+            <span id="senapredLiveStatusText" style="font-size:0.8rem; font-weight:600; color:var(--text-primary);">
+              🟢 Ingesta SENAPRED + DMC + SAE activa vía <code>/api/senapred/alertas-live</code>
+            </span>
+          </div>
+          <button type="button" id="btnRefreshSenapredAlerts" class="btn btn-sm btn-secondary" style="font-size:0.75rem; padding:0.25rem 0.6rem;">
+            🔄 Sincronizar Alertas Ahora
+          </button>
+        </div>
+
         <!-- Filtros de Alertas -->
         <div class="filter-bar">
           <div class="control-group">

@@ -10,6 +10,7 @@ import {
   fetchLiveOpenMeteoForLocation,
   syncLocationViaServerOrDirect,
   fetchRainViewerMetadata,
+  fetchLiveSenapredAlerts,
   buildCartoBuilderGeoJsonClient
 } from './modules/live-api.js';
 import {
@@ -51,7 +52,10 @@ const STATE = {
   alertOriginFilter: 'ALL',
   alertSeverityFilter: 'ALL',
   highlightedEvidenceId: null,
-  notifications: []
+  notifications: [],
+  liveSenapredAlerts: [],
+  liveSenapredFetched: false,
+  saeActiveCount: 0
 };
 
 const TIME_SLIDER_STEPS = [0, 6, 12, 24, 48];
@@ -940,11 +944,94 @@ function renderRainfallSection() {
   }
 }
 
+export async function loadLiveSenapredAlerts(force = false) {
+  if (STATE.liveSenapredFetched && !force) return;
+  try {
+    const res = await fetchLiveSenapredAlerts();
+    if (res.ok && Array.isArray(res.alerts)) {
+      STATE.liveSenapredAlerts = res.alerts;
+      STATE.saeActiveCount = res.saeActiveCount || 0;
+      STATE.liveSenapredFetched = true;
+
+      const statusText = document.getElementById('senapredLiveStatusText');
+      if (statusText) {
+        statusText.innerHTML = `🟢 Ingesta activa: <strong>${res.alerts.length} alertas oficiales</strong> sincronizadas (SENAPRED / DMC / SAE)`;
+      }
+    }
+  } catch (err) {
+    console.warn('Error sincronizando alertas SENAPRED:', err);
+  }
+}
+
 function renderAlertsSection() {
   const container = document.getElementById('alertsListContainer');
   if (!container) return;
 
-  const filtered = ALERTS_DATA.filter((a) => {
+  // Renderizar banner prioritario de activación SAE
+  const saeBanner = document.getElementById('saeEmergencyLiveBanner');
+  const saeAlert = STATE.liveSenapredAlerts.find((a) => a.isSaeActivation);
+  if (saeBanner) {
+    if (saeAlert) {
+      saeBanner.style.display = 'block';
+      saeBanner.innerHTML = `
+        <div class="sae-emergency-card" role="alert" aria-live="assertive">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.6rem;">
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+              <span class="sae-badge">🚨 MENSAJERÍA SAE ACTIVADA</span>
+              <span class="epistemic-badge badge-peligro">Evacuación Inmediata</span>
+              <span class="epistemic-badge badge-alerta-oficial">SENAPRED · Cell Broadcast</span>
+            </div>
+            <span style="font-size:0.75rem; font-family:var(--font-mono); color:var(--text-muted);">
+              Estampa: ${formatUtcInChileTz(saeAlert.issuedAtUtc)}
+            </span>
+          </div>
+          <h3 style="margin:0 0 0.4rem; font-size:1.15rem; color:#ef4444; font-weight:800;">
+            ${saeAlert.title}
+          </h3>
+          <p style="margin:0 0 0.6rem; font-size:0.88rem; color:var(--text-primary); line-height:1.45;">
+            <strong>Zona y Comunas Afectadas:</strong> ${saeAlert.affectedZonesText}.<br/>
+            <strong>Fundamento del Riesgo:</strong> ${saeAlert.whatCouldHappen}
+          </p>
+          <div style="background:rgba(0,0,0,0.15); border-radius:8px; padding:0.6rem 0.8rem; font-size:0.82rem; margin-bottom:0.75rem;">
+            <strong>Instrucciones Oficiales de Protección Civil:</strong>
+            <ul style="margin:0.25rem 0 0; padding-left:1.2rem;">
+              ${saeAlert.preventiveActions.map((act) => `<li>${act}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="sae-actions-bar">
+            <button type="button" id="btnTriggerSaePush" class="btn btn-primary" style="background:#dc2626; border-color:#b91c1c;">
+              🔊 Probar Alarma Sonora y Notificación Nativa en este Dispositivo
+            </button>
+            <a href="${saeAlert.officialUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+              Portal Oficial SENAPRED ↗
+            </a>
+          </div>
+        </div>
+      `;
+
+      const btnTrigger = document.getElementById('btnTriggerSaePush');
+      if (btnTrigger) {
+        btnTrigger.addEventListener('click', () => {
+          triggerNativeWebPushNotification({
+            title: `🚨 EMERGENCIA SAE: ${saeAlert.shortTitle || 'Alerta SENAPRED'}`,
+            body: `${saeAlert.affectedZonesText}. ${saeAlert.whatCouldHappen}`,
+            tag: `sae-${saeAlert.id}`
+          });
+        });
+      }
+    } else {
+      saeBanner.style.display = 'none';
+      saeBanner.innerHTML = '';
+    }
+  }
+
+  // Lista unificada: Alertas oficiales en vivo + datos de muestra/estimaciones
+  const combinedAlerts = [
+    ...STATE.liveSenapredAlerts.map((a) => ({ ...a, isLiveScraped: true })),
+    ...ALERTS_DATA.filter((a) => !STATE.liveSenapredAlerts.some((la) => la.id === a.id))
+  ];
+
+  const filtered = combinedAlerts.filter((a) => {
     const matchOrigin =
       STATE.alertOriginFilter === 'ALL' || a.originCategory === STATE.alertOriginFilter;
     const matchSev =
@@ -953,7 +1040,7 @@ function renderAlertsSection() {
   });
 
   if (!filtered.length) {
-    container.innerHTML = `<div class="alert-card">No hay alertas de muestra que coincidan con el filtro seleccionado.</div>`;
+    container.innerHTML = `<div class="alert-card">No hay alertas que coincidan con el filtro seleccionado.</div>`;
     return;
   }
 
@@ -969,11 +1056,15 @@ function renderAlertsSection() {
               <span class="epistemic-badge ${isOfficial ? 'badge-alerta-oficial' : 'badge-alerta-app'}">
                 ${a.originLabel}
               </span>
-              <span class="epistemic-badge badge-estimacion">🧪 Ejemplo de Demostración</span>
+              ${
+                a.isLiveScraped
+                  ? '<span class="epistemic-badge badge-observacion">🟢 Transmisión Oficial en Vivo</span>'
+                  : '<span class="epistemic-badge badge-estimacion">🧪 Registro de Demostración</span>'
+              }
               <span class="epistemic-badge badge-pronostico">Confianza: ${a.confidenceLevel}</span>
             </div>
             <span style="font-size:0.76rem; color:var(--text-muted); font-family:var(--font-mono);">
-              ID: ${a.id} · Estampa ref.: ${formatUtcInChileTz(a.issuedAtUtc)}
+              ID: ${a.id} · Ref: ${formatUtcInChileTz(a.issuedAtUtc)}
             </span>
           </div>
 
@@ -1006,7 +1097,7 @@ function renderAlertsSection() {
           </div>
 
           <div class="provenance-bar">
-            <span><strong>Emisor de Referencia:</strong> ${a.issuer} (Registro de muestra)</span>
+            <span><strong>Emisor:</strong> ${a.issuer}</span>
             <span>•</span>
             <a href="${a.officialUrl}" target="_blank" rel="noopener noreferrer">Consultar Portal Oficial (${a.officialUrl}) ↗</a>
             ${
@@ -1852,6 +1943,18 @@ function setupEventListeners() {
     btnLiveSync.addEventListener('click', () => syncAllLocationsLive());
   }
 
+  const btnRefreshSenapred = document.getElementById('btnRefreshSenapredAlerts');
+  if (btnRefreshSenapred) {
+    btnRefreshSenapred.addEventListener('click', async () => {
+      btnRefreshSenapred.disabled = true;
+      btnRefreshSenapred.textContent = '⏳ Sincronizando...';
+      await loadLiveSenapredAlerts(true);
+      renderAlertsSection();
+      btnRefreshSenapred.disabled = false;
+      btnRefreshSenapred.textContent = '🔄 Sincronizar Alertas Ahora';
+    });
+  }
+
   document.getElementById('btnGeolocate')?.addEventListener('click', selectNearestLocation);
   document.getElementById('btnShareView')?.addEventListener('click', shareCurrentView);
 
@@ -2075,6 +2178,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Datos reales por defecto: sincroniza automáticamente al abrir y cada 30 min.
   syncAllLocationsLive();
   setInterval(syncAllLocationsLive, 30 * 60 * 1000);
+
+  // Ingesta oficial en vivo SENAPRED / DMC / SAE
+  loadLiveSenapredAlerts().then(() => renderAlertsSection());
+  setInterval(() => loadLiveSenapredAlerts(true).then(() => renderAlertsSection()), 10 * 60 * 1000);
 
   // Registro de Service Worker PWA para resiliencia offline durante temporales
   if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {

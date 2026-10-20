@@ -3,6 +3,20 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-10-20
+
+### Agregado
+- **Módulo de Ingesta y Scraper Oficial SENAPRED + SAE + DMC (`GET /api/senapred/alertas-live`)**:
+  - Ingestor en `server.js` con caché en memoria (TTL 10 min) y tolerancia a fallos mediante timeout de 4 segundos que extrae avisos y alertas oficiales de SENAPRED y DMC sin dependencias externas npm (cumpliendo con la arquitectura *zero-external-dependency*).
+  - Detección algorítmica de activaciones del **Sistema de Alerta de Emergencia (SAE)** vía Cell Broadcast (`isSaeActivation: true`, canal `CELL_BROADCAST_SAE`) ante instrucciones de evacuación preventiva por aluvión, crecida o remoción en masa.
+- **Banner de Emergencia SAE Vibrante en la Interfaz (`#saeEmergencyLiveBanner`)**:
+  - Tarjeta de alerta crítica con animación visual de pulso perimetral rojo (`.sae-emergency-card`), instrucciones de protección civil y botón interactivo para probar la alarma sonora y despacho de notificación nativa Web Push en escritorio y teléfonos móviles.
+- **Conector de Cliente en Tiempo Real (`fetchLiveSenapredAlerts`)**:
+  - Módulo en `public/js/modules/live-api.js` y sincronización automática en `public/js/app.js` cada 10 minutos, sumado a un botón de actualización manual (`#btnRefreshSenapredAlerts`).
+  - Coexistencia epistémica estricta: las alertas oficiales en vivo se etiquetan como `🟢 Transmisión Oficial en Vivo`, mientras que las simulaciones mantienen el badge `🧪 Registro de Demostración`, preservando el cumplimiento riguroso del Criterio de Aceptación CA-01.
+
+---
+
 ## [1.6.0] - 2026-10-20
 
 ### Optimizado y Refactorizado

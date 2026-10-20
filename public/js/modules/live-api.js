@@ -370,3 +370,29 @@ export function buildCartoBuilderGeoJsonClient(locations, alerts = []) {
     })
   };
 }
+
+/**
+ * Conecta con el endpoint /api/senapred/alertas-live del backend
+ * que ingesta en tiempo real alertas de SENAPRED, activaciones SAE (Cell Broadcast)
+ * y avisos oficiales de la DMC.
+ */
+export async function fetchLiveSenapredAlerts() {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+  try {
+    const res = await fetch('/api/senapred/alertas-live', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) return { ok: false, alerts: [] };
+    const data = await res.json();
+    return {
+      ok: true,
+      count: data.count || 0,
+      saeActiveCount: data.saeActiveCount || 0,
+      cached: data.cached || false,
+      alerts: data.alerts || []
+    };
+  } catch {
+    clearTimeout(timeoutId);
+    return { ok: false, alerts: [] };
+  }
+}
