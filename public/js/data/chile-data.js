@@ -1514,6 +1514,14 @@ export const AI_AGENTS_DATA = {
       parameter: 'Tasa pluvial y tiempo de concentración de cuenca',
       rawValue: 'Tasa puntual 14.2 mm/h sobre cota 2.850 m s.n.m. con tiempo de concentración estimado en 45 minutos',
       dataType: 'OBSERVACION'
+    },
+    'EV-SAE-01': {
+      id: 'EV-SAE-01',
+      source: 'SENAPRED · Sistema de Alerta de Emergencia (SAE) / SUBTEL',
+      timestampUtc: '2026-10-19T15:15:00Z',
+      parameter: 'Transmisión Oficial Cell Broadcast SAE',
+      rawValue: 'Evacuación preventiva por peligro de remoción en masa en Quebrada de Macul y San José de Maipo',
+      dataType: 'OFICIAL_VINCULANTE'
     }
   },
   agents: [
@@ -1598,6 +1606,24 @@ export const AI_AGENTS_DATA = {
           citations: ['EV-103', 'EV-106']
         }
       ]
+    },
+    {
+      id: 'AG-SAE-06',
+      name: 'Agente Centinela de Emergencia SAE (SaeEmergencyCoordinator)',
+      role: 'Detección directa en tiempo real de emisiones de mensajería Cell Broadcast SAE y acoplamiento hidrometeorológico',
+      status: 'EMERGENCIA_SAE_ACTIVADA',
+      autonomyLevel: 'DETECCION_DIRECTA_CON_SUPERVISION_HUMANA',
+      lastRunUtc: '2026-10-19T15:15:00Z',
+      findings: [
+        {
+          text: 'Detección directa de transmisión Cell Broadcast SAE: Evacuación preventiva en Quebrada de Macul y San José de Maipo por peligro de remoción en masa.',
+          citations: ['EV-SAE-01']
+        },
+        {
+          text: 'Correlación multivariable confirmada: La orden de evacuación coincide con ascenso forzado de la isoterma 0 °C sobre 3.050 m s.n.m. y pulsos de lluvia intensa en cabecera de cuenca.',
+          citations: ['EV-101', 'EV-107', 'EV-SAE-01']
+        }
+      ]
     }
   ],
   hitlQueue: [
@@ -1631,6 +1657,23 @@ export const AI_AGENTS_DATA = {
         { rule: 'Vínculo estricto a evidencia hidrológica [EV-101], [EV-106] y [EV-107]', passed: true },
         { rule: 'Tiempo de respuesta estimado en 45 minutos hacia el valle', passed: true },
         { rule: 'Bloqueo preventivo de despacho masivo sin confirmación técnica HITL', passed: true }
+      ]
+    },
+    {
+      id: 'HITL-203',
+      agentId: 'AG-SAE-06',
+      createdAtUtc: '2026-10-19T15:15:30Z',
+      targetAudience: 'Comunidades en Evacuación, COGRID Comunal y Dirección de Gestión de Riesgo de Desastres',
+      impactLevel: 'EMERGENCIA_CRITICA_SAE',
+      isSaeEmergency: true,
+      status: 'PENDIENTE_REVISION_HUMANA',
+      proposedSummary: '🚨 DETECCIÓN DIRECTA DE MENSAJERÍA SAE [EV-SAE-01]: Transmisión activa de Cell Broadcast emitida por SENAPRED para Quebrada de Macul y San José de Maipo ante peligro inminente de remoción en masa y aluvión. El agente correlaciona la alerta con lluvia activa en cabecera e isoterma sobre 3.050 m s.n.m. [EV-101, EV-107]. Se solicita validación inmediata para coordinar despacho de alarma sonora dual (853/960 Hz), cierre de accesos a la cuenca y notificación push masiva.',
+      citations: ['EV-SAE-01', 'EV-101', 'EV-107'],
+      guardrailChecks: [
+        { rule: 'Verificación de autenticidad criptográfica del canal oficial SENAPRED/SUBTEL', passed: true },
+        { rule: 'Correlación cruzada con telemetría DGA y radar meteorológico en tiempo real', passed: true },
+        { rule: 'Generación automática de paquete de despacho: Sirena acústica SAE + Locución', passed: true },
+        { rule: 'Supervisión y trazabilidad humana (HITL) obligatoria antes de difusión masiva', passed: true }
       ]
     }
   ]

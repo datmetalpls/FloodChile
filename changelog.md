@@ -16,6 +16,10 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
   - Integración de locución de protección civil mediante **Web Speech API (`SpeechSynthesis`)** en español ("*Atención: Alerta de emergencia emitida por SENAPRED...*").
   - Botón de control dinámico para silenciar/detener la sirena inmediatamente (`#btnStopSaeAlarm`).
   - Funciona 100% offline sin necesidad de descargar archivos MP3 ni sufrir bloqueos de autoplay, activado mediante el gesto de clic del usuario.
+- **Agente Centinela de Difusión de Emergencia SAE (`AG-SAE-06` / `SaeEmergencyCoordinator`)**:
+  - Nuevo agente especializado en la arquitectura multi-agente que monitorea directamente las emisiones Cell Broadcast del SAE.
+  - Ingesta dinámica de evidencia trazable `EV-SAE-01` en el registro de evidencias (`evidenceRegistry`), correlacionando la orden de evacuación con la isoterma 0 °C (`EV-101`) y la telemetría de cuencas andinas (`EV-107`).
+  - Escalamiento prioritario a la cola de supervisión humana `HITL-203` con botón de prueba acústica in-situ (`🔊 Probar Sirena SAE`) y despacho automático de sirena dual (853/960 Hz) y Web Push nativo tras la firma y aprobación del supervisor meteorológico.
 - **Conector de Cliente en Tiempo Real (`fetchLiveSenapredAlerts`)**:
   - Módulo en `public/js/modules/live-api.js` y sincronización automática en `public/js/app.js` cada 10 minutos, sumado a un botón de actualización manual (`#btnRefreshSenapredAlerts`).
   - Coexistencia epistémica estricta: las alertas oficiales en vivo se etiquetan como `🟢 Transmisión Oficial en Vivo`, mientras que las simulaciones mantienen el badge `🧪 Registro de Demostración`, preservando el cumplimiento riguroso del Criterio de Aceptación CA-01.

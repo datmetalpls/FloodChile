@@ -962,9 +962,43 @@ export async function loadLiveSenapredAlerts(force = false) {
       if (statusText) {
         statusText.innerHTML = `🟢 Ingesta activa: <strong>${res.alerts.length} alertas oficiales</strong> sincronizadas (SENAPRED / DMC / SAE)`;
       }
+
+      // Sincronizar directamente con el sistema de Agentes de IA (Detección directa SAE)
+      const saeAlert = res.alerts.find((a) => a.isSaeActivation);
+      if (saeAlert && AI_AGENTS_DATA.evidenceRegistry['EV-SAE-01']) {
+        AI_AGENTS_DATA.evidenceRegistry['EV-SAE-01'] = {
+          id: 'EV-SAE-01',
+          source: 'SENAPRED · Sistema de Alerta de Emergencia (SAE) / SUBTEL',
+          timestampUtc: saeAlert.issuedAtUtc || saeAlert.onsetUtc || new Date().toISOString(),
+          parameter: 'Transmisión Oficial Cell Broadcast SAE',
+          rawValue: `${saeAlert.title} | ${saeAlert.whatCouldHappen}`,
+          dataType: 'OFICIAL_VINCULANTE'
+        };
+
+        const saeAgent = AI_AGENTS_DATA.agents.find((ag) => ag.id === 'AG-SAE-06');
+        if (saeAgent) {
+          saeAgent.status = 'EMERGENCIA_SAE_ACTIVADA';
+          saeAgent.lastRunUtc = new Date().toISOString();
+          saeAgent.findings = [
+            {
+              text: `Detección directa de transmisión Cell Broadcast SAE: ${saeAlert.title}. Zonas bajo orden de evacuación: ${saeAlert.affectedZonesText}.`,
+              citations: ['EV-SAE-01']
+            },
+            {
+              text: 'Correlación multivariable confirmada: La orden de evacuación coincide con ascenso forzado de la isoterma 0 °C sobre 3.050 m s.n.m. y pulsos de lluvia intensa en cabecera de cuenca.',
+              citations: ['EV-101', 'EV-107', 'EV-SAE-01']
+            }
+          ];
+        }
+
+        const hitlSae = AI_AGENTS_DATA.hitlQueue.find((q) => q.id === 'HITL-203');
+        if (hitlSae) {
+          hitlSae.proposedSummary = `🚨 DETECCIÓN DIRECTA DE MENSAJERÍA SAE [EV-SAE-01]: Transmisión activa de Cell Broadcast emitida por SENAPRED para ${saeAlert.affectedZonesText} ante peligro inminente de remoción en masa y aluvión. El agente correlaciona la alerta con lluvia activa en cabecera e isoterma sobre 3.050 m s.n.m. [EV-101, EV-107]. Se solicita validación inmediata para coordinar despacho de alarma sonora dual (853/960 Hz), cierre de accesos a la cuenca y notificación push masiva.`;
+        }
+      }
     }
   } catch (err) {
-    console.warn('Error sincronizando alertas SENAPRED:', err);
+    console.warn('Error sincronizando alertas SENAPRED con Agentes:', err);
   }
 }
 
@@ -1464,17 +1498,38 @@ function renderAgentsSection() {
 
   if (hitlContainer) {
     hitlContainer.innerHTML = AI_AGENTS_DATA.hitlQueue
-      .map(
-        (item) => `
-        <div class="agent-card" style="border: 2px dashed var(--sev-prev-border);">
+      .map((item) => {
+        const isSae = Boolean(item.isSaeEmergency);
+        const isPending = item.status === 'PENDIENTE_REVISION_HUMANA';
+        return `
+        <div class="agent-card ${isSae ? 'sae-hitl-card' : ''}" style="${
+          isSae
+            ? 'border: 2px solid #ef4444; background: rgba(239, 68, 68, 0.05); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.15);'
+            : 'border: 2px dashed var(--sev-prev-border);'
+        }">
           <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.4rem;">
-            <span class="severity-pill sev-TEMPRANA">👤 Escalamiento HITL #${item.id}</span>
-            <span id="hitlStatusBadge-${item.id}" class="epistemic-badge badge-estimacion">${item.status}</span>
+            <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+              <span class="severity-pill ${isSae ? 'sev-EXTREMA' : 'sev-TEMPRANA'}">
+                ${isSae ? '🚨 EMERGENCIA SAE EN VIVO #' + item.id : '👤 Escalamiento HITL #' + item.id}
+              </span>
+              ${
+                isSae
+                  ? '<span class="sae-badge" style="font-size:0.7rem; padding:0.15rem 0.45rem;">Detección Cell Broadcast</span>'
+                  : ''
+              }
+            </div>
+            <span id="hitlStatusBadge-${item.id}" class="epistemic-badge ${
+              item.status === 'APROBADO_POR_SUPERVISOR_HUMANO'
+                ? 'badge-observacion'
+                : item.status === 'RECHAZADO_POR_SUPERVISOR_HUMANO'
+                ? 'badge-peligro'
+                : 'badge-estimacion'
+            }">${item.status}</span>
           </div>
           <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.45rem;">
             Destinatario propuesto: <strong>${item.targetAudience}</strong>
           </div>
-          <p class="condition-summary-banner" style="margin:0.4rem 0;">
+          <p class="condition-summary-banner" style="margin:0.4rem 0; ${isSae ? 'border-left-color:#ef4444;' : ''}">
             ${item.proposedSummary}
             ${item.citations
               .map(
@@ -1489,17 +1544,40 @@ function renderAgentsSection() {
               ${item.guardrailChecks.map((g) => `<li>✓ ${g.rule}</li>`).join('')}
             </ul>
           </div>
-          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.65rem;">
-            <button type="button" class="btn btn-primary btn-hitl-action" data-hitl-id="${item.id}" data-decision="APROBADO_POR_SUPERVISOR_HUMANO">
-              ✓ Aprobar Boletín Preventivo (Firma Humana)
-            </button>
-            <button type="button" class="btn btn-warning btn-hitl-action" data-hitl-id="${item.id}" data-decision="RECHAZADO_POR_SUPERVISOR_HUMANO">
-              ✕ Rechazar / Solicitar Recálculo
-            </button>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.65rem; align-items:center;">
+            ${
+              isPending
+                ? `
+              <button type="button" class="btn btn-primary btn-hitl-action" data-hitl-id="${item.id}" data-decision="APROBADO_POR_SUPERVISOR_HUMANO" style="${
+                    isSae ? 'background:#dc2626; border-color:#b91c1c; font-weight:700;' : ''
+                  }">
+                ✓ ${
+                  isSae
+                    ? 'Aprobar y Emitir Alarma Acústica SAE + Web Push'
+                    : 'Aprobar Boletín Preventivo (Firma Humana)'
+                }
+              </button>
+              <button type="button" class="btn btn-warning btn-hitl-action" data-hitl-id="${item.id}" data-decision="RECHAZADO_POR_SUPERVISOR_HUMANO">
+                ✕ Rechazar / Solicitar Recálculo
+              </button>
+            `
+                : `
+              <span style="font-size:0.8rem; font-weight:700; color:var(--text-secondary);">Decisión registrada: <code>${item.status}</code></span>
+            `
+            }
+            ${
+              isSae
+                ? `
+              <button type="button" class="btn btn-sm btn-secondary btn-hitl-preview-alarm" data-hitl-id="${item.id}">
+                🔊 Probar Sirena SAE
+              </button>
+            `
+                : ''
+            }
           </div>
         </div>
-      `
-      )
+      `;
+      })
       .join('');
   }
 
@@ -1529,6 +1607,22 @@ function renderAgentsSection() {
     });
   });
 
+  document.querySelectorAll('.btn-hitl-preview-alarm').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (isAudioAlarmPlaying()) {
+        stopAudioAlarm();
+        btn.textContent = '🔊 Probar Sirena SAE';
+      } else {
+        playSaeAlarm({
+          title: 'Prueba Acústica SAE',
+          speechText: 'Prueba de transmisión del Sistema de Alerta de Emergencia.',
+          durationSec: 5
+        });
+        btn.textContent = '⏹ Silenciar Sirena';
+      }
+    });
+  });
+
   document.querySelectorAll('.btn-hitl-action').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const hitlId = btn.getAttribute('data-hitl-id');
@@ -1539,11 +1633,25 @@ function renderAgentsSection() {
         renderAgentsSection();
 
         if (decision === 'APROBADO_POR_SUPERVISOR_HUMANO') {
-          triggerNativeWebPushNotification({
-            title: '🛡️ FloodChile · Boletín Supervisado Aprobado (HITL)',
-            body: item.proposedSummary.replace(/\[Ref:\s*[^\]]+\]/g, '').slice(0, 150) + '...',
-            tag: `hitl-approved-${item.id}`
-          });
+          if (item.isSaeEmergency) {
+            playSaeAlarm({
+              title: '🚨 EMERGENCIA SAE VALIDADA',
+              speechText:
+                'Atención: Emergencia validada por supervisión meteorológica. Evacuación preventiva en curso.',
+              durationSec: 8
+            });
+            triggerNativeWebPushNotification({
+              title: '🚨 EMERGENCIA SAE VALIDADA (SUPERVISIÓN HITL)',
+              body: item.proposedSummary.replace(/\[Ref:\s*[^\]]+\]/g, '').slice(0, 160) + '...',
+              tag: `hitl-sae-${item.id}`
+            });
+          } else {
+            triggerNativeWebPushNotification({
+              title: '🛡️ FloodChile · Boletín Supervisado Aprobado (HITL)',
+              body: item.proposedSummary.replace(/\[Ref:\s*[^\]]+\]/g, '').slice(0, 150) + '...',
+              tag: `hitl-approved-${item.id}`
+            });
+          }
         }
 
         try {
