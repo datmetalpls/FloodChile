@@ -1349,8 +1349,9 @@ canvas:focus-visible {
 
 #chileDynamicMapCanvas {
   width: 100%;
-  max-height: 620px;
-  object-fit: contain;
+  height: auto;
+  aspect-ratio: 760 / 620;
+  max-height: 640px;
   background: var(--bg-card-elevated);
   display: block;
   margin: 0 auto;

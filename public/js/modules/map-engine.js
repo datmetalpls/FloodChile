@@ -346,205 +346,324 @@ class ChileMapController {
 
   project(loc, width, height) {
     if (loc.id === 'rapanui') {
-      return { x: 84, y: 245, isInsular: true };
+      return { x: 96, y: 154, isInsular: true };
     }
     const minLat = -55.8;
     const maxLat = -17.2;
     const normY = (maxLat - loc.lat) / (maxLat - minLat);
-    const rawY = 44 + normY * (height - 88);
+    const topMargin = 52;
+    const botMargin = 52;
+    const rawY = topMargin + normY * (height - topMargin - botMargin);
     const y = (rawY - height / 2) * this.zoomLevel + height / 2 + this.panY;
 
+    // Centrar la columna de Chile en x = 320 para dar espacio balanceado a izquierda (22..300) y derecha (340..740)
     const baseCenterLon = -71.2;
-    const offsetX = (loc.lon - baseCenterLon) * 20 * Math.min(1.4, this.zoomLevel * 0.85);
-    const x = Math.max(155, Math.min(345, 250 + offsetX));
+    const spineX = Math.round(width * 0.44); // ~334px en 760px
+    const offsetX = (loc.lon - baseCenterLon) * 16 * Math.min(1.4, this.zoomLevel * 0.85);
+    const x = Math.max(spineX - 60, Math.min(spineX + 50, spineX + offsetX));
     return { x, y, isInsular: false };
   }
 
-  focusOnSelectedLocation() {
-    const loc = this.locations.find((l) => l.id === this.selectedLocationId);
-    if (!loc) return;
+  /**
+   * ESQUEMA NACIONAL POR MACROZONAS (Determinista, sin lluvia ni viento ficticio)
+   * Muestra todas las comunas del dataset con sus valores para el paso temporal activo.
+   */
+  renderFrame() {
+    if (!this.ctx || !this.canvas) return;
+    const ctx = this.ctx;
 
-    if (this.mapMode === 'leaflet' && this.leafletMap) {
-      if (prefersReducedMotion()) {
-        this.leafletMap.setView([loc.lat, loc.lon], 8);
-      } else {
-        this.leafletMap.flyTo([loc.lat, loc.lon], 8, { duration: 0.65 });
+    // Sincronizar dimensiones nativas con ancho del contenedor
+    const container = this.canvas.parentElement;
+    if (container && container.clientWidth > 100) {
+      const targetW = container.clientWidth;
+      const targetH = Math.min(680, Math.max(540, Math.round(targetW * 0.76)));
+      if (this.canvas.width !== targetW || this.canvas.height !== targetH) {
+        this.canvas.width = targetW;
+        this.canvas.height = targetH;
       }
-      return;
     }
 
-    if (loc.id === 'rapanui' || !this.canvas) {
-      this.zoomLevel = 1;
-      this.panY = 0;
-      this.redrawCurrentCanvas();
-      return;
-    }
-    const height = 680;
-    const minLat = -55.8;
-    const maxLat = -17.2;
-    const normY = (maxLat - loc.lat) / (maxLat - minLat);
-    const rawY = 44 + normY * (height - 88);
-    this.zoomLevel = 1.8;
-    this.panY = -(rawY - height / 2) * (this.zoomLevel - 0.15);
-    this.panY = Math.max(-390, Math.min(390, this.panY));
-    this.redrawCurrentCanvas();
-  }
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+    const isLight = document.documentElement.getAttribute('data-theme') !== 'dark';
 
-  resetZoom() {
-    this.zoomLevel = 1;
-    this.panY = 0;
-    this.cameraPitch3D = 0.58;
-    this.cameraYaw3D = -0.32;
-    if (this.mapMode === 'leaflet' && this.leafletMap) {
-      if (prefersReducedMotion()) {
-        this.leafletMap.setView([-35.8, -71.2], 5);
-      } else {
-        this.leafletMap.flyTo([-35.8, -71.2], 5, { duration: 0.65 });
-      }
+    ctx.save();
+    // Fondo estilizado con degradado cartográfico sutil
+    const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+    if (isLight) {
+      bgGrad.addColorStop(0, '#f8fafc');
+      bgGrad.addColorStop(0.5, '#f1f5f9');
+      bgGrad.addColorStop(1, '#e2e8f0');
     } else {
-      this.redrawCurrentCanvas();
+      bgGrad.addColorStop(0, '#060d17');
+      bgGrad.addColorStop(0.5, '#0b1627');
+      bgGrad.addColorStop(1, '#07101c');
     }
-  }
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, width, height);
 
-  redrawCurrentCanvas() {
-    if (this.mapMode === 'terrain3d') {
-      this.renderTerrain3DFrame();
-    } else if (this.mapMode === 'fluid') {
-      this.renderFrame();
+    // Grilla latitudinal sutil
+    ctx.strokeStyle = isLight ? 'rgba(15, 23, 42, 0.06)' : 'rgba(148, 163, 184, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.font = '500 9.5px "JetBrains Mono", monospace';
+    ctx.fillStyle = isLight ? '#94a3b8' : 'rgba(148, 163, 184, 0.55)';
+
+    for (const lat of [-20, -25, -30, -35, -40, -45, -50, -55]) {
+      const minLat = -55.8;
+      const maxLat = -17.2;
+      const topMargin = 52;
+      const botMargin = 52;
+      const rawY = topMargin + ((maxLat - lat) / (maxLat - minLat)) * (height - topMargin - botMargin);
+      const y = (rawY - height / 2) * this.zoomLevel + height / 2 + this.panY;
+      if (y > 24 && y < height - 24) {
+        ctx.beginPath();
+        ctx.moveTo(20, y);
+        ctx.lineTo(width - 20, y);
+        ctx.stroke();
+        ctx.fillText(`${Math.abs(lat)}°S`, 24, y - 4);
+      }
     }
-  }
 
-  mount({
-    container,
-    locations,
-    selectedLocationId,
-    activeLayer,
-    hourOffset,
-    onSelectLocation,
-    onExportGeoJson
-  }) {
-    this.locations = locations;
-    const prevSelected = this.selectedLocationId;
-    this.selectedLocationId = selectedLocationId;
-    this.activeLayer = activeLayer;
-    this.hourOffset = hourOffset;
-    this.onSelectLocation = onSelectLocation;
-    if (onExportGeoJson) this.onExportGeoJson = onExportGeoJson;
+    // Silueta territorial estilizada del territorio continental
+    const contPoints = this.locations
+      .filter((l) => l.id !== 'rapanui')
+      .map((l) => ({ loc: l, ...this.project(l, width, height) }));
 
-    if (!container) return;
+    if (contPoints.length > 1) {
+      // Costa y relieve oeste
+      ctx.beginPath();
+      contPoints.forEach((pt, i) => {
+        const cx = pt.x - 22;
+        if (i === 0) ctx.moveTo(cx, pt.y);
+        else ctx.lineTo(cx, pt.y);
+      });
+      // Límite cordillerano este
+      [...contPoints].reverse().forEach((pt) => {
+        ctx.lineTo(pt.x + 24, pt.y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(24, 35, 54, 0.7)';
+      ctx.fill();
+      ctx.strokeStyle = isLight ? 'rgba(148, 163, 184, 0.6)' : 'rgba(71, 85, 105, 0.6)';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
 
-    if (!this.canvas || !container.contains(this.canvas)) {
-      const hasLeaflet = typeof window !== 'undefined' && typeof window.L !== 'undefined';
-      this.mapMode = hasLeaflet ? 'leaflet' : 'fluid';
+      // Línea de columna vertebral andina (este)
+      ctx.beginPath();
+      contPoints.forEach((pt, i) => {
+        const ax = pt.x + 18;
+        if (i === 0) ctx.moveTo(ax, pt.y);
+        else ctx.lineTo(ax, pt.y);
+      });
+      ctx.strokeStyle = isLight ? 'rgba(100, 116, 139, 0.35)' : 'rgba(226, 232, 240, 0.2)';
+      ctx.setLineDash([3, 4]);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
 
-      container.innerHTML = `
-        <div class="animated-map-stage">
-          <div class="map-mode-toolbar" role="toolbar" aria-label="Modo de visualización del mapa">
-            <div class="map-mode-pills">
-              <button type="button" class="btn-map-ctrl ${this.mapMode === 'leaflet' ? 'active' : ''}" id="btnModeLeaflet" title="Mapa cartográfico interactivo con comunas, capas climáticas y superposición satelital">
-                🗺 Mapa Interactivo
-              </button>
-              <button type="button" class="btn-map-ctrl ${this.mapMode === 'fluid' ? 'active' : ''}" id="btnModeFluid" title="Esquema nacional comparativo de las 16 regiones e isla Rapa Nui">
-                🇨🇱 Esquema Nacional
-              </button>
-              <button type="button" class="btn-map-ctrl ${this.mapMode === 'terrain3d' ? 'active' : ''}" id="btnModeTerrain3D" title="Corte altitudinal adaptable Océano → Valle → Cordillera con nivel de Isoterma 0 °C">
-                🏔 Perfil Isoterma 0°C
-              </button>
-            </div>
-            <div class="map-camera-pills">
-              <button type="button" class="btn-map-ctrl" id="btnMapZoomLoc" title="Centrar en la comuna seleccionada">
-                🎯 Ir a Comuna
-              </button>
-              <button type="button" class="btn-map-ctrl" id="btnMapZoomReset" title="Ver todo Chile">
-                🇨🇱 Vista Nacional
-              </button>
-            </div>
-          </div>
+    // Recuadro Territorio Insular Rapa Nui en la esquina superior izquierda (lat ~27°S pero en caja aislada arriba)
+    const insularBoxX = 22;
+    const insularBoxY = 46;
+    const insularBoxW = 160;
+    const insularBoxH = 68;
 
-          <!-- Barra de Mapa Base Abierto y Capas Satelitales (en modo Mapa Interactivo) -->
-          <div id="leafletRadarToolbar" class="map-radar-subbar ${this.mapMode === 'leaflet' ? '' : 'hidden'}" role="region" aria-label="Proveedor de mapa base abierto y capa satelital/radar">
-            <label for="basemapProviderSelect" style="font-size:0.74rem; font-weight:700; color:var(--text-secondary);">
-              Mapa base:
-            </label>
-            <select id="basemapProviderSelect" style="font-size:0.75rem; padding:0.24rem 0.48rem;">
-              <option value="osm_standard" selected>OpenStreetMap Estándar (Cartografía Abierta)</option>
-              <option value="opentopomap">OpenTopoMap — Relieve y Curvas de Nivel Andinas (Abierto)</option>
-              <option value="esri_satellite">ESRI World Imagery — Satelital de Alta Resolución</option>
-              <option value="positron_dark">Contraste Oscuro / Positron (Minimalista)</option>
-            </select>
+    ctx.save();
+    ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(15, 23, 42, 0.8)';
+    ctx.strokeStyle = isLight ? 'rgba(2, 132, 199, 0.45)' : 'rgba(56, 189, 248, 0.35)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(insularBoxX, insularBoxY, insularBoxW, insularBoxH, 10);
+    ctx.fill();
+    ctx.stroke();
 
-            <label for="satelliteOverlaySelect" style="font-size:0.74rem; font-weight:700; color:var(--text-secondary);">
-              Satélite / Radar:
-            </label>
-            <select id="satelliteOverlaySelect" style="font-size:0.75rem; padding:0.24rem 0.48rem;" title="Selecciona la capa satelital en vivo superpuesta sobre Chile">
-              <option value="rainviewer" selected>RainViewer — Mosaico Radar + IR (En vivo)</option>
-              <option value="gibs_goes_ir">NASA GIBS — GOES-East Banda 13 Infrarrojo (En vivo 10m)</option>
-              <option value="gibs_goes_geocolor">NASA GIBS — GOES-East GeoColor (Color Real Día + IR Noche)</option>
-              <option value="gibs_viirs_truecolor">NASA GIBS — VIIRS Suomi NPP Color Verdadero (250m)</option>
-              <option value="none">Sin superposición satelital</option>
-            </select>
+    ctx.fillStyle = isLight ? '#0369a1' : '#38bdf8';
+    ctx.font = '700 9px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText('TERRITORIO INSULAR', insularBoxX + 12, insularBoxY + 16);
+    ctx.fillStyle = isLight ? '#64748b' : '#94a3b8';
+    ctx.font = '500 8px "JetBrains Mono", monospace';
+    ctx.fillText('Rapa Nui · 27°S 109°W', insularBoxX + 12, insularBoxY + 28);
+    ctx.restore();
 
-            <button type="button" class="btn btn-sm" id="btnRadarPlay" title="Reproduce los fotogramas observados de RainViewer si hay conexión en vivo">
-              ▶ Fotogramas IR/Radar
-            </button>
-            <span id="radarFrameStatus" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--text-secondary);">
-              Radar: Listo
-            </span>
-            <label style="display:inline-flex; align-items:center; gap:0.35rem; font-size:0.74rem; margin-left:auto;">
-              <span>Opacidad (<strong id="radarOpacityVal">65%</strong>):</span>
-              <input type="range" id="radarOpacitySlider" min="0" max="100" value="65" style="width:70px;" />
-            </label>
-          </div>
+    this.nodePositions = [];
 
-          <!-- Barra de controles del Perfil Isoterma 0 °C -->
-          <div id="terrain3DToolbar" class="map-radar-subbar hidden" role="region" aria-label="Controles del perfil altitudinal">
-            <span style="font-size:0.75rem; font-weight:700; color:var(--accent-text);">
-              🏔 Corte Altitudinal de Cuenca: Océano Pacífico → Depresión Intermedia → Alta Cordillera
-            </span>
-            <span style="font-size:0.72rem; color:var(--text-secondary); margin-left:auto;">
-              Nivel de congelación determinista según paso temporal (+0h a +48h)
-            </span>
-          </div>
+    // Separación limpia:
+    // Flujo IZQUIERDO: Ciudades costeras y centro-sur para despejar la columna derecha
+    // (Valparaíso, Rancagua, Concepción, Valdivia, Puerto Montt)
+    const leftAnchorIds = new Set(['valparaiso', 'rancagua', 'concepcion', 'valdivia', 'puertomontt']);
 
-          <div class="map-viewport-wrapper">
-            <div id="chileLeafletMapContainer" class="leaflet-stage ${this.mapMode === 'leaflet' ? '' : 'hidden'}" aria-label="Mapa cartográfico interactivo de Chile"></div>
-            <canvas id="chileDynamicMapCanvas" width="720" height="560" tabindex="0"
-                    class="${this.mapMode === 'leaflet' ? 'hidden' : ''}"
-                    role="img"
-                    aria-label="Esquema nacional de Chile y perfil altitudinal de isoterma cero grados"></canvas>
-          </div>
-        </div>
-      `;
-      this.canvas = container.querySelector('#chileDynamicMapCanvas');
-      this.ctx = this.canvas.getContext('2d');
-      this.leafletContainer = container.querySelector('#chileLeafletMapContainer');
-      this.cartoEmbedContainer = null;
-      this.bindCanvasEvents(container);
-
-      if (this.mapMode === 'leaflet') {
-        this.initLeafletIfNeeded();
+    const rawItems = this.locations.map((loc) => {
+      const isInsular = loc.id === 'rapanui';
+      let p;
+      if (isInsular) {
+        p = { x: insularBoxX + 22, y: insularBoxY + 47, isInsular: true };
       } else {
-        this.redrawCurrentCanvas();
-        if (typeof window !== 'undefined' && !window.L) {
-          window.addEventListener(
-            'load',
-            () => {
-              if (window.L && this.mapMode === 'fluid' && !this.leafletMap) {
-                const btnLeaflet = container.querySelector('#btnModeLeaflet');
-                btnLeaflet?.click();
-              }
-            },
-            { once: true }
-          );
+        p = this.project(loc, width, height);
+      }
+      const isLeft = isInsular ? false : leftAnchorIds.has(loc.id);
+      return {
+        loc,
+        x: p.x,
+        y: p.y,
+        isLeft,
+        isInsular,
+        targetY: p.y
+      };
+    });
+
+    const leftGroup = rawItems.filter((it) => it.isLeft);
+    const rightGroup = rawItems.filter((it) => !it.isLeft && !it.isInsular);
+
+    // Algoritmo de relajación vertical bidireccional (minDist = 32px)
+    const relaxGroup = (group, minDist = 32) => {
+      group.sort((a, b) => a.y - b.y);
+      for (let i = 1; i < group.length; i++) {
+        if (group[i].targetY < group[i - 1].targetY + minDist) {
+          group[i].targetY = group[i - 1].targetY + minDist;
         }
       }
-    }
+      for (let i = group.length - 2; i >= 0; i--) {
+        if (group[i].targetY > group[i + 1].targetY - minDist) {
+          group[i].targetY = group[i + 1].targetY - minDist;
+        }
+      }
+    };
 
-    if (this.mapMode === 'leaflet') {
-      this.syncLeafletMarkers(prevSelected !== selectedLocationId);
-    } else if (this.mapMode !== 'carto_embed') {
-      this.redrawCurrentCanvas();
-    }
+    relaxGroup(leftGroup, 32);
+    relaxGroup(rightGroup, 32);
+
+    rawItems.forEach((item) => {
+      const { loc, x, y, isLeft, isInsular, targetY } = item;
+      const isSelected = loc.id === this.selectedLocationId;
+      const isHovered = loc.id === this.hoveredLocationId;
+      const metric = getLocationValueForStep(loc, this.activeLayer, this.hourOffset);
+
+      // Anillo de selección exterior si está activa
+      if (isSelected) {
+        ctx.beginPath();
+        ctx.arc(x, y, 14, 0, Math.PI * 2);
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 2.4;
+        ctx.stroke();
+      }
+
+      // Pin geográfico circular
+      ctx.beginPath();
+      ctx.arc(x, y, isSelected || isHovered ? 9.5 : 7.5, 0, Math.PI * 2);
+      ctx.fillStyle = metric.color;
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = isSelected ? 2.4 : 1.6;
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 8px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(metric.symbol, x, y + 2.8);
+
+      // Dimensiones de tarjeta de comuna
+      const boxW = Math.min(205, Math.max(160, Math.round(width * 0.25)));
+      const boxH = 26;
+      let boxX;
+      let boxY;
+
+      if (isInsular) {
+        boxX = insularBoxX + 38;
+        boxY = insularBoxY + 34;
+      } else if (isLeft) {
+        boxX = x - 22 - boxW;
+        boxY = targetY - boxH / 2;
+      } else {
+        boxX = x + 22;
+        boxY = targetY - boxH / 2;
+      }
+
+      // Línea conectora elástica (leader line) si la tarjeta se movió para no chocar
+      if (!isInsular) {
+        ctx.beginPath();
+        const startX = isLeft ? x - 10 : x + 10;
+        const anchorX = isLeft ? boxX + boxW : boxX;
+        ctx.moveTo(startX, y);
+        ctx.lineTo(anchorX, targetY);
+        ctx.strokeStyle = isSelected
+          ? (isLight ? '#0284c7' : '#38bdf8')
+          : (isLight ? 'rgba(15, 23, 42, 0.24)' : 'rgba(148, 163, 184, 0.35)');
+        ctx.lineWidth = isSelected ? 1.5 : 1;
+        ctx.setLineDash(isSelected ? [] : [3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Fondo Glassmorphic / Traslúcido de la tarjeta de datos
+      ctx.save();
+      ctx.fillStyle = isSelected
+        ? (isLight ? '#ffffff' : 'rgba(15, 23, 42, 0.94)')
+        : (isLight ? 'rgba(255, 255, 255, 0.88)' : 'rgba(15, 23, 42, 0.78)');
+      ctx.strokeStyle = isSelected
+        ? '#0284c7'
+        : isHovered
+        ? (isLight ? '#0284c7' : '#38bdf8')
+        : (isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.15)');
+      ctx.lineWidth = isSelected ? 2 : 1;
+
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, boxW, boxH, 9999);
+      ctx.fill();
+      ctx.stroke();
+
+      // Punto de severidad dentro de la cápsula
+      const dotX = boxX + 10;
+      const dotY = boxY + boxH / 2;
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+      ctx.fillStyle = metric.color;
+      ctx.fill();
+
+      // Tipografía y contenido en 1 sola línea limpia (evita cajas altas apiladas)
+      ctx.textAlign = 'left';
+      ctx.fillStyle = isLight ? '#0f172a' : '#f8fafc';
+      ctx.font = '700 9.5px "Plus Jakarta Sans", sans-serif';
+      const shortName = loc.name.split('/')[0].trim();
+      const cityTitle = `${loc.regionCode} · ${shortName}`;
+      ctx.fillText(cityTitle, boxX + 19, boxY + 16.5);
+
+      // Métrica numérica a la derecha con fuente monospace nítida
+      ctx.textAlign = 'right';
+      ctx.fillStyle = isLight ? '#0369a1' : '#38bdf8';
+      ctx.font = '600 9px "JetBrains Mono", monospace';
+      ctx.fillText(metric.shortDisplay, boxX + boxW - 10, boxY + 16.5);
+      ctx.restore();
+
+      this.nodePositions.push({
+        id: loc.id,
+        x,
+        y,
+        boxX,
+        boxY,
+        boxW,
+        boxH
+      });
+    });
+
+    // Barra informativa inferior estilizada
+    ctx.save();
+    ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 23, 42, 0.88)';
+    ctx.strokeStyle = isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(148, 163, 184, 0.2)';
+    ctx.beginPath();
+    ctx.roundRect(16, height - 36, 320, 24, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = isLight ? '#0f172a' : '#cbd5e1';
+    ctx.font = '600 9.5px "Plus Jakarta Sans", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(
+      `🇨🇱 Esquema Nacional · ${this.hourOffset === 0 ? 'Ahora (t = 0 h)' : `Pronóstico +${this.hourOffset} h`}`,
+      24,
+      height - 20
+    );
+    ctx.restore();
+
+    ctx.restore();
   }
 
   async initLeafletIfNeeded() {
