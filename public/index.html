@@ -70,6 +70,9 @@
   <header class="brand-header">
     <div class="brand-header-inner">
       <div class="brand-title-group">
+        <button id="btnSidebarToggle" class="btn-sidebar-toggle" type="button" aria-label="Abrir o cerrar menú lateral" title="Menú de Navegación">
+          ☰
+        </button>
         <h1>
           <span>🇨🇱 ClimasFlood Chile</span>
           <span class="epistemic-badge badge-pronostico">Meteorología y Riesgo Hidrometeorológico</span>
@@ -141,59 +144,95 @@
     </div>
   </header>
 
-  <!-- Navegación simplificada en 4 áreas primarias + subnavegación contextual -->
-  <nav class="main-nav" aria-label="Navegación principal de la plataforma">
-    <div class="main-nav-inner">
-      <!-- 4 Grupos Primarios Comprensibles -->
-      <div class="primary-nav-groups" role="menubar" aria-label="Áreas principales">
-        <button type="button" class="nav-group-btn active" data-nav-group="mapa" aria-expanded="true">
-          🗺 Mapa y Comuna
-        </button>
-        <button type="button" class="nav-group-btn" data-nav-group="pronostico" aria-expanded="false">
-          📅 Pronóstico y Lluvia
-        </button>
-        <button type="button" class="nav-group-btn" data-nav-group="alertas" aria-expanded="false">
-          ⚠ Alertas <span id="navAlertCountChip" class="nav-count-badge">5 (Muestra)</span>
-        </button>
-        <button type="button" class="nav-group-btn" data-nav-group="mas" aria-expanded="false">
-          ➕ Más Análisis ▾
-        </button>
+  <!-- Backdrop para cierre en móviles -->
+  <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+  <!-- Contenedor Maestro Eje Z (Shell) -->
+  <div class="app-shell">
+    <!-- Menú Lateral Arquitectónico UX -->
+    <aside id="appSidebar" class="app-sidebar" aria-label="Navegación lateral y módulos">
+      <div class="sidebar-scrollable">
+        <!-- Grupo 1: Cartografía y Comuna -->
+        <div class="sidebar-group">
+          <span class="sidebar-group-title">Cartografía y Comuna</span>
+          <button class="sidebar-nav-item nav-tab active" data-tab="tab-mapa" data-group="mapa" type="button">
+            <span class="nav-item-icon">🗺</span>
+            <span class="nav-item-label">Mapa y Resumen</span>
+            <span class="nav-item-badge badge-cyan">En vivo</span>
+          </button>
+        </div>
+
+        <!-- Grupo 2: Pronóstico y Lluvia -->
+        <div class="sidebar-group">
+          <span class="sidebar-group-title">Pronóstico y Lluvia</span>
+          <button class="sidebar-nav-item nav-tab" data-tab="tab-pronostico" data-group="pronostico" type="button">
+            <span class="nav-item-icon">📅</span>
+            <span class="nav-item-label">Pronóstico 7 Días</span>
+            <span class="nav-item-badge">P10-P90</span>
+          </button>
+          <button class="sidebar-nav-item nav-tab" data-tab="tab-lluvia" data-group="pronostico" type="button">
+            <span class="nav-item-icon">🌧</span>
+            <span class="nav-item-label">Lluvia Horaria e Isoterma</span>
+            <span class="nav-item-badge">0 °C</span>
+          </button>
+        </div>
+
+        <!-- Grupo 3: Riesgo y Alertas -->
+        <div class="sidebar-group">
+          <span class="sidebar-group-title">Riesgo y Alertas</span>
+          <button class="sidebar-nav-item nav-tab" data-tab="tab-alertas" data-group="alertas" type="button">
+            <span class="nav-item-icon">⚠</span>
+            <span class="nav-item-label">Alertas y Notificaciones</span>
+            <span id="sidebarAlertBadge" class="nav-item-badge badge-rose">5 Activas</span>
+          </button>
+          <button class="sidebar-nav-item nav-tab" data-tab="tab-escenarios" data-group="mas" type="button">
+            <span class="nav-item-icon">🌊</span>
+            <span class="nav-item-label">Escenarios de Cuencas</span>
+            <span class="nav-item-badge">4 Casos</span>
+          </button>
+        </div>
+
+        <!-- Grupo 4: Sensores, Modelos & IA -->
+        <div class="sidebar-group">
+          <span class="sidebar-group-title">Sensores, Modelos & IA</span>
+          <button class="sidebar-nav-item nav-tab" data-tab="tab-satelite" data-group="mas" type="button">
+            <span class="nav-item-icon">🛰</span>
+            <span class="nav-item-label">Satélite GOES-16 NASA</span>
+            <span class="nav-item-badge badge-cyan">Banda 13</span>
+          </button>
+          <button class="sidebar-nav-item nav-tab" data-tab="tab-predictivo" data-group="mas" type="button">
+            <span class="nav-item-icon">📊</span>
+            <span class="nav-item-label">Modelos y Verificación</span>
+            <span class="nav-item-badge">CA-03</span>
+          </button>
+          <button class="sidebar-nav-item nav-tab" data-tab="tab-agentes" data-group="mas" type="button">
+            <span class="nav-item-icon">🤖</span>
+            <span class="nav-item-label">Agentes IA (HITL)</span>
+            <span class="nav-item-badge badge-amber">Supervisado</span>
+          </button>
+          <button class="sidebar-nav-item nav-tab" data-tab="tab-fuentes" data-group="mas" type="button">
+            <span class="nav-item-icon">📚</span>
+            <span class="nav-item-label">Fuentes y Criterios</span>
+            <span class="nav-item-badge">CA-01..09</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Pestañas de las 9 secciones (filtradas contextualmente según el área activa) -->
-      <div class="sub-nav-tabs" id="subNavTabsBar" role="tablist" aria-label="Secciones de la aplicación">
-        <button class="nav-tab active" role="tab" aria-selected="true" data-tab="tab-mapa" data-group="mapa">
-          Mapa y Resumen Local
-        </button>
-        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-pronostico" data-group="pronostico">
-          Pronóstico 7 Días (P10–P90)
-        </button>
-        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-lluvia" data-group="pronostico">
-          Lluvia Horaria e Isoterma 0 °C
-        </button>
-        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-alertas" data-group="alertas">
-          Alertas y Suscripciones
-        </button>
-        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-satelite" data-group="mas">
-          Satélite GOES-16 (Antes / Ahora)
-        </button>
-        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-escenarios" data-group="mas">
-          Escenarios Hidrometeorológicos
-        </button>
-        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-predictivo" data-group="mas">
-          Modelos y Verificación
-        </button>
-        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-agentes" data-group="mas">
-          Agentes IA (HITL)
-        </button>
-        <button class="nav-tab sub-tab-hidden" role="tab" aria-selected="false" data-tab="tab-fuentes" data-group="mas">
-          Fuentes y Criterios
-        </button>
+      <!-- Pie del Menú Lateral -->
+      <div class="sidebar-footer">
+        <div class="sidebar-loc-picker">
+          <label for="sidebarLocationSelect">Comuna Rápida</label>
+          <select id="sidebarLocationSelect" class="sidebar-select" aria-label="Cambiar comuna activa desde menú lateral"></select>
+        </div>
+        <div class="sidebar-meta-row">
+          <span>ClimasFlood Chile</span>
+          <span class="sidebar-status-pill">● Operativo</span>
+        </div>
       </div>
-    </div>
-  </nav>
+    </aside>
 
-  <main class="app-container">
+    <!-- Contenedor Principal en Eje Z -->
+    <main class="app-main-content app-container">
     <!-- Banner de advertencia cuando una fuente está desactualizada o sin conexión (CA-05) -->
     <div id="staleWarningBanner" class="stale-warning-banner hidden" role="alert">
       <div>
@@ -520,9 +559,12 @@
           <span class="epistemic-badge badge-pronostico">Estimación Probabilística — No es certeza determinista</span>
         </div>
 
-        <div class="condition-summary-banner">
-          <strong>Nota de Incertidumbre Hidrometeorológica:</strong> Los montos de precipitación e isoterma 0 °C son estimaciones sujetas a variaciones por topografía andina. Utilice siempre el rango <strong>P50 (escenario central)</strong> a <strong>P90 (escenario húmedo exigente)</strong> para planificación preventiva.
-        </div>
+        <details class="methodology-details">
+          <summary>ℹ Guía de Incertidumbre y Uso Preventivo (P50 vs P90)</summary>
+          <div class="methodology-content">
+            Los montos de precipitación e isoterma 0 °C son estimaciones probabilísticas sujetas a variaciones por topografía andina. Utilice siempre el rango <strong>P50 (escenario central)</strong> a <strong>P90 (escenario húmedo exigente)</strong> para planificación preventiva en cuencas.
+          </div>
+        </details>
 
         <div id="hourlyRainChartContainer"></div>
 
@@ -555,9 +597,12 @@
           </div>
         </div>
 
-        <div class="condition-summary-banner">
-          <strong>Aviso de Integridad de Datos:</strong> Las alertas listadas a continuación corresponden a <strong>datos de muestra predefinidos</strong> en el repositorio para demostrar la separación entre avisos oficiales y estimaciones por umbral. Para consultar alertas reales vigentes hoy en Chile, acuda directamente a <a href="https://senapred.cl/alertas/" target="_blank" rel="noopener noreferrer">SENAPRED Alertas ↗</a> y <a href="https://www.meteochile.gob.cl/" target="_blank" rel="noopener noreferrer">DMC MeteoChile ↗</a>.
-        </div>
+        <details class="methodology-details">
+          <summary>ℹ Integridad y Criterios Oficiales de Alerta (SENAPRED / DMC)</summary>
+          <div class="methodology-content">
+            Las alertas listadas a continuación diferencian explícitamente avisos oficiales de estimaciones por umbrales de la app. Para emergencias oficiales vinculantes en Chile, consulte siempre <a href="https://senapred.cl/alertas/" target="_blank" rel="noopener noreferrer">SENAPRED Alertas ↗</a> y <a href="https://www.meteochile.gob.cl/" target="_blank" rel="noopener noreferrer">DMC MeteoChile ↗</a>.
+          </div>
+        </details>
 
         <!-- Filtros de Alertas -->
         <div class="filter-bar">
@@ -679,13 +724,15 @@
 
           <div id="modelComparisonContainer"></div>
 
-          <div class="condition-summary-banner" style="margin-top: 1rem;">
-            <strong>Sustento y limitaciones en terreno complejo:</strong>
-            <ul style="margin: 0.4rem 0 0; padding-left: 1.2rem; color: var(--text-secondary);">
-              <li><strong>Sustento:</strong> Comparación referencial entre las resoluciones de grilla de ECMWF IFS (9 km), DWD ICON (13 km) y NOAA GFS (25 km).</li>
-              <li><strong>Limitación topográfica en los Andes:</strong> La pendiente entre el valle central y la cordillera (&gt;4.500 m en menos de 60 km) introduce incertidumbre de ±150 m en la cota de la isoterma 0 °C dentro de cajones cordilleranos estrechos.</li>
-            </ul>
-          </div>
+          <details class="methodology-details" style="margin-top: 1rem;">
+            <summary>ℹ Sustento Técnico y Limitaciones Topográficas en los Andes</summary>
+            <div class="methodology-content">
+              <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-secondary);">
+                <li><strong>Sustento:</strong> Comparación referencial entre las resoluciones de grilla de ECMWF IFS (9 km), DWD ICON (13 km) y NOAA GFS (25 km).</li>
+                <li><strong>Limitación topográfica en los Andes:</strong> La pendiente entre el valle central y la cordillera (&gt;4.500 m en menos de 60 km) introduce incertidumbre de ±150 m en la cota de la isoterma 0 °C dentro de cajones cordilleranos estrechos.</li>
+              </ul>
+            </div>
+          </details>
         </div>
 
         <div class="panel-card">
@@ -841,6 +888,7 @@
       </div>
     </section>
   </main>
+  </div> <!-- /.app-shell -->
 
   <footer class="footer-bar">
     <div>

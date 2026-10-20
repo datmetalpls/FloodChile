@@ -164,12 +164,22 @@ function activateTab(tabId) {
     const isActive = tId === tabId;
     tab.classList.toggle('active', isActive);
     tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    tab.classList.toggle('sub-tab-hidden', tGroup !== group);
+    if (!tab.classList.contains('sidebar-nav-item')) {
+      tab.classList.toggle('sub-tab-hidden', tGroup !== group);
+    }
   });
 
   document.querySelectorAll('.view-section').forEach((sec) => {
     sec.classList.toggle('active', sec.id === tabId);
   });
+
+  // Cierre automático del drawer en dispositivos móviles/tablets al seleccionar sección
+  const sidebar = document.getElementById('appSidebar');
+  const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+  if (sidebar && sidebarBackdrop && window.innerWidth <= 1024) {
+    sidebar.classList.remove('sidebar-open');
+    sidebarBackdrop.classList.remove('active');
+  }
 
   if (tabId === 'tab-satelite') {
     renderSatelliteSection();
@@ -370,6 +380,14 @@ function populateLocationSelectors() {
       STATE.selectedLocationId = filtered[0].id;
       locSelect.value = STATE.selectedLocationId;
     }
+  }
+
+  const sidebarLocSelect = document.getElementById('sidebarLocationSelect');
+  if (sidebarLocSelect) {
+    sidebarLocSelect.innerHTML = CHILE_LOCATIONS.map(
+      (l) => `<option value="${l.id}" ${l.id === STATE.selectedLocationId ? 'selected' : ''}>[${l.regionCode}] ${l.name}</option>`
+    ).join('');
+    sidebarLocSelect.value = STATE.selectedLocationId;
   }
 
   if (notifSelect && !notifSelect.innerHTML.trim()) {
@@ -1556,6 +1574,37 @@ function setupEventListeners() {
       }
     });
   });
+
+  // Control de apertura/cierre del Menú Lateral (Drawer) y Backdrop
+  const sidebar = document.getElementById('appSidebar');
+  const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+  const btnSidebarToggle = document.getElementById('btnSidebarToggle');
+
+  if (btnSidebarToggle && sidebar) {
+    btnSidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar-open');
+      if (sidebarBackdrop) {
+        sidebarBackdrop.classList.toggle('active', sidebar.classList.contains('sidebar-open'));
+      }
+    });
+  }
+
+  if (sidebarBackdrop && sidebar) {
+    sidebarBackdrop.addEventListener('click', () => {
+      sidebar.classList.remove('sidebar-open');
+      sidebarBackdrop.classList.remove('active');
+    });
+  }
+
+  const sidebarLocSelect = document.getElementById('sidebarLocationSelect');
+  if (sidebarLocSelect) {
+    sidebarLocSelect.addEventListener('change', (e) => {
+      STATE.selectedLocationId = e.target.value;
+      const locSelect = document.getElementById('locationSelect');
+      if (locSelect) locSelect.value = e.target.value;
+      refreshAllViews();
+    });
+  }
 
   // Botones de acción rápida en la primera pantalla
   document.getElementById('btnJumpToRain')?.addEventListener('click', () => {
