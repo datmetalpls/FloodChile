@@ -170,27 +170,39 @@ export function renderModelComparisonChartSVG(container, location) {
         })
         .join('')}
 
-      <div class="obs-metrics-grid" style="margin:0.35rem 0;">
-        <div class="obs-metric-box">
-          <div class="obs-metric-label">Diferencia Lluvia 72h</div>
-          <div class="obs-metric-val">Δ ${spreadMm.toFixed(1)} mm</div>
-          <div style="font-size:0.72rem; color:var(--text-secondary);">Rango: ${Math.min(...precipVals).toFixed(1)} a ${Math.max(...precipVals).toFixed(1)} mm</div>
+      <div class="model-delta-grid">
+        <div class="model-delta-card">
+          <div class="delta-header">
+            <span class="delta-label">Diferencia Lluvia 72h</span>
+            <span class="delta-pill">Precipitación</span>
+          </div>
+          <div class="delta-val">Δ ${spreadMm.toFixed(1)} mm</div>
+          <div class="delta-sub">Rango: ${Math.min(...precipVals).toFixed(1)} – ${Math.max(...precipVals).toFixed(1)} mm</div>
         </div>
-        <div class="obs-metric-box">
-          <div class="obs-metric-label">Diferencia Isoterma 0 °C</div>
-          <div class="obs-metric-val">Δ ${spreadIso} m</div>
-          <div style="font-size:0.72rem; color:var(--text-secondary);">Rango: ${Math.min(...isoVals)} a ${Math.max(...isoVals)} m</div>
+        <div class="model-delta-card">
+          <div class="delta-header">
+            <span class="delta-label">Diferencia Isoterma 0 °C</span>
+            <span class="delta-pill">Congelación</span>
+          </div>
+          <div class="delta-val">Δ ${spreadIso} m</div>
+          <div class="delta-sub">Rango: ${Math.min(...isoVals)} – ${Math.max(...isoVals)} m</div>
         </div>
-        <div class="obs-metric-box">
-          <div class="obs-metric-label">Diferencia Racha Viento</div>
-          <div class="obs-metric-val">Δ ${spreadWind} km/h</div>
-          <div style="font-size:0.72rem; color:var(--text-secondary);">Datos de muestra predefinidos</div>
+        <div class="model-delta-card">
+          <div class="delta-header">
+            <span class="delta-label">Diferencia Racha Viento</span>
+            <span class="delta-pill">Viento</span>
+          </div>
+          <div class="delta-val">Δ ${spreadWind} km/h</div>
+          <div class="delta-sub">Dispersión inter-modelo</div>
         </div>
       </div>
 
-      <p class="model-spread-explanation">
-        <strong>Nota de divergencia entre modelos (Datos de muestra):</strong> ${mc.spreadNote}
-      </p>
+      <div class="model-spread-explanation-box">
+        <span class="spread-icon" aria-hidden="true">💡</span>
+        <div>
+          <strong>Diagnóstico Multimodelo:</strong> ${mc.spreadNote}
+        </div>
+      </div>
     </div>
   `;
 }

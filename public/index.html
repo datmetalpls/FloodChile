@@ -872,26 +872,22 @@
           <span class="epistemic-badge badge-estimacion">Demostración de Guardrails + HITL</span>
         </div>
 
-        <div class="obs-metrics-grid" style="margin-bottom: 1rem;">
-          <div class="obs-metric-box">
-            <div class="obs-metric-label">Guardrail 1: Alertas Oficiales</div>
-            <div style="font-size: 0.84rem; font-weight: 700; margin-top: 0.2rem;">🔒 Permiso SOLO LECTURA</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary);">Prohibido emitir o modificar alertas de DMC, SENAPRED o SHOA.</div>
+        <div class="guardrails-ribbon" role="region" aria-label="Guardrails éticos y técnicos del sistema">
+          <div class="guardrail-chip">
+            <span class="gr-badge">🔒 Guardrail 1</span>
+            <strong>Alertas Oficiales:</strong> Solo Lectura
           </div>
-          <div class="obs-metric-box">
-            <div class="obs-metric-label">Guardrail 2: Trazabilidad de Citas</div>
-            <div style="font-size: 0.84rem; font-weight: 700; margin-top: 0.2rem;">✓ 100% Citas Vinculadas</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary);">Afirmaciones sin vínculo a <code>[EV-*]</code> son descartadas.</div>
+          <div class="guardrail-chip">
+            <span class="gr-badge">🔗 Guardrail 2</span>
+            <strong>Trazabilidad:</strong> 100% Citas [EV-*]
           </div>
-          <div class="obs-metric-box">
-            <div class="obs-metric-label">Guardrail 3: Filtro Epistemológico</div>
-            <div style="font-size: 0.84rem; font-weight: 700; margin-top: 0.2rem;">✓ Sin Falsa Certeza</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary);">Las inferencias se etiquetan como estimaciones sujetas a incertidumbre.</div>
+          <div class="guardrail-chip">
+            <span class="gr-badge">⚖ Guardrail 3</span>
+            <strong>Epistemología:</strong> Sin Falsa Certeza
           </div>
-          <div class="obs-metric-box">
-            <div class="obs-metric-label">Guardrail 4: Escalamiento HITL</div>
-            <div style="font-size: 0.84rem; font-weight: 700; margin-top: 0.2rem;">👤 Revisión Humana</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary);">Recomendaciones críticas bloqueadas hasta aprobación de supervisor.</div>
+          <div class="guardrail-chip">
+            <span class="gr-badge">👤 Guardrail 4</span>
+            <strong>HITL:</strong> Firma Humana Obligatoria
           </div>
         </div>
 
@@ -931,9 +927,9 @@
       <div class="panel-card">
         <div class="panel-header">
           <div>
-            <h2>Fuentes de Datos, Estado Real de Integración y Condiciones de Acceso</h2>
+            <h2>Fuentes de Datos y Estado de Integración</h2>
             <div class="panel-subtitle">
-              Transparencia sobre qué fuentes se consultan en vivo desde el navegador (Open-Meteo, RainViewer) y cuáles corresponden a referencias institucionales con datos de muestra en este prototipo.
+              Transparencia sobre APIs en vivo (Open-Meteo, RainViewer) y organismos institucionales de referencia.
             </div>
           </div>
           <a href="/docs/propuesta-tecnica.md" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
@@ -946,12 +942,10 @@
             <thead>
               <tr>
                 <th>Fuente / Organismo</th>
-                <th>Rol en el Sistema</th>
-                <th>Frecuencia / TTL</th>
-                <th>Estampa de Referencia</th>
-                <th>Modo en esta Interfaz</th>
-                <th>Condiciones de Acceso y Alcance Real</th>
-                <th>Enlace Oficial</th>
+                <th>Rol e Integración</th>
+                <th>Cadencia y TTL</th>
+                <th>Condiciones de Acceso</th>
+                <th>Enlace</th>
               </tr>
             </thead>
             <tbody id="sourcesTableBody"></tbody>

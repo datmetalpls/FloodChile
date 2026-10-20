@@ -1509,19 +1509,53 @@ function renderPredictiveAndVerificationSection() {
       (v) => `
         <tr>
           <td><strong>${v.locationName}</strong></td>
-          <td>${v.targetDate} (-${v.leadTimeHours}h)</td>
+          <td style="white-space:nowrap;">${v.targetDate} <span class="lead-time-pill">-${v.leadTimeHours}h</span></td>
           <td>${Number(v.predictedPrecipP50Mm || 0).toFixed(1)} mm <span class="uncertainty-range">[${v.predictedPrecipRangeMm || ''}]</span></td>
           <td><strong>${Number(v.observedPrecipMm || 0).toFixed(1)} mm</strong></td>
-          <td>${Number(v.precipAbsErrorMm || 0).toFixed(1)} mm</td>
-          <td>${v.predictedTempMaxC}°C / <strong>${v.observedTempMaxC}°C</strong></td>
+          <td><span class="mono-err">±${Number(v.precipAbsErrorMm || 0).toFixed(1)} mm</span></td>
+          <td>${v.predictedTempMaxC}° / <strong>${v.observedTempMaxC}°C</strong></td>
           <td>
-            <span class="epistemic-badge badge-observacion">
-              ✓ Sí (${v.evaluationNote || ''})
-            </span>
+            <div class="eval-result-cell">
+              <span class="eval-status-badge ${v.withinUncertaintyBand ? 'in-band' : 'out-band'}">
+                ${v.withinUncertaintyBand ? '✓ En Rango' : '✕ Fuera'}
+              </span>
+              <span class="eval-compact-note">${v.evaluationNote || ''}</span>
+            </div>
           </td>
         </tr>
       `
     ).join('');
+  }
+}
+
+// ==========================================================================
+// Persistencia Local de Decisiones Human-in-the-Loop (HITL)
+// ==========================================================================
+const HITL_STORAGE_KEY = 'climasflood_hitl_decisions_v2';
+
+function getStoredHitlDecisions() {
+  try {
+    const raw = localStorage.getItem(HITL_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveHitlDecision(hitlId, decision) {
+  try {
+    const data = getStoredHitlDecisions();
+    if (decision === 'PENDIENTE_REVISION_HUMANA') {
+      delete data[hitlId];
+    } else {
+      data[hitlId] = {
+        status: decision,
+        timestamp: new Date().toISOString()
+      };
+    }
+    localStorage.setItem(HITL_STORAGE_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.error('Error saving HITL decision to storage:', err);
   }
 }
 
@@ -1530,33 +1564,45 @@ function renderAgentsSection() {
   const hitlContainer = document.getElementById('hitlQueueContainer');
   const evidenceBody = document.getElementById('evidenceTableBody');
 
+  // Sincronizar estado HITL con localStorage para persistir entre recargas (F5)
+  const storedDecisions = getStoredHitlDecisions();
+  const hitlList = Array.isArray(AI_AGENTS_DATA?.hitlQueue) ? AI_AGENTS_DATA.hitlQueue : [];
+  hitlList.forEach((item) => {
+    if (storedDecisions[item.id]) {
+      item.status = storedDecisions[item.id].status;
+      item.decidedAt = storedDecisions[item.id].timestamp;
+    }
+  });
+
   const agentsList = Array.isArray(AI_AGENTS_DATA?.agents) ? AI_AGENTS_DATA.agents : [];
   if (agentsContainer) {
     agentsContainer.innerHTML = agentsList
       .map(
         (ag) => `
         <div class="agent-card">
-          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.35rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.35rem;">
             <strong>${ag.name}</strong>
-            <span class="epistemic-badge ${ag.status === 'ESPERANDO_REVISION_HUMANA' ? 'badge-estimacion' : 'badge-pronostico'}">
-              ${ag.status}
+            <span class="agent-status-pill ${ag.status === 'ACTIVO' ? 'pill-active' : 'pill-waiting'}">
+              ● ${ag.status}
             </span>
           </div>
-          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem;">
-            Rol: ${ag.role} · Permiso: <code>${ag.autonomyLevel}</code>
+          <div class="agent-role-meta">
+            ${ag.role} · Permiso: <code>${ag.autonomyLevel}</code>
           </div>
-          <ul style="margin:0; padding-left:1.1rem; font-size:0.84rem;">
+          <ul class="agent-findings-list">
             ${(ag.findings || [])
               .map(
                 (f) => `
-                <li style="margin-bottom:0.4rem;">
-                  ${f.text}
-                  ${(f.citations || [])
-                    .map(
-                      (cid) =>
-                        `<button type="button" class="citation-chip" data-ev-id="${cid}" title="Inspeccionar dato fuente ${cid}">[Ref: ${cid}]</button>`
-                    )
-                    .join('')}
+                <li>
+                  <span class="finding-text">${f.text}</span>
+                  <span class="finding-chips">
+                    ${(f.citations || [])
+                      .map(
+                        (cid) =>
+                          `<button type="button" class="citation-chip" data-ev-id="${cid}" title="Inspeccionar dato fuente ${cid}">[Ref: ${cid}]</button>`
+                      )
+                      .join('')}
+                  </span>
                 </li>
               `
               )
@@ -1568,40 +1614,42 @@ function renderAgentsSection() {
       .join('');
   }
 
-  const hitlList = Array.isArray(AI_AGENTS_DATA?.hitlQueue) ? AI_AGENTS_DATA.hitlQueue : [];
   if (hitlContainer) {
     hitlContainer.innerHTML = hitlList
       .map((item) => {
         const isSae = Boolean(item.isSaeEmergency);
         const isPending = item.status === 'PENDIENTE_REVISION_HUMANA';
+        const isApproved = item.status === 'APROBADO_POR_SUPERVISOR_HUMANO';
+        const isRejected = item.status === 'RECHAZADO_POR_SUPERVISOR_HUMANO';
+
         return `
-        <div class="agent-card ${isSae ? 'sae-hitl-card' : ''}" style="${
-          isSae
-            ? 'border: 2px solid #ef4444; background: rgba(239, 68, 68, 0.05); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.15);'
-            : 'border: 2px dashed var(--sev-prev-border);'
-        }">
-          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.4rem;">
-            <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+        <div class="agent-card ${isSae ? 'sae-hitl-card' : ''} ${isApproved ? 'hitl-card-approved' : ''}">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.4rem;">
+            <div style="display:flex; align-items:center; gap:0.45rem; flex-wrap:wrap;">
               <span class="severity-pill ${isSae ? 'sev-EXTREMA' : 'sev-TEMPRANA'}">
-                ${isSae ? '🚨 EMERGENCIA SAE EN VIVO #' + item.id : '👤 Escalamiento HITL #' + item.id}
+                ${isSae ? '🚨 EMERGENCIA SAE #' + item.id : '👤 Escalamiento HITL #' + item.id}
               </span>
               ${
                 isSae
-                  ? '<span class="sae-badge" style="font-size:0.7rem; padding:0.15rem 0.45rem;">Detección Cell Broadcast</span>'
+                  ? '<span class="sae-badge" style="font-size:0.7rem; padding:0.12rem 0.4rem;">Cell Broadcast</span>'
                   : ''
               }
             </div>
             <span id="hitlStatusBadge-${item.id}" class="epistemic-badge ${
-              item.status === 'APROBADO_POR_SUPERVISOR_HUMANO'
+              isApproved
                 ? 'badge-observacion'
-                : item.status === 'RECHAZADO_POR_SUPERVISOR_HUMANO'
+                : isRejected
                 ? 'badge-peligro'
                 : 'badge-estimacion'
-            }">${item.status}</span>
+            }">
+              ${isApproved ? '✓ Firmado' : isRejected ? '✕ Rechazado' : '⏳ Pendiente'}
+            </span>
           </div>
-          <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.45rem;">
-            Destinatario propuesto: <strong>${item.targetAudience}</strong>
+
+          <div class="hitl-target-line">
+            Destinatario: <strong>${item.targetAudience}</strong>
           </div>
+
           <p class="condition-summary-banner" style="margin:0.4rem 0; ${isSae ? 'border-left-color:#ef4444;' : ''}">
             ${item.proposedSummary}
             ${(item.citations || [])
@@ -1611,13 +1659,16 @@ function renderAgentsSection() {
               )
               .join('')}
           </p>
-          <div style="font-size:0.78rem; margin:0.5rem 0;">
-            <strong>Verificaciones automáticas de Guardrails antes de revisión humana:</strong>
-            <ul style="margin:0.25rem 0; padding-left:1.1rem; color:var(--tag-obs-text);">
+
+          <!-- Validaciones técnicas colapsables para no saturar la lectura -->
+          <details class="hitl-guardrails-details">
+            <summary>🛡️ Validaciones de Guardrails superadas (${(item.guardrailChecks || []).length})</summary>
+            <ul>
               ${(item.guardrailChecks || []).map((g) => `<li>✓ ${g.rule}</li>`).join('')}
             </ul>
-          </div>
-          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.65rem; align-items:center;">
+          </details>
+
+          <div class="hitl-action-toolbar">
             ${
               isPending
                 ? `
@@ -1626,20 +1677,42 @@ function renderAgentsSection() {
                   }">
                 ✓ ${
                   isSae
-                    ? 'Aprobar y Emitir Alarma Acústica SAE + Web Push'
-                    : 'Aprobar Boletín Preventivo (Firma Humana)'
+                    ? 'Aprobar y Emitir Alarma Acústica SAE'
+                    : 'Aprobar Boletín (Firma Humana)'
                 }
               </button>
               <button type="button" class="btn btn-warning btn-hitl-action" data-hitl-id="${item.id}" data-decision="RECHAZADO_POR_SUPERVISOR_HUMANO">
-                ✕ Rechazar / Solicitar Recálculo
+                ✕ Rechazar / Recálculo
               </button>
             `
+                : isApproved
+                ? `
+              <div class="hitl-approved-banner">
+                <span class="badge-approved-icon">✓</span>
+                <div class="approved-text-wrap">
+                  <strong>Boletín Aprobado con Firma Humana</strong>
+                  <span class="approved-timestamp">${item.decidedAt ? formatUtcInChileTz(item.decidedAt) : 'Registrado en memoria'}</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-ghost btn-hitl-action" data-hitl-id="${item.id}" data-decision="PENDIENTE_REVISION_HUMANA" title="Reabrir este boletín para volver a evaluarlo">
+                  ↩ Reabrir
+                </button>
+              </div>
+            `
                 : `
-              <span style="font-size:0.8rem; font-weight:700; color:var(--text-secondary);">Decisión registrada: <code>${item.status}</code></span>
+              <div class="hitl-rejected-banner">
+                <span class="badge-rejected-icon">✕</span>
+                <div class="approved-text-wrap">
+                  <strong>Boletín Rechazado por Supervisor</strong>
+                  <span class="approved-timestamp">Se solicitó recálculo a los modelos</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-ghost btn-hitl-action" data-hitl-id="${item.id}" data-decision="PENDIENTE_REVISION_HUMANA">
+                  ↩ Reabrir
+                </button>
+              </div>
             `
             }
             ${
-              isSae
+              isSae && isPending
                 ? `
               <button type="button" class="btn btn-sm btn-secondary btn-hitl-preview-alarm" data-hitl-id="${item.id}">
                 🔊 Probar Sirena SAE
@@ -1705,6 +1778,7 @@ function renderAgentsSection() {
       const item = AI_AGENTS_DATA.hitlQueue.find((q) => q.id === hitlId);
       if (item) {
         item.status = decision;
+        saveHitlDecision(hitlId, decision);
         renderAgentsSection();
 
         if (decision === 'APROBADO_POR_SUPERVISOR_HUMANO') {
@@ -1760,32 +1834,45 @@ function renderSourcesAndCriteriaSection() {
 
       let modeBadgeHtml = '';
       if (isStaleSimulated) {
-        modeBadgeHtml = `<span class="epistemic-badge badge-alerta-oficial">⚠ Simulación Fuente Vencida</span>`;
+        modeBadgeHtml = `<span class="epistemic-badge badge-alerta-oficial">⚠ Simulación Vencida</span>`;
       } else if (
         s.id === 'openmeteo-multi' ||
         s.id === 'dga-glofas' ||
         s.id === 'shoa-marine'
       ) {
         modeBadgeHtml = anyOpenMeteoSynced
-          ? `<span class="epistemic-badge badge-observacion">● Sincronizado en Vivo (API Abierta)</span>`
-          : `<span class="epistemic-badge badge-pronostico">↻ Consultable en Vivo (API Abierta)</span>`;
+          ? `<span class="epistemic-badge badge-observacion">● En Vivo (API)</span>`
+          : `<span class="epistemic-badge badge-pronostico">↻ En Vivo</span>`;
       } else if (s.id === 'noaa-goes16-gibs') {
         modeBadgeHtml = STATE.rainViewerMeta?.ok
-          ? `<span class="epistemic-badge badge-observacion">● RainViewer en Vivo + Muestra GOES</span>`
-          : `<span class="epistemic-badge badge-estimacion">🧪 Muestra Local + API RainViewer</span>`;
+          ? `<span class="epistemic-badge badge-observacion">● RainViewer + GOES</span>`
+          : `<span class="epistemic-badge badge-estimacion">🧪 Muestra + RainViewer</span>`;
       } else {
-        modeBadgeHtml = `<span class="epistemic-badge badge-estimacion">🧪 Datos de Muestra (Enlace Oficial)</span>`;
+        modeBadgeHtml = `<span class="epistemic-badge badge-estimacion">🧪 Muestra</span>`;
       }
 
       return `
         <tr>
-          <td><strong>${s.name}</strong></td>
-          <td>${s.role}</td>
-          <td>Cada ${s.updateFrequencyMinutes} min (TTL: ${s.ttlMinutes} min)</td>
-          <td>${formatUtcInChileTz(s.lastUpdatedUtc)} (Muestra)</td>
-          <td>${modeBadgeHtml}</td>
-          <td>${s.accessNotes}</td>
-          <td><a href="${s.url}" target="_blank" rel="noopener noreferrer">Sitio Oficial ↗</a></td>
+          <td>
+            <strong>${s.shortName || s.name}</strong>
+            <div style="font-size:0.72rem; color:var(--text-muted);">${s.name}</div>
+          </td>
+          <td>
+            <div style="font-size:0.8rem; line-height:1.35; margin-bottom:0.25rem;">${s.role}</div>
+            ${modeBadgeHtml}
+          </td>
+          <td style="white-space:nowrap;">
+            <div style="font-weight:700; font-size:0.8rem;">Cada ${s.updateFrequencyMinutes} min</div>
+            <div style="font-size:0.72rem; color:var(--text-muted);">TTL: ${s.ttlMinutes} min</div>
+          </td>
+          <td style="font-size:0.76rem; color:var(--text-secondary); max-width:240px; line-height:1.3;">
+            ${s.accessNotes}
+          </td>
+          <td>
+            <a href="${s.url}" target="_blank" rel="noopener noreferrer" class="quick-link-pill">
+              Portal ↗
+            </a>
+          </td>
         </tr>
       `;
     }).join('');
@@ -1793,30 +1880,32 @@ function renderSourcesAndCriteriaSection() {
 
   if (criteriaBox) {
     const criteria = [
-      { code: 'CA-01', title: 'Separación estricta de datos', desc: 'Etiquetas explícitas para Observación, Pronóstico Numérico, Escenario Estimado, Alerta Oficial vs App y Datos de Muestra.' },
-      { code: 'CA-02', title: 'Incertidumbre y rangos obligatorios', desc: 'Bandas P10–P50–P90 en lluvia y temperatura; ninguna estimación futura se presenta como certeza.' },
-      { code: 'CA-03', title: 'Registro de verificación histórica', desc: 'Comparación auditable de predicciones pasadas (-24h/-48h/-72h) contra observaciones con cálculo de MAE (conjunto de muestra).' },
-      { code: 'CA-04', title: 'Metadatos de procedencia y hora local', desc: 'Cada capa, imagen satelital y alerta indica fuente, enlace, hora de referencia y huso horario local de Chile.' },
-      { code: 'CA-05', title: 'Detección de fuentes desactualizadas', desc: 'Degradación controlada y banner explícito cuando una fuente supera su TTL (verificable en menú ⚙ Verificación).' },
-      { code: 'CA-06', title: 'Accesibilidad sin depender solo del color', desc: 'Iconos geométricos (ℹ, ◆, ▲, 🛑), patrones de borde y modo de Escala de Grises integrado.' },
-      { code: 'CA-07', title: 'Interfaz adaptable (Móvil / Escritorio)', desc: 'Diseño responsivo con vista Ciudadanía / Monitoreo, Modo Claro / Oscuro / Auto y navegación por teclado.' },
-      { code: 'CA-08', title: 'Trazabilidad total de Agentes IA', desc: 'Cada afirmación de agente incluye chips clicables [Ref: EV-*] vinculados al registro de evidencia.' },
-      { code: 'CA-09', title: 'Guardrails y Revisión Humana (HITL)', desc: 'Agentes sin permiso para alterar alertas oficiales y cola de aprobación humana para recomendaciones críticas.' }
+      { code: 'CA-01', title: 'Separación estricta', desc: 'Etiquetas para Observación, Pronóstico, Estimación y Alerta Oficial.' },
+      { code: 'CA-02', title: 'Bandas de incertidumbre', desc: 'Banda P10–P50–P90 obligatoria; sin falsa certeza.' },
+      { code: 'CA-03', title: 'Verificación histórica', desc: 'Predicho vs Observado con MAE y cobertura de banda.' },
+      { code: 'CA-04', title: 'Metadatos y hora local', desc: 'Procedencia, enlaces directos y hora de Chile (UTC-3/UTC-5).' },
+      { code: 'CA-05', title: 'Detección de fuente vencida', desc: 'Aviso visual explícito al superar TTL (>45 min).' },
+      { code: 'CA-06', title: 'Accesibilidad universal', desc: 'Iconos geométricos, alto contraste y escala de grises.' },
+      { code: 'CA-07', title: 'Multi-dispositivo', desc: 'Vistas adaptadas a Ciudadanía y Monitoreo Técnico.' },
+      { code: 'CA-08', title: 'Citas de agentes IA', desc: 'Trazabilidad 100% mediante chips clicables [Ref: EV-*].' },
+      { code: 'CA-09', title: 'Guardrails y HITL', desc: 'Bloqueo estricto de emisión hasta firma humana.' }
     ];
 
-    criteriaBox.innerHTML = criteria
-      .map(
-        (c) => `
-        <div style="padding:0.5rem 0; border-bottom:1px solid var(--border-subtle); display:flex; gap:0.6rem; align-items:flex-start;">
-          <span class="epistemic-badge badge-observacion">✓ ${c.code}</span>
-          <div>
-            <strong>${c.title}:</strong> <span style="color:var(--text-secondary);">${c.desc}</span>
+    criteriaBox.innerHTML = `
+      <div class="criteria-cards-grid">
+        ${criteria
+          .map(
+            (c) => `
+          <div class="criterion-mini-card">
+            <span class="criterion-tag">✓ ${c.code}</span>
+            <div class="criterion-title">${c.title}</div>
+            <div class="criterion-desc">${c.desc}</div>
           </div>
-        </div>
-      `
-      )
-      .join('');
-  }
+        `
+          )
+          .join('')}
+      </div>
+    `;
 }
 
 function refreshAllViews() {

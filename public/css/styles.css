@@ -2636,3 +2636,442 @@ canvas:focus-visible {
   margin-top: 0.85rem;
   align-items: center;
 }
+
+/* ==========================================================================
+   Cinta de Guardrails (Gobernanza y Ética de Agentes)
+   ========================================================================== */
+.guardrails-ribbon {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 1.1rem;
+}
+
+.guardrail-chip {
+  background: var(--bg-card-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-secondary);
+}
+
+.guardrail-chip strong {
+  color: var(--text-primary);
+}
+
+.gr-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--accent-text);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Tabla de Verificación de Predicciones y Celdas de Evaluación
+   ========================================================================== */
+.lead-time-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--bg-card-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.mono-err {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.eval-result-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 250px;
+}
+
+.eval-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  width: fit-content;
+  white-space: nowrap;
+}
+
+.eval-status-badge.in-band {
+  background: var(--tag-obs-bg);
+  color: var(--tag-obs-text);
+  border: 1px solid var(--tag-obs-border);
+}
+
+.eval-status-badge.out-band {
+  background: var(--sev-extr-bg);
+  color: var(--sev-extr-text);
+  border: 1px solid var(--sev-extr-border);
+}
+
+.eval-compact-note {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  line-height: 1.32;
+}
+
+/* ==========================================================================
+   Tarjetas de Diferencia Multimodelo (Model Delta Cards)
+   ========================================================================== */
+.model-delta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.65rem;
+  margin: 0.85rem 0 0.65rem;
+}
+
+.model-delta-card {
+  background: var(--bg-card-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.model-delta-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-primary);
+}
+
+.delta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delta-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.delta-pill {
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: var(--accent-soft-bg);
+  color: var(--accent-text);
+}
+
+.delta-val {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+  line-height: 1.1;
+  margin: 0.15rem 0;
+}
+
+.delta-sub {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.model-spread-explanation-box {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  background: var(--accent-soft-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: 0.5rem;
+}
+
+.spread-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Agentes de IA y Cola HITL Refactorizada
+   ========================================================================== */
+.agent-status-pill {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+}
+
+.agent-status-pill.pill-active {
+  background: var(--tag-obs-bg);
+  color: var(--tag-obs-text);
+  border: 1px solid var(--tag-obs-border);
+}
+
+.agent-status-pill.pill-waiting {
+  background: var(--sev-prev-bg);
+  color: var(--sev-prev-text);
+  border: 1px solid var(--sev-prev-border);
+}
+
+.agent-role-meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-bottom: 0.45rem;
+}
+
+.agent-role-meta code {
+  font-size: 0.72rem;
+  padding: 0.08rem 0.3rem;
+  border-radius: 4px;
+  background: var(--bg-card);
+}
+
+.agent-findings-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.agent-findings-list li {
+  margin-bottom: 0.4rem;
+}
+
+.finding-chips {
+  display: inline-flex;
+  gap: 0.2rem;
+  margin-left: 0.25rem;
+}
+
+.hitl-card-approved {
+  border: 1.5px solid var(--tag-obs-border) !important;
+  background: var(--bg-card-elevated) !important;
+  opacity: 0.96;
+}
+
+.hitl-target-line {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.hitl-guardrails-details {
+  margin: 0.45rem 0 0.65rem;
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.76rem;
+}
+
+.hitl-guardrails-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.hitl-guardrails-details ul {
+  margin: 0.35rem 0 0.2rem;
+  padding-left: 1.1rem;
+  color: var(--tag-obs-text);
+}
+
+.hitl-action-toolbar {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.65rem;
+}
+
+.hitl-approved-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: var(--tag-obs-bg);
+  border: 1px solid var(--tag-obs-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  width: 100%;
+}
+
+.badge-approved-icon {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--tag-obs-text);
+}
+
+.approved-text-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.approved-text-wrap strong {
+  font-size: 0.82rem;
+  color: var(--tag-obs-text);
+}
+
+.approved-timestamp {
+  font-size: 0.72rem;
+  color: var(--tag-obs-text);
+  opacity: 0.85;
+}
+
+.hitl-rejected-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: var(--sev-extr-bg);
+  border: 1px solid var(--sev-extr-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  width: 100%;
+}
+
+.badge-rejected-icon {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--sev-extr-text);
+}
+
+.btn-reopen-hitl {
+  font-size: 0.74rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+}
+
+.btn-reopen-hitl:hover {
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   Grilla de Criterios de Aceptación (CA-01 a CA-09)
+   ========================================================================== */
+.criteria-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.65rem;
+}
+
+.criterion-mini-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.criterion-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--accent-text);
+}
+
+.criterion-title {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.criterion-desc {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* ==========================================================================
+   Ajustes Específicos para Tema RETRO CRT
+   ========================================================================== */
+[data-theme="retro"] .guardrail-chip {
+  background: #06180a !important;
+  border: 1px solid #16a34a !important;
+  border-radius: 2px !important;
+  color: #4ade80 !important;
+}
+
+[data-theme="retro"] .gr-badge {
+  color: #86efac !important;
+}
+
+[data-theme="retro"] .model-delta-card {
+  background: #06180a !important;
+  border: 1px solid #16a34a !important;
+  border-radius: 2px !important;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.12) !important;
+}
+
+[data-theme="retro"] .delta-val {
+  color: #4ade80 !important;
+}
+
+[data-theme="retro"] .model-spread-explanation-box {
+  background: #0a240f !important;
+  border: 1px solid #22c55e !important;
+  border-radius: 2px !important;
+  color: #86efac !important;
+}
+
+[data-theme="retro"] .eval-status-badge {
+  border-radius: 2px !important;
+}
+
+[data-theme="retro"] .eval-status-badge.in-band {
+  background: #0f3316 !important;
+  border-color: #22c55e !important;
+  color: #4ade80 !important;
+}
+
+[data-theme="retro"] .eval-compact-note {
+  color: #86efac !important;
+  opacity: 0.85;
+}
+
+[data-theme="retro"] .hitl-guardrails-details {
+  background: #051408 !important;
+  border-color: #16a34a !important;
+  border-radius: 2px !important;
+}
+
+[data-theme="retro"] .hitl-approved-banner {
+  background: #0a240f !important;
+  border-color: #22c55e !important;
+  color: #4ade80 !important;
+  border-radius: 2px !important;
+}
+
+[data-theme="retro"] .criterion-mini-card {
+  background: #06180a !important;
+  border: 1px solid #16a34a !important;
+  border-radius: 2px !important;
+}
