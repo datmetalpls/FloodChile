@@ -62,7 +62,8 @@ const STATE = {
   notifications: [],
   liveSenapredAlerts: [],
   liveSenapredFetched: false,
-  saeActiveCount: 0
+  ingestionHealth: [],
+  ingestionHealthCheckedAt: 0,
 };
 
 const TIME_SLIDER_STEPS = [0, 6, 12, 24, 48];
@@ -433,11 +434,9 @@ function updateClockAndHeaderStatus() {
     const matching = ALERTS_DATA.filter(
       (a) => a.communesIds.includes(loc.id) || a.regions.includes(loc.regionCode)
     );
-    const official = matching.filter((a) => a.originCategory === 'OFFICIAL_AUTHORITY').length;
-    const app = matching.length - official;
     alertCountEl.textContent = matching.length
-      ? `${official} oficiales · ${app} app · muestra`
-      : 'ninguna en la muestra';
+      ? `${matching.length} registros de muestra`
+      : 'ninguna muestra local';
   }
 }
 
@@ -686,6 +685,98 @@ function renderMapAndDetailView() {
       <span>•</span>
       <span><strong>Estampa:</strong> ${formatUtcInChileTz(loc.observation.observedAtUtc, loc.timezone)}</span>
     `;
+    const stationCode = loc.stationId.match(/EMA-(\d{6})/)?.[1];
+    if (stationCode) {
+      const dmcLine = document.createElement('span');
+      dmcLine.textContent = 'DMC EMA: consultando observación oficial…';
+      obsProv.append(dmcLine);
+      fetch(`/api/dmc/observaciones?estacion=${stationCode}`)
+        .then((response) => response.json()
+          .then((data) => response.ok ? data : { ...data, ok: false })
+          .catch(() => ({ ok: false, error: `HTTP ${response.status}` })))
+        .then((data) => {
+          if (STATE.selectedLocationId !== loc.id) return;
+          if (!data?.ok) {
+            dmcLine.textContent = data?.configured === false
+              ? 'DMC EMA: credenciales de API requeridas; conector no configurado'
+              : /bloqueó este servicio/i.test(data?.error || '')
+                ? 'DMC EMA: usuario sin habilitación para este servicio; solicita acceso a DMC'
+              : /no aceptó las credenciales/i.test(data?.error || '')
+                ? 'DMC EMA: usuario o API key rechazados; observaciones oficiales no disponibles'
+              : 'DMC EMA: servicio no disponible o respuesta no reconocida';
+            refreshIngestionHealth(true);
+            return;
+          }
+          const values = [
+            data.values?.temperatureC != null && `Temp. ${data.values.temperatureC} °C`,
+            data.values?.humidityPct != null && `HR ${data.values.humidityPct}%`,
+            data.values?.windKmh != null && `Viento ${data.values.windKmh} km/h`,
+            data.values?.precipitationTodayMm != null && `Lluvia acumulada (${data.precipitationPeriod || 'período DMC'}): ${data.values.precipitationTodayMm} mm`
+          ].filter(Boolean);
+          dmcLine.textContent = values.length
+            ? `DMC EMA · ${data.stationName || stationCode}: ${values.join(' · ')} · medición ${data.measurementTimeUtc ? formatUtcInChileTz(data.measurementTimeUtc, loc.timezone) : `${data.measurementTime || 'sin hora'} (zona no confirmada)`} · descarga ${formatUtcInChileTz(data.retrievedAtUtc, loc.timezone)}${data.quality.status === 'STALE' ? ' · observación desactualizada' : data.quality.status === 'REVIEW' ? ' · requiere revisión QC' : data.quality.status === 'PARTIAL' ? ' · respuesta parcial' : ''}`
+            : 'DMC EMA: estación sin observaciones disponibles';
+          refreshIngestionHealth(true);
+        })
+        .catch(() => {
+          dmcLine.textContent = 'DMC EMA: servicio no disponible';
+          refreshIngestionHealth(true);
+        });
+      const stationDetails = document.createElement('details');
+      const stationSummary = document.createElement('summary');
+      stationSummary.textContent = 'Ficha de la estación DMC';
+      const stationInfo = document.createElement('p');
+      stationInfo.textContent = 'Consultando ficha…';
+      stationDetails.append(stationSummary, stationInfo);
+      stationDetails.addEventListener('toggle', async () => {
+        if (!stationDetails.open) return;
+        try {
+          const response = await fetch(`/api/dmc/estaciones/${stationCode}`);
+          const data = await response.json();
+          if (!response.ok || !data.ok) throw new Error('Ficha no disponible');
+          const station = data.station;
+          stationInfo.textContent = [
+            `${station.stationName || 'Estación'} · código ${station.stationCode}`,
+            station.commune && `Comuna: ${station.commune}`,
+            station.latitude != null && station.longitude != null && `Coordenadas: ${station.latitude}, ${station.longitude}`,
+            station.elevationM != null && `Altitud: ${station.elevationM} m`,
+            `Vigencia DMC: ${station.active ? 'activa' : 'inactiva'}`,
+            'Los datos corresponden a esta estación; las condiciones pueden variar dentro de la zona seleccionada.'
+          ].filter(Boolean).join(' · ');
+        } catch {
+          stationInfo.textContent = 'La ficha DMC no está disponible. Las observaciones se consultan por separado.';
+        }
+      });
+      obsProv.append(stationDetails);
+    }
+    const conafLine = document.createElement('span');
+    conafLine.textContent = 'CONAF: consultando informe diario regional…';
+    obsProv.append(conafLine);
+    fetch('/api/conaf/incendios')
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (STATE.selectedLocationId !== loc.id) return;
+        if (!data?.ok) {
+          conafLine.textContent = 'CONAF: informe no disponible o formato no reconocido';
+          refreshIngestionHealth(true);
+          return;
+        }
+        const targetRegion = loc.regionCode === 'RM' ? 'metropolitana'
+          : loc.regionCode === 'VI' ? "o'higgins"
+            : loc.regionName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const regionData = data.regions?.find((item) => {
+          const name = item.region.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+          return name === targetRegion || (targetRegion === 'metropolitana de santiago' && name === 'metropolitana');
+        });
+        conafLine.textContent = regionData
+          ? `CONAF · ${regionData.region}: ${regionData.firesTotal ?? 's/d'} incendios reportados hoy · ${regionData.affectedAreaHa ?? 's/d'} ha · reporte ${data.sourceReportedAtLocal || 'sin hora' }${data.stale ? ' · copia local atrasada' : ''}${data.quality.status === 'REVIEW' ? ' · revisar consistencia' : ''}`
+          : 'CONAF: el informe no incluye la región seleccionada';
+        refreshIngestionHealth(true);
+      })
+      .catch(() => {
+        conafLine.textContent = 'CONAF: informe no disponible';
+        refreshIngestionHealth(true);
+      });
   }
 
   const keyPhenEl = document.getElementById('detailKeyPhenomenon');
@@ -765,13 +856,12 @@ function renderMapAndDetailView() {
       const sampleCardsHtml = matching
         .map((a) => {
           const sev = SEVERITY_META[a.severity] || SEVERITY_META.INFORMATIVA;
-          const isOfficial = a.originCategory === 'OFFICIAL_AUTHORITY';
           return `
-            <div class="alert-card sev-border-${a.severity}" style="margin-bottom:0.65rem; padding:0.75rem;">
+            <div class="alert-card sev-border-INFORMATIVA" style="margin-bottom:0.65rem; padding:0.75rem;">
               <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.3rem;">
-                <span class="severity-pill ${sev.css}">${sev.icon} ${sev.label}</span>
-                <span class="epistemic-badge ${isOfficial ? 'badge-alerta-oficial' : 'badge-alerta-app'}">
-                  ${a.originLabel} (Muestra)
+                <span class="epistemic-badge badge-estimacion">🧪 Severidad de muestra: ${sev.label}</span>
+                <span class="epistemic-badge badge-estimacion">
+                  Muestra · ${a.issuer}
                 </span>
               </div>
               <div style="font-weight:700; font-size:0.88rem; margin-bottom:0.2rem;">${a.title}</div>
@@ -1012,8 +1102,7 @@ export async function loadLiveSenapredAlerts(force = false) {
   try {
     const res = await fetchLiveSenapredAlerts();
     if (res.ok && Array.isArray(res.alerts)) {
-      STATE.liveSenapredAlerts = res.alerts;
-      STATE.saeActiveCount = res.saeActiveCount || 0;
+      STATE.liveSenapredAlerts = res.sourceAvailable ? res.alerts : [];
       STATE.liveSenapredFetched = true;
 
       const statusText = document.getElementById('senapredLiveStatusText');
@@ -1025,42 +1114,9 @@ export async function loadLiveSenapredAlerts(force = false) {
       }
       statusDot?.classList.toggle('online', res.sourceAvailable);
 
-      // Sincronizar directamente con el sistema de Agentes de IA (Detección directa SAE)
-      const saeAlert = res.alerts.find((a) => a.isSaeActivation);
-      if (saeAlert && AI_AGENTS_DATA.evidenceRegistry['EV-SAE-01']) {
-        AI_AGENTS_DATA.evidenceRegistry['EV-SAE-01'] = {
-          id: 'EV-SAE-01',
-          source: 'SENAPRED · Sistema de Alerta de Emergencia (SAE) / SUBTEL',
-          timestampUtc: saeAlert.issuedAtUtc || saeAlert.onsetUtc || new Date().toISOString(),
-          parameter: 'Transmisión Oficial Cell Broadcast SAE',
-          rawValue: `${saeAlert.title} | ${saeAlert.whatCouldHappen}`,
-          dataType: 'OFICIAL_VINCULANTE'
-        };
-
-        const saeAgent = AI_AGENTS_DATA.agents.find((ag) => ag.id === 'AG-SAE-06');
-        if (saeAgent) {
-          saeAgent.status = 'EMERGENCIA_SAE_ACTIVADA';
-          saeAgent.lastRunUtc = new Date().toISOString();
-          saeAgent.findings = [
-            {
-              text: `Detección directa de transmisión Cell Broadcast SAE: ${saeAlert.title}. Zonas bajo orden de evacuación: ${saeAlert.affectedZonesText}.`,
-              citations: ['EV-SAE-01']
-            },
-            {
-              text: 'Correlación multivariable confirmada: La orden de evacuación coincide con ascenso forzado de la isoterma 0 °C sobre 3.050 m s.n.m. y pulsos de lluvia intensa en cabecera de cuenca.',
-              citations: ['EV-101', 'EV-107', 'EV-SAE-01']
-            }
-          ];
-        }
-
-        const hitlSae = AI_AGENTS_DATA.hitlQueue.find((q) => q.id === 'HITL-203');
-        if (hitlSae) {
-          hitlSae.proposedSummary = `🚨 DETECCIÓN DIRECTA DE MENSAJERÍA SAE [EV-SAE-01]: Transmisión activa de Cell Broadcast emitida por SENAPRED para ${saeAlert.affectedZonesText} ante peligro inminente de remoción en masa y aluvión. El agente correlaciona la alerta con lluvia activa en cabecera e isoterma sobre 3.050 m s.n.m. [EV-101, EV-107]. Se solicita validación inmediata para coordinar despacho de alarma sonora dual (853/960 Hz), cierre de accesos a la cuenca y notificación push masiva.`;
-        }
-      }
     }
   } catch (err) {
-    console.warn('Error sincronizando alertas SENAPRED con Agentes:', err);
+    console.warn('Error consultando alertas de SENAPRED:', err);
   }
 }
 
@@ -1068,108 +1124,36 @@ function renderAlertsSection() {
   const container = document.getElementById('alertsListContainer');
   if (!container) return;
 
-  // Renderizar banner prioritario de activación SAE
-  const saeBanner = document.getElementById('saeEmergencyLiveBanner');
-  const saeAlert = STATE.liveSenapredAlerts.find((a) => a.isSaeActivation);
-  if (saeBanner) {
-    if (saeAlert) {
-      saeBanner.style.display = 'block';
-      saeBanner.innerHTML = `
-        <div class="sae-emergency-card" role="alert" aria-live="assertive">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.6rem;">
-            <div style="display:flex; align-items:center; gap:0.6rem;">
-              <span class="sae-badge">🚨 MENSAJERÍA SAE ACTIVADA</span>
-              <span class="epistemic-badge badge-peligro">Evacuación Inmediata</span>
-              <span class="epistemic-badge badge-alerta-oficial">SENAPRED · Cell Broadcast</span>
-            </div>
-            <span style="font-size:0.75rem; font-family:var(--font-mono); color:var(--text-muted);">
-              Estampa: ${formatUtcInChileTz(saeAlert.issuedAtUtc)}
-            </span>
-          </div>
-          <h3 style="margin:0 0 0.4rem; font-size:1.15rem; color:#ef4444; font-weight:800;">
-            ${saeAlert.title}
-          </h3>
-          <p style="margin:0 0 0.6rem; font-size:0.88rem; color:var(--text-primary); line-height:1.45;">
-            <strong>Zona y Comunas Afectadas:</strong> ${saeAlert.affectedZonesText}.<br/>
-            <strong>Fundamento del Riesgo:</strong> ${saeAlert.whatCouldHappen}
-          </p>
-          <div style="background:rgba(0,0,0,0.15); border-radius:8px; padding:0.6rem 0.8rem; font-size:0.82rem; margin-bottom:0.75rem;">
-            <strong>Instrucciones Oficiales de Protección Civil:</strong>
-            <ul style="margin:0.25rem 0 0; padding-left:1.2rem;">
-              ${saeAlert.preventiveActions.map((act) => `<li>${act}</li>`).join('')}
-            </ul>
-          </div>
-          <div class="sae-actions-bar">
-            <button type="button" id="btnTriggerSaePush" class="btn btn-primary" style="background:#dc2626; border-color:#b91c1c; font-weight:700;">
-              🔊 Probar Alarma Sonora SAE (Sirena + Voz)
-            </button>
-            <button type="button" id="btnStopSaeAlarm" class="btn btn-secondary" style="display:none; background:#7f1d1d; color:#ffffff; border-color:#ef4444; font-weight:700;">
-              ⏹ Silenciar Alarma Sonora
-            </button>
-            <a href="${saeAlert.officialUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
-              Portal Oficial SENAPRED ↗
-            </a>
-          </div>
-        </div>
-      `;
-
-      const btnTrigger = document.getElementById('btnTriggerSaePush');
-      const btnStop = document.getElementById('btnStopSaeAlarm');
-
-      const updateAlarmUiState = () => {
-        const playing = isAudioAlarmPlaying();
-        if (btnTrigger) {
-          btnTrigger.style.display = playing ? 'none' : 'inline-flex';
-        }
-        if (btnStop) {
-          btnStop.style.display = playing ? 'inline-flex' : 'none';
-        }
-      };
-
-      if (btnTrigger) {
-        btnTrigger.addEventListener('click', async () => {
-          // 1. Activar Alarma Sonora oficial SAE (Web Audio API + TTS)
-          await playSaeAlarm({
-            title: saeAlert.shortTitle || 'Alerta SAE',
-            speechText: `Atención: Alerta de emergencia emitida por SENAPRED. ${saeAlert.shortTitle || 'Evacuación preventiva'}. ${saeAlert.affectedZonesText}.`,
-            durationSec: 8
-          });
-          updateAlarmUiState();
-
-          // 2. Disparar notificación nativa Web Push en escritorio/móvil
-          triggerNativeWebPushNotification({
-            title: `🚨 EMERGENCIA SAE: ${saeAlert.shortTitle || 'Alerta SENAPRED'}`,
-            body: `${saeAlert.affectedZonesText}. ${saeAlert.whatCouldHappen}`,
-            tag: `sae-${saeAlert.id}`
-          });
-        });
-      }
-
-      if (btnStop) {
-        btnStop.addEventListener('click', () => {
-          stopAudioAlarm();
-          updateAlarmUiState();
-        });
-      }
-
-      document.addEventListener('sae-alarm-stopped', updateAlarmUiState);
-      document.addEventListener('sae-alarm-started', updateAlarmUiState);
-      updateAlarmUiState();
-    } else {
-      saeBanner.style.display = 'none';
-      saeBanner.innerHTML = '';
-    }
-  }
-
   // Lista unificada: Alertas oficiales en vivo + datos de muestra/estimaciones
   const combinedAlerts = [
-    ...STATE.liveSenapredAlerts.map((a) => ({ ...a, isLiveScraped: true })),
-    ...ALERTS_DATA.filter((a) => !STATE.liveSenapredAlerts.some((la) => la.id === a.id))
+    ...STATE.liveSenapredAlerts.map(({ officialUrl }, index) => ({
+      id: `SENAPRED-ENLACE-${index + 1}`,
+      title: 'Publicación para revisar en el portal SENAPRED',
+      issuer: 'SENAPRED',
+      originLabel: 'SENAPRED · enlace encontrado',
+      originCategory: 'OFFICIAL_AUTHORITY',
+      officialUrl,
+      severity: 'INFORMATIVA',
+      confidenceLevel: 'No evaluada',
+      confidenceRationale: 'La aplicación no valida el contenido ni la vigencia del enlace.',
+      whatCouldHappen: 'Contenido no interpretado por la aplicación.',
+      affectedZonesText: 'Sin zonas verificadas; consulta el enlace oficial.',
+      preventiveActions: ['Confirma la publicación vigente directamente en SENAPRED.'],
+      onsetUtc: null,
+      issuedAtUtc: null,
+      expiresUtc: null,
+      isLiveScraped: true
+    })),
+    ...ALERTS_DATA
+      .filter((a) => !STATE.liveSenapredAlerts.some((la) => la.id === a.id))
+      .map((a) => ({ ...a, isDemoRecord: true }))
   ];
 
   const filtered = combinedAlerts.filter((a) => {
-    const matchOrigin =
-      STATE.alertOriginFilter === 'ALL' || a.originCategory === STATE.alertOriginFilter;
+    const matchOrigin = STATE.alertOriginFilter === 'ALL'
+      || (STATE.alertOriginFilter === 'OFFICIAL_AUTHORITY' && a.isLiveScraped)
+      || (STATE.alertOriginFilter === 'APP_THRESHOLD_ESTIMATE' && a.isDemoRecord && a.originCategory === 'APP_THRESHOLD_ESTIMATE')
+      || (STATE.alertOriginFilter === 'DEMO' && a.isDemoRecord);
     const matchSev =
       STATE.alertSeverityFilter === 'ALL' || a.severity === STATE.alertSeverityFilter;
     return matchOrigin && matchSev;
@@ -1183,21 +1167,24 @@ function renderAlertsSection() {
   container.innerHTML = filtered
     .map((a) => {
       const sev = SEVERITY_META[a.severity] || SEVERITY_META.INFORMATIVA;
-      const isOfficial = a.originCategory === 'OFFICIAL_AUTHORITY';
+      const isLivePortalLink = a.isLiveScraped;
+      const cardSeverity = a.isDemoRecord ? 'INFORMATIVA' : a.severity;
       return `
-        <article class="alert-card sev-border-${a.severity}" aria-label="${a.title}">
+        <article class="alert-card sev-border-${cardSeverity}" aria-label="${a.title}">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
             <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-              <span class="severity-pill ${sev.css}">${sev.icon} Severidad: ${sev.label}</span>
-              <span class="epistemic-badge ${isOfficial ? 'badge-alerta-oficial' : 'badge-alerta-app'}">
-                ${a.originLabel}
+              ${a.isDemoRecord
+                ? `<span class="epistemic-badge badge-estimacion">🧪 Severidad de muestra: ${sev.label}</span>`
+                : `<span class="severity-pill ${sev.css}">${sev.icon} Severidad: ${sev.label}</span>`}
+              <span class="epistemic-badge ${isLivePortalLink ? 'badge-observacion' : 'badge-estimacion'}">
+                ${isLivePortalLink ? a.originLabel : `Muestra · ${a.issuer}`}
               </span>
               ${
                 a.isLiveScraped
-                  ? '<span class="epistemic-badge badge-observacion">Enlace encontrado en portal oficial</span>'
-                  : '<span class="epistemic-badge badge-estimacion">🧪 Registro de Demostración</span>'
+                  ? '<span class="epistemic-badge badge-observacion">Enlace del portal · contenido y vigencia sin verificar</span>'
+                  : '<span class="epistemic-badge badge-estimacion">🧪 Demostración · no indica vigencia real</span>'
               }
-              <span class="epistemic-badge badge-pronostico">Confianza: ${a.confidenceLevel}</span>
+              <span class="epistemic-badge badge-pronostico">${a.isDemoRecord ? 'Confianza ilustrativa' : 'Confianza'}: ${a.confidenceLevel}</span>
             </div>
             <span style="font-size:0.76rem; color:var(--text-muted); font-family:var(--font-mono);">
               ID: ${a.id} · ${a.isLiveScraped ? 'Publicación: ' : 'Ref: '}${formatUtcInChileTz(a.issuedAtUtc)}
@@ -1637,6 +1624,47 @@ function renderSourceAuditReport() {
   container.append(list);
 }
 
+function renderLiveSourceMonitorCard() {
+  const card = document.createElement('div');
+  card.className = 'agent-card';
+  card.setAttribute('aria-live', 'polite');
+  const heading = document.createElement('strong');
+  heading.textContent = 'Monitor de fuentes en esta sesión';
+  const scope = document.createElement('p');
+  scope.className = 'agent-role-meta';
+  scope.textContent = 'Reglas deterministas de disponibilidad, vigencia y QC básico. Solo lectura; no emite alertas. Los otros perfiles de agentes siguen siendo demostrativos.';
+  card.append(heading, scope);
+
+  const list = document.createElement('ul');
+  list.className = 'agent-findings-list';
+  for (const sourceId of ['dmc-meteochile', 'conaf-incendios']) {
+    const source = DATA_SOURCES.find((item) => item.id === sourceId);
+    const health = STATE.ingestionHealth.find((item) => item.sourceId === sourceId);
+    const item = document.createElement('li');
+    const age = health?.lastSuccessAtUtc ? Math.floor((Date.now() - Date.parse(health.lastSuccessAtUtc)) / 60000) : null;
+    const stale = age === null || age > (source?.ttlMinutes || 60);
+    const status = !health ? 'Sin consulta en esta sesión'
+      : health.status === 'ERROR' ? `No disponible · ${health.lastError || 'sin detalle'}`
+        : health.status === 'REVIEW' ? 'Respuesta recibida · QC requiere revisión'
+          : health.status === 'PARTIAL' ? 'Respuesta parcial · campos incompletos'
+            : health.status === 'STALE' ? 'Última observación desactualizada'
+              : health.status === 'NOT_CONFIGURED' ? `No configurado · ${health.lastError || 'faltan credenciales'}`
+                : stale ? `Último éxito vencido · hace ${age} min` : `Respuesta reciente · hace ${age} min`;
+    item.textContent = `${source?.shortName || sourceId}: ${status}`;
+    if (source?.url) {
+      const link = document.createElement('a');
+      link.href = source.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = ' Abrir fuente ↗';
+      item.append(link);
+    }
+    list.append(item);
+  }
+  card.append(list);
+  return card;
+}
+
 function renderAgentsSection() {
   const agentsContainer = document.getElementById('agentsCardsContainer');
   const hitlContainer = document.getElementById('hitlQueueContainer');
@@ -1655,7 +1683,9 @@ function renderAgentsSection() {
 
   const agentsList = Array.isArray(AI_AGENTS_DATA?.agents) ? AI_AGENTS_DATA.agents : [];
   if (agentsContainer) {
-    agentsContainer.innerHTML = agentsList
+    agentsContainer.replaceChildren(renderLiveSourceMonitorCard());
+    agentsContainer.insertAdjacentHTML('beforeend', agentsList
+      .filter((agent) => agent.id !== 'AG-MON-01')
       .map(
         (ag) => `
         <div class="agent-card">
@@ -1690,13 +1720,14 @@ function renderAgentsSection() {
         </div>
       `
       )
-      .join('');
+      .join(''));
   }
 
   if (hitlContainer) {
     hitlContainer.innerHTML = hitlList
       .map((item) => {
-        const isSae = Boolean(item.isSaeEmergency);
+        const isDemo = Boolean(item.simulationOnly);
+        const isSae = Boolean(item.isSaeEmergency && !isDemo);
         const isPending = item.status === 'PENDIENTE_REVISION_HUMANA';
         const isApproved = item.status === 'APROBADO_POR_SUPERVISOR_HUMANO';
         const isRejected = item.status === 'RECHAZADO_POR_SUPERVISOR_HUMANO';
@@ -1706,22 +1737,24 @@ function renderAgentsSection() {
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.4rem;">
             <div style="display:flex; align-items:center; gap:0.45rem; flex-wrap:wrap;">
               <span class="severity-pill ${isSae ? 'sev-EXTREMA' : 'sev-TEMPRANA'}">
-                ${isSae ? '🚨 EMERGENCIA SAE #' + item.id : '👤 Escalamiento HITL #' + item.id}
+                ${isDemo ? '🧪 Simulación #' + item.id : isSae ? '🚨 EMERGENCIA SAE #' + item.id : '👤 Escalamiento HITL #' + item.id}
               </span>
               ${
-                isSae
+                isDemo
+                  ? '<span class="epistemic-badge badge-estimacion">Solo demostración · sin envío</span>'
+                  : isSae
                   ? '<span class="sae-badge" style="font-size:0.7rem; padding:0.12rem 0.4rem;">Cell Broadcast</span>'
                   : ''
               }
             </div>
             <span id="hitlStatusBadge-${item.id}" class="epistemic-badge ${
-              isApproved
+              isApproved && !isDemo
                 ? 'badge-observacion'
                 : isRejected
                 ? 'badge-peligro'
                 : 'badge-estimacion'
             }">
-              ${isApproved ? '✓ Firmado' : isRejected ? '✕ Rechazado' : '⏳ Pendiente'}
+              ${isApproved ? (isDemo ? 'Escenario revisado' : '✓ Firmado') : isRejected ? '✕ Rechazado' : '⏳ Pendiente'}
             </span>
           </div>
 
@@ -1741,9 +1774,9 @@ function renderAgentsSection() {
 
           <!-- Validaciones técnicas colapsables para no saturar la lectura -->
           <details class="hitl-guardrails-details">
-            <summary>🛡️ Validaciones de Guardrails superadas (${(item.guardrailChecks || []).length})</summary>
+            <summary>${isDemo ? 'ℹ️ Guardrails ilustrativos (no ejecutados)' : `🛡️ Validaciones de Guardrails superadas (${(item.guardrailChecks || []).length})`}</summary>
             <ul>
-              ${(item.guardrailChecks || []).map((g) => `<li>✓ ${g.rule}</li>`).join('')}
+              ${(item.guardrailChecks || []).map((g) => `<li>${isDemo ? '•' : '✓'} ${g.rule}</li>`).join('')}
             </ul>
           </details>
 
@@ -1757,7 +1790,7 @@ function renderAgentsSection() {
                 ✓ ${
                   isSae
                     ? 'Aprobar y Emitir Alarma Acústica SAE'
-                    : 'Aprobar Boletín (Firma Humana)'
+                    : isDemo ? 'Registrar revisión (sin envío)' : 'Aprobar Boletín (Firma Humana)'
                 }
               </button>
               <button type="button" class="btn btn-warning btn-hitl-action" data-hitl-id="${item.id}" data-decision="RECHAZADO_POR_SUPERVISOR_HUMANO">
@@ -1769,7 +1802,7 @@ function renderAgentsSection() {
               <div class="hitl-approved-banner">
                 <span class="badge-approved-icon">✓</span>
                 <div class="approved-text-wrap">
-                  <strong>Boletín Aprobado con Firma Humana</strong>
+                  <strong>${isDemo ? 'Escenario de demostración revisado' : 'Boletín Aprobado con Firma Humana'}</strong>
                   <span class="approved-timestamp">${item.decidedAt ? formatUtcInChileTz(item.decidedAt) : 'Registrado en memoria'}</span>
                 </div>
                 <button type="button" class="btn btn-sm btn-ghost btn-hitl-action" data-hitl-id="${item.id}" data-decision="PENDIENTE_REVISION_HUMANA" title="Reabrir este boletín para volver a evaluarlo">
@@ -1781,8 +1814,8 @@ function renderAgentsSection() {
               <div class="hitl-rejected-banner">
                 <span class="badge-rejected-icon">✕</span>
                 <div class="approved-text-wrap">
-                  <strong>Boletín Rechazado por Supervisor</strong>
-                  <span class="approved-timestamp">Se solicitó recálculo a los modelos</span>
+                  <strong>${isDemo ? 'Escenario de demostración rechazado' : 'Boletín Rechazado por Supervisor'}</strong>
+                  <span class="approved-timestamp">${isDemo ? 'No se ejecutó ningún recálculo.' : 'Se solicitó recálculo a los modelos'}</span>
                 </div>
                 <button type="button" class="btn btn-sm btn-ghost btn-hitl-action" data-hitl-id="${item.id}" data-decision="PENDIENTE_REVISION_HUMANA">
                   ↩ Reabrir
@@ -1791,7 +1824,7 @@ function renderAgentsSection() {
             `
             }
             ${
-              isSae && isPending
+              isSae && isPending && !isDemo
                 ? `
               <button type="button" class="btn btn-sm btn-secondary btn-hitl-preview-alarm" data-hitl-id="${item.id}">
                 🔊 Probar Sirena SAE
@@ -1860,7 +1893,7 @@ function renderAgentsSection() {
         saveHitlDecision(hitlId, decision);
         renderAgentsSection();
 
-        if (decision === 'APROBADO_POR_SUPERVISOR_HUMANO') {
+        if (decision === 'APROBADO_POR_SUPERVISOR_HUMANO' && !item.simulationOnly) {
           if (item.isSaeEmergency) {
             playSaeAlarm({
               title: '🚨 EMERGENCIA SAE VALIDADA',
@@ -1882,6 +1915,8 @@ function renderAgentsSection() {
           }
         }
 
+        if (item.simulationOnly) return;
+
         try {
           await fetch('/api/audit-log', {
             method: 'POST',
@@ -1901,7 +1936,22 @@ function renderAgentsSection() {
   });
 }
 
-function renderSourcesAndCriteriaSection() {
+async function refreshIngestionHealth(force = false) {
+  if (!force && Date.now() - STATE.ingestionHealthCheckedAt < 30000) return;
+  STATE.ingestionHealthCheckedAt = Date.now();
+  try {
+    const response = await fetch('/api/ingestion/status');
+    if (!response.ok) return;
+    const result = await response.json();
+    STATE.ingestionHealth = result.sources || [];
+    renderSourcesAndCriteriaSection(false);
+    renderAgentsSection();
+  } catch {
+    STATE.ingestionHealth = [];
+  }
+}
+
+function renderSourcesAndCriteriaSection(checkHealth = true) {
   const tbody = document.getElementById('sourcesTableBody');
   const criteriaBox = document.getElementById('acceptanceCriteriaContainer');
   const anyOpenMeteoSynced = CHILE_LOCATIONS.some((l) => l.observation.isLiveSynced);
@@ -1912,7 +1962,22 @@ function renderSourcesAndCriteriaSection() {
         STATE.staleSimulationActive && (s.id === 'dmc-meteochile' || s.id === 'senapred-chile');
 
       let modeBadgeHtml = '';
-      if (isStaleSimulated) {
+      const health = STATE.ingestionHealth.find((item) => item.sourceId === s.id);
+      if (s.id === 'dmc-meteochile' || s.id === 'conaf-incendios') {
+        modeBadgeHtml = health?.status === 'NOT_CONFIGURED'
+          ? `<span class="epistemic-badge badge-pronostico">Credenciales DMC requeridas</span>`
+          : health?.status === 'ONLINE'
+          ? `<span class="epistemic-badge badge-observacion">● Fuente consultada</span>`
+          : health?.status === 'REVIEW'
+            ? `<span class="epistemic-badge badge-estimacion">⚠ Respuesta requiere QC</span>`
+            : health?.status === 'PARTIAL'
+              ? `<span class="epistemic-badge badge-pronostico">◐ Respuesta parcial</span>`
+              : health?.status === 'STALE'
+                ? `<span class="epistemic-badge badge-estimacion">⚠ Observación desactualizada</span>`
+              : health?.status === 'ERROR'
+              ? `<span class="epistemic-badge badge-estimacion">⚠ Fuente no disponible</span>`
+              : `<span class="epistemic-badge badge-pronostico">Conector · esperando consulta</span>`;
+      } else if (isStaleSimulated) {
         modeBadgeHtml = `<span class="epistemic-badge badge-alerta-oficial">⚠ Simulación Vencida</span>`;
       } else if (
         s.id === 'openmeteo-multi' ||
@@ -1986,6 +2051,7 @@ function renderSourcesAndCriteriaSection() {
       </div>
     `;
   }
+  if (checkHealth) refreshIngestionHealth();
 }
 
 function refreshAllViews() {
@@ -2005,7 +2071,8 @@ function refreshAllViews() {
 }
 
 function setupEventListeners() {
-  document.getElementById('btnRunSourceAudit')?.addEventListener('click', () => {
+  document.getElementById('btnRunSourceAudit')?.addEventListener('click', async () => {
+    await refreshIngestionHealth(true);
     const liveLocations = CHILE_LOCATIONS.filter(
       (location) => location.observation.isLiveSynced && location.observation.sourceId === 'openmeteo-multi'
     );
@@ -2019,7 +2086,12 @@ function setupEventListeners() {
         syncedLocationCount: liveLocations.length,
         totalLocationCount: CHILE_LOCATIONS.length,
         lastSuccessAtUtc: lastSuccessAt
-      }
+      },
+      ingestion: STATE.ingestionHealth.map((source) => ({
+        ...source,
+        name: DATA_SOURCES.find((item) => item.id === source.sourceId)?.shortName || source.sourceId,
+        ttlMinutes: DATA_SOURCES.find((item) => item.id === source.sourceId)?.ttlMinutes || 60
+      }))
     });
     renderSourceAuditReport();
   });
@@ -2475,6 +2547,7 @@ function setupEventListeners() {
         : '◐ Escala de Grises (A11y)';
     });
   }
+
 }
 
 let liveSyncInFlight = false;
@@ -2657,6 +2730,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialTab = applyUrlStateOnLoad();
   activateTab(initialTab);
   refreshAllViews();
+  window.addEventListener('load', () => {
+    if (STATE.activeTabId === 'tab-mapa') {
+      renderMapAndDetailView();
+      mapControllerSingleton.leafletMap?.invalidateSize();
+    }
+  }, { once: true });
   setInterval(updateClockAndHeaderStatus, 30000);
   // Datos reales por defecto: sincroniza automáticamente al abrir y cada 30 min.
   syncAllLocationsLive();

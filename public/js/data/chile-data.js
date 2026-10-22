@@ -15,28 +15,28 @@ export const DATA_SOURCES = [
     name: 'Dirección Meteorológica de Chile (DMC - DGAC)',
     shortName: 'DMC MeteoChile',
     category: 'OFFICIAL_AUTHORITY',
-    role: 'Observaciones red EMA, avisos, alertas y alarmas meteorológicas oficiales',
+    role: 'Observaciones instrumentales de red EMA; avisos meteorológicos oficiales enlazados',
     url: 'https://www.meteochile.gob.cl/',
-    apiDocUrl: 'https://climatologia.meteochile.gob.cl/application/index/menuTematicoEmas',
+    apiDocUrl: 'https://climatologia.meteochile.gob.cl/application/documentacion/getDocumento/2',
     updateFrequencyMinutes: 15,
     ttlMinutes: 45,
-    lastUpdatedUtc: '2026-10-19T15:00:00Z',
-    status: 'ONLINE',
-    accessNotes: 'Portal Servicios Climáticos requiere credenciales institucionales para API REST completa; boletines y avisos públicos consultables en portal oficial.'
+    lastUpdatedUtc: null,
+    status: 'PARTIAL',
+    accessNotes: 'La documentación vigente describe getDatosRecientesEma/{código} y requiere usuario/token. El servidor usa DMC_API_USER y DMC_API_TOKEN; mientras falten, el conector queda no configurado.'
   },
   {
     id: 'senapred-chile',
     name: 'Servicio Nacional de Prevención y Respuesta ante Desastres (SENAPRED)',
     shortName: 'SENAPRED',
     category: 'OFFICIAL_AUTHORITY',
-    role: 'Alertas Tempranas Preventivas (ATP), Amarillas, Rojas y Sistema de Alerta de Emergencia (SAE)',
+    role: 'Publicaciones de alertas y comunicados oficiales; sin lectura de activaciones SAE Cell Broadcast',
     url: 'https://senapred.cl/alertas/',
-    apiDocUrl: 'https://senapred.cl/informate/alertas/',
+    apiDocUrl: 'https://senapred.cl/alertas/',
     updateFrequencyMinutes: 15,
     ttlMinutes: 60,
-    lastUpdatedUtc: '2026-10-19T14:50:00Z',
-    status: 'ONLINE',
-    accessNotes: 'Sin API REST pública abierta con SLA; se integran boletines oficiales con enlace directo verificable.'
+    lastUpdatedUtc: null,
+    status: 'PARTIAL',
+    accessNotes: 'El portal /alertas/ entrega una aplicación JavaScript; se rastrean enlaces disponibles sin interpretar ni validar publicaciones. El calendario de pruebas SAE no es un feed de emergencias.'
   },
   {
     id: 'openmeteo-multi',
@@ -68,17 +68,31 @@ export const DATA_SOURCES = [
   },
   {
     id: 'dga-glofas',
-    name: 'DGA-MOP / Copernicus GloFAS Hydrological Forecast',
-    shortName: 'DGA / GloFAS Hidrología',
+    name: 'Open-Meteo Flood API / pronóstico hidrológico GloFAS',
+    shortName: 'Pronóstico de caudal GloFAS',
     category: 'HYDRO_MODEL',
     role: 'Monitoreo fluviométrico referencial y pronóstico de caudal en cuencas de Chile',
-    url: 'https://snia.mop.gob.cl/dga/',
+    url: 'https://open-meteo.com/en/docs/flood-api',
     apiDocUrl: 'https://open-meteo.com/en/docs/flood-api',
     updateFrequencyMinutes: 180,
     ttlMinutes: 720,
     lastUpdatedUtc: '2026-10-19T12:00:00Z',
     status: 'ONLINE',
-    accessNotes: 'Combina umbrales históricos de cuencas (CR2 CAMELS-CL / DGA) con pronóstico ensemble GloFAS.'
+    accessNotes: 'Pronóstico de caudal servido por Open-Meteo; no son observaciones en vivo de estaciones DGA. Los datos del Sistema Hidrométrico DGA son provisionales y el conector directo queda pendiente de verificar.'
+  },
+  {
+    id: 'conaf-incendios',
+    name: 'Corporación Nacional Forestal (CONAF) — informe diario de incendios',
+    shortName: 'CONAF Incendios',
+    category: 'OFFICIAL_AUTHORITY',
+    role: 'Conteo diario regional y superficie afectada reportados por CONAF',
+    url: 'https://www.conaf.cl/mapas-incendios-forestales/ocurrencia-nacional.htm',
+    apiDocUrl: 'https://www.conaf.cl/mapas-incendios-forestales/ocurrencia-nacional.htm',
+    updateFrequencyMinutes: 5,
+    ttlMinutes: 15,
+    lastUpdatedUtc: null,
+    status: 'PARTIAL',
+    accessNotes: 'Lectura de tabla HTML oficial con caché local de 4 min. Reporte agregado, no es un feed de alertas ni de puntos de incendio; conserva la hora reportada por CONAF.'
   },
   {
     id: 'shoa-marine',
@@ -1517,11 +1531,11 @@ export const AI_AGENTS_DATA = {
     },
     'EV-SAE-01': {
       id: 'EV-SAE-01',
-      source: 'SENAPRED · Sistema de Alerta de Emergencia (SAE) / SUBTEL',
+      source: 'Escenario local de demostración (sin consulta a SENAPRED/SUBTEL)',
       timestampUtc: '2026-10-19T15:15:00Z',
-      parameter: 'Transmisión Oficial Cell Broadcast SAE',
-      rawValue: 'Evacuación preventiva por peligro de remoción en masa en Quebrada de Macul y San José de Maipo',
-      dataType: 'OFICIAL_VINCULANTE'
+      parameter: 'Ejemplo ficticio de alerta SAE',
+      rawValue: 'Dato sintético; no representa evacuación ni transmisión oficial.',
+      dataType: 'DEMO_ESCENARIO'
     }
   },
   agents: [
@@ -1609,18 +1623,18 @@ export const AI_AGENTS_DATA = {
     },
     {
       id: 'AG-SAE-06',
-      name: 'Agente Centinela de Emergencia SAE (SaeEmergencyCoordinator)',
-      role: 'Detección directa en tiempo real de emisiones de mensajería Cell Broadcast SAE y acoplamiento hidrometeorológico',
-      status: 'EMERGENCIA_SAE_ACTIVADA',
-      autonomyLevel: 'DETECCION_DIRECTA_CON_SUPERVISION_HUMANA',
+      name: 'Simulación de centinela SAE (demo)',
+      role: 'Escenario local ficticio; no recibe ni detecta transmisiones Cell Broadcast SAE.',
+      status: 'SIMULACION',
+      autonomyLevel: 'SOLO_DEMOSTRACION_SIN_ACCIONES',
       lastRunUtc: '2026-10-19T15:15:00Z',
       findings: [
         {
-          text: 'Detección directa de transmisión Cell Broadcast SAE: Evacuación preventiva en Quebrada de Macul y San José de Maipo por peligro de remoción en masa.',
+          text: 'Simulación: ejemplo ficticio de un aviso SAE; no existe detección ni evacuación confirmada.',
           citations: ['EV-SAE-01']
         },
         {
-          text: 'Correlación multivariable confirmada: La orden de evacuación coincide con ascenso forzado de la isoterma 0 °C sobre 3.050 m s.n.m. y pulsos de lluvia intensa en cabecera de cuenca.',
+          text: 'Ejemplo didáctico con cifras sintéticas; no confirma una orden de evacuación ni condiciones meteorológicas observadas.',
           citations: ['EV-101', 'EV-107', 'EV-SAE-01']
         }
       ]
@@ -1629,12 +1643,13 @@ export const AI_AGENTS_DATA = {
   hitlQueue: [
     {
       id: 'HITL-201',
+      simulationOnly: true,
       agentId: 'AG-BRI-04',
       createdAtUtc: '2026-10-19T15:11:00Z',
-      targetAudience: 'Equipos de Emergencia Comunales (RM, O’Higgins y Maule)',
+      targetAudience: 'Demostración local; sin destinatarios externos',
       impactLevel: 'ALTO_IMPACTO',
       status: 'PENDIENTE_REVISION_HUMANA',
-      proposedSummary: 'INFERENCIA ASISTIDA POR IA (Sujeta a Aprobación Humana): Se recomienda reforzar el monitoreo preventivo de quebradas en San José de Maipo, Machalí y San Clemente entre las 15:00 y 03:00 HL. La combinación de lluvia activa observada [EV-101], tope nuboso frío en avance satelital [EV-103] y la dispersión de isoterma 0 °C entre 2.950 y 3.120 m s.n.m. en los modelos ECMWF/GFS [EV-102] respalda una probabilidad moderada-alta de escorrentía pluvial rápida antes del descenso térmico de mañana.',
+      proposedSummary: 'SIMULACIÓN — cifras y recomendaciones ficticias, no son datos actuales ni un boletín operativo. Se recomienda reforzar el monitoreo preventivo de quebradas en San José de Maipo, Machalí y San Clemente. Esta demostración no se envía a destinatarios.',
       citations: ['EV-101', 'EV-102', 'EV-103'],
       guardrailChecks: [
         { rule: 'No modifica ni reemplaza alertas oficiales de DMC/SENAPRED', passed: true },
@@ -1645,12 +1660,13 @@ export const AI_AGENTS_DATA = {
     },
     {
       id: 'HITL-202',
+      simulationOnly: true,
       agentId: 'AG-FLA-05',
       createdAtUtc: '2026-10-19T15:12:30Z',
-      targetAudience: 'COGRID Regional RM, Municipios de San José de Maipo y Machalí',
+      targetAudience: 'Demostración local; sin destinatarios externos',
       impactLevel: 'ALTO_IMPACTO',
       status: 'PENDIENTE_REVISION_HUMANA',
-      proposedSummary: 'ALERTA AGÉNTICA TEMPRANA DE FLASH FLOOD (Requiere Validación Humana): Se detecta pulso de lluvia convectiva intensa en cabecera cordillerana con isoterma 0 °C en 3.050 m s.n.m. [EV-101, EV-107] y actividad eléctrica asociada [EV-106]. Se recomienda activar monitoreo presencial de turbidez en bocatomas de agua potable y advertir a comunidades de San Alfonso, San Gabriel y Baños Morales ante riesgo inminente de flujos de detritos.',
+      proposedSummary: 'SIMULACIÓN — cifras y recomendaciones ficticias, no son datos actuales ni un boletín operativo. Este ejemplo plantea monitoreo de turbidez en bocatomas; no indica un riesgo vigente ni se envía a destinatarios.',
       citations: ['EV-101', 'EV-106', 'EV-107'],
       guardrailChecks: [
         { rule: 'No reemplaza canales vinculantes SAE de SENAPRED', passed: true },
@@ -1661,19 +1677,18 @@ export const AI_AGENTS_DATA = {
     },
     {
       id: 'HITL-203',
+      simulationOnly: true,
       agentId: 'AG-SAE-06',
       createdAtUtc: '2026-10-19T15:15:30Z',
-      targetAudience: 'Comunidades en Evacuación, COGRID Comunal y Dirección de Gestión de Riesgo de Desastres',
-      impactLevel: 'EMERGENCIA_CRITICA_SAE',
+      targetAudience: 'Demostración local; sin destinatarios externos',
+      impactLevel: 'SIMULACION',
       isSaeEmergency: true,
       status: 'PENDIENTE_REVISION_HUMANA',
-      proposedSummary: '🚨 DETECCIÓN DIRECTA DE MENSAJERÍA SAE [EV-SAE-01]: Transmisión activa de Cell Broadcast emitida por SENAPRED para Quebrada de Macul y San José de Maipo ante peligro inminente de remoción en masa y aluvión. El agente correlaciona la alerta con lluvia activa en cabecera e isoterma sobre 3.050 m s.n.m. [EV-101, EV-107]. Se solicita validación inmediata para coordinar despacho de alarma sonora dual (853/960 Hz), cierre de accesos a la cuenca y notificación push masiva.',
+      proposedSummary: 'SIMULACIÓN FICTICIA — no es alerta, orden de evacuación ni transmisión SAE real. Este registro no se envía a usuarios ni autoridades.',
       citations: ['EV-SAE-01', 'EV-101', 'EV-107'],
       guardrailChecks: [
-        { rule: 'Verificación de autenticidad criptográfica del canal oficial SENAPRED/SUBTEL', passed: true },
-        { rule: 'Correlación cruzada con telemetría DGA y radar meteorológico en tiempo real', passed: true },
-        { rule: 'Generación automática de paquete de despacho: Sirena acústica SAE + Locución', passed: true },
-        { rule: 'Supervisión y trazabilidad humana (HITL) obligatoria antes de difusión masiva', passed: true }
+        { rule: 'Ejemplo de validación ilustrativa; no ejecutada', passed: true },
+        { rule: 'Aprobación registra solo una decisión local; no activa audio ni notificaciones', passed: true }
       ]
     }
   ]

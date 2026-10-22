@@ -1,4 +1,4 @@
-export function auditSourceCatalog(sources, { now = Date.now(), openMeteo = null } = {}) {
+export function auditSourceCatalog(sources, { now = Date.now(), openMeteo = null, ingestion = [] } = {}) {
   const checkedAtUtc = new Date(now).toISOString();
   const findings = [];
   const runtimeChecks = [];
@@ -51,6 +51,26 @@ export function auditSourceCatalog(sources, { now = Date.now(), openMeteo = null
         });
       }
     }
+  }
+
+  for (const source of ingestion) {
+    const lastSuccess = Date.parse(source.lastSuccessAtUtc || '');
+    const ageMinutes = Number.isFinite(lastSuccess) ? Math.floor((now - lastSuccess) / 60000) : null;
+    const stale = ageMinutes === null || ageMinutes > (source.ttlMinutes ?? 60);
+    runtimeChecks.push({
+      name: source.name,
+      status: source.status === 'NOT_CONFIGURED' ? 'NO_CONFIGURADA'
+        : source.status === 'ERROR' ? 'FUENTE_NO_DISPONIBLE'
+          : source.status === 'STALE' ? 'DATOS_DESACTUALIZADOS'
+        : source.status === 'REVIEW' ? 'DATOS_REQUIEREN_REVISION'
+          : source.status === 'PARTIAL' ? 'DATOS_PARCIALES'
+          : stale ? 'SIN_RESPUESTA_RECIENTE' : 'RESPUESTA_RECIENTE',
+      detail: ageMinutes === null
+        ? source.status === 'NOT_CONFIGURED'
+          ? `Conector sin credenciales configuradas. ${source.lastError || ''}`.trim()
+          : `Sin respuesta exitosa registrada; último intento: ${source.lastAttemptAtUtc || 'sin datos'}. ${source.lastError || ''}`.trim()
+        : `Última respuesta hace ${ageMinutes} min; ${source.successCount || 0} éxitos y ${source.failureCount || 0} fallos en esta sesión.${source.lastError ? ` Último error: ${source.lastError}` : ''}`
+    });
   }
 
   return {

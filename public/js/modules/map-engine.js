@@ -320,12 +320,13 @@ class ChileMapController {
     this.leafletMarkers = [];
     this.leafletMarkerMap = new Map();
     this.radarFrames = [];
+    this.irFrames = [];
     this.radarFrameIdx = 0;
     this.radarOpacity = 0.65;
     this.radarPlaying = false;
     this.radarTimerId = null;
     this.basemapProvider = 'osm_chile';
-    this.satelliteOverlayMode = 'rainviewer';
+    this.satelliteOverlayMode = 'rainviewer_radar';
     this.cartoBuilderEmbedUrl = '';
 
     // Modos: 'leaflet' (Mapa interactivo principal) | 'fluid' (Esquema Nacional) | 'terrain3d' (Perfil Altitudinal Isoterma 0 °C) | 'carto_embed' (Visor CARTO Builder)
@@ -467,7 +468,7 @@ class ChileMapController {
               Mapa base:
             </label>
             <select id="basemapProviderSelect" style="font-size:0.75rem; padding:0.24rem 0.48rem;">
-              <option value="osm_chile" selected>OpenStreetMap Estándar</option>
+              <option value="osm_chile" selected>OpenStreetMap Estándar — sin token</option>
               <option value="opentopomap">OpenTopoMap — Relieve y Curvas de Nivel Andinas (Abierto)</option>
               <option value="esri_satellite">ESRI World Imagery — Satelital de Alta Resolución</option>
             </select>
@@ -475,16 +476,17 @@ class ChileMapController {
             <label for="satelliteOverlaySelect" style="font-size:0.74rem; font-weight:700; color:var(--text-secondary);">
               Satélite / Radar:
             </label>
-            <select id="satelliteOverlaySelect" style="font-size:0.75rem; padding:0.24rem 0.48rem;" title="Selecciona la capa satelital en vivo superpuesta sobre Chile">
-              <option value="rainviewer" selected>RainViewer — Mosaico Radar + IR (En vivo)</option>
+            <select id="satelliteOverlaySelect" style="font-size:0.75rem; padding:0.24rem 0.48rem;" title="Selecciona la capa satelital o de radar superpuesta sobre Chile">
+              <option value="rainviewer_radar" selected>📡 Radar Meteorológico Doppler (Lluvia en vivo · dBZ)</option>
+              <option value="rainviewer_sat">🛰 RainViewer — Mosaico Satelital Infrarrojo (IR)</option>
               <option value="gibs_goes_ir">NASA GIBS — GOES-East Banda 13 Infrarrojo (En vivo 10m)</option>
               <option value="gibs_goes_geocolor">NASA GIBS — GOES-East GeoColor (Color Real Día + IR Noche)</option>
               <option value="gibs_viirs_truecolor">NASA GIBS — VIIRS Suomi NPP Color Verdadero (250m)</option>
               <option value="none">Sin superposición satelital</option>
             </select>
 
-            <button type="button" class="btn btn-sm" id="btnRadarPlay" title="Reproduce los fotogramas observados de RainViewer si hay conexión en vivo">
-              ▶ Fotogramas IR/Radar
+            <button type="button" class="btn btn-sm" id="btnRadarPlay" title="Reproduce los fotogramas observados de radar o satélite si hay conexión en vivo">
+              ▶ Fotogramas Radar
             </button>
             <span id="radarFrameStatus" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--text-secondary);">
               Radar: Listo
@@ -557,6 +559,7 @@ class ChileMapController {
       zoomControl: true,
       attributionControl: true
     });
+    this.leafletMap.on('resize', () => this.syncLeafletMarkers(false));
 
     this.updateLeafletThemeTiles();
     this.syncLeafletMarkers(false);
@@ -571,25 +574,43 @@ class ChileMapController {
         const data = await res.json();
         const irFrames = data?.satellite?.infrared || [];
         const radarFrames = data?.radar?.past || [];
-        const isRadar = !irFrames.length && radarFrames.length > 0;
-        const frames = (irFrames.length ? irFrames : radarFrames).slice(-8);
-        if (frames.length) {
-          const host = data.host || 'https://tilecache.rainviewer.com';
-          this.radarFrames = frames.map((f) => ({
-            time: f.time,
-            url: `${host}${f.path}/256/{z}/{x}/{y}/${isRadar ? '2/1_1.png' : '0/0_0.png'}`
-          }));
-          this.radarFrameIdx = this.radarFrames.length - 1;
+        const host = data.host || 'https://tilecache.rainviewer.com';
+
+        // Fotogramas reales de Radar Meteorológico Doppler (Reflectividad dBZ)
+        this.radarFrames = radarFrames.slice(-12).map((f) => ({
+          time: f.time,
+          url: `${host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`,
+          type: 'radar'
+        }));
+
+        // Fotogramas reales de Satélite Infrarrojo
+        this.irFrames = irFrames.slice(-8).map((f) => ({
+          time: f.time,
+          url: `${host}${f.path}/256/{z}/{x}/{y}/0/0_0.png`,
+          type: 'infrared'
+        }));
+
+        // Fallbacks cruzados por resiliencia
+        if (!this.radarFrames.length && this.irFrames.length) {
+          this.radarFrames = this.irFrames;
+        }
+        if (!this.irFrames.length && this.radarFrames.length) {
+          this.irFrames = this.radarFrames;
+        }
+
+        const activeFrames = this.satelliteOverlayMode === 'rainviewer_sat' ? this.irFrames : this.radarFrames;
+        if (activeFrames.length) {
+          this.radarFrameIdx = activeFrames.length - 1;
           this.applySatelliteOverlayMode();
         } else if (statusEl) {
-          statusEl.textContent = 'RainViewer: Sin fotogramas activos';
+          statusEl.textContent = 'Radar: Sin fotogramas activos';
         }
       } else if (statusEl) {
-        statusEl.textContent = 'RainViewer: No disponible';
+        statusEl.textContent = 'Radar: No disponible';
       }
     } catch {
       if (statusEl) {
-        statusEl.textContent = 'RainViewer: Sin conexión (Modo local)';
+        statusEl.textContent = 'Radar: Modo local resiliente';
       }
     }
   }
@@ -606,7 +627,7 @@ class ChileMapController {
 
     if (this.satelliteOverlayMode === 'none') {
       if (btnPlay) btnPlay.disabled = true;
-      if (statusEl) statusEl.textContent = 'Superposición satelital desactivada';
+      if (statusEl) statusEl.textContent = 'Superposición satelital/radar desactivada';
       return;
     }
 
@@ -658,27 +679,62 @@ class ChileMapController {
       return;
     }
 
-    if (btnPlay) btnPlay.disabled = false;
-    this.showRadarFrame(this.radarFrameIdx);
+    // Modos RainViewer: 'rainviewer_radar' (por defecto) o 'rainviewer_sat' (o 'rainviewer' heredado)
+    const isSat = this.satelliteOverlayMode === 'rainviewer_sat';
+    const activeFrames = isSat ? this.irFrames : this.radarFrames;
+
+    if (btnPlay) {
+      btnPlay.disabled = !activeFrames.length;
+      btnPlay.textContent = this.radarPlaying
+        ? (isSat ? '⏸ Pausar IR' : '⏸ Pausar Radar')
+        : (isSat ? '▶ Fotogramas IR' : '▶ Fotogramas Radar');
+    }
+
+    if (activeFrames.length) {
+      this.showRadarFrame(this.radarFrameIdx);
+    } else if (statusEl) {
+      statusEl.textContent = isSat ? 'Satélite IR: Sin datos activos' : 'Radar Doppler: Sin datos activos';
+    }
   }
 
   showRadarFrame(idx) {
-    if (
-      !this.leafletMap ||
-      typeof window.L === 'undefined' ||
-      !this.radarFrames.length ||
-      this.satelliteOverlayMode !== 'rainviewer'
-    ) {
-      return;
-    }
-    const frame = this.radarFrames[idx] || this.radarFrames[this.radarFrames.length - 1];
+    if (!this.leafletMap || typeof window.L === 'undefined') return;
+
+    const isSat = this.satelliteOverlayMode === 'rainviewer_sat';
+    const isRainViewer =
+      this.satelliteOverlayMode === 'rainviewer_radar' ||
+      this.satelliteOverlayMode === 'rainviewer' ||
+      isSat;
+
+    if (!isRainViewer) return;
+
+    const activeFrames = isSat ? this.irFrames : this.radarFrames;
+    if (!activeFrames || !activeFrames.length) return;
+
+    const safeIdx = Math.max(0, Math.min(idx, activeFrames.length - 1));
+    const frame = activeFrames[safeIdx];
+    const isRadar = !isSat;
+
     if (this.leafletRadarLayer) {
-      this.leafletMap.removeLayer(this.leafletRadarLayer);
+      if (typeof this.leafletRadarLayer.setUrl === 'function') {
+        this.leafletRadarLayer.setUrl(frame.url, false);
+        this.leafletRadarLayer.setOpacity(this.radarOpacity);
+      } else {
+        this.leafletMap.removeLayer(this.leafletRadarLayer);
+        this.leafletRadarLayer = window.L.tileLayer(frame.url, {
+          opacity: this.radarOpacity,
+          zIndex: 15
+        }).addTo(this.leafletMap);
+      }
+    } else {
+      this.leafletRadarLayer = window.L.tileLayer(frame.url, {
+        opacity: this.radarOpacity,
+        zIndex: 15,
+        attribution: isRadar
+          ? 'RainViewer Radar Doppler (Reflectividad dBZ)'
+          : 'RainViewer Satélite Infrarrojo'
+      }).addTo(this.leafletMap);
     }
-    this.leafletRadarLayer = window.L.tileLayer(frame.url, {
-      opacity: this.radarOpacity,
-      zIndex: 15
-    }).addTo(this.leafletMap);
 
     const statusEl = document.getElementById('radarFrameStatus');
     if (statusEl) {
@@ -686,7 +742,8 @@ class ChileMapController {
         hour: '2-digit',
         minute: '2-digit'
       });
-      statusEl.textContent = `Fotograma ${idx + 1}/${this.radarFrames.length} (${dt} obs. RainViewer)`;
+      const prefix = isRadar ? '📡 Radar Doppler' : '🛰 Satélite IR';
+      statusEl.textContent = `${prefix}: Cuadro ${safeIdx + 1}/${activeFrames.length} (${dt} RainViewer)`;
     }
   }
 
@@ -864,12 +921,14 @@ class ChileMapController {
     this.locations.forEach((loc) => {
       const metric = getLocationValueForStep(loc, this.activeLayer, this.hourOffset);
       const isSelected = loc.id === this.selectedLocationId;
+      const compactPin = window.matchMedia?.('(max-width: 768px)').matches && !isSelected;
       const shortName = loc.name.split('/')[0].trim();
+      const markerTitle = `${loc.regionCode} · ${shortName}: ${metric.display}`;
 
       const iconHtml = `
         <div class="leaflet-custom-pin ${isSelected ? 'selected' : ''}" style="--pin-color: ${metric.color};">
           <span class="pin-badge" style="background:${metric.color};">${metric.symbol}</span>
-          <span class="pin-text">
+          <span class="pin-text${compactPin ? ' pin-text--compact' : ''}">
             <strong>${loc.regionCode} · ${shortName}</strong>
             <small>${metric.shortDisplay}</small>
           </span>
@@ -879,16 +938,21 @@ class ChileMapController {
       const divIcon = window.L.divIcon({
         className: 'climasflood-leaflet-divicon',
         html: iconHtml,
-        iconSize: [148, 36],
-        iconAnchor: [16, 18]
+        iconSize: compactPin ? [28, 36] : [148, 36],
+        iconAnchor: compactPin ? [14, 18] : [16, 18]
       });
 
       const existing = this.leafletMarkerMap.get(loc.id);
       if (existing) {
         existing.setIcon(divIcon);
         existing.setLatLng([loc.lat, loc.lon]);
+        existing.options.title = markerTitle;
+        existing.getElement()?.setAttribute('title', markerTitle);
       } else {
-        const marker = window.L.marker([loc.lat, loc.lon], { icon: divIcon }).addTo(this.leafletMap);
+        const marker = window.L.marker([loc.lat, loc.lon], {
+          icon: divIcon,
+          title: markerTitle
+        }).addTo(this.leafletMap);
         marker.on('click', () => {
           if (this.onSelectLocation) this.onSelectLocation(loc.id);
         });
@@ -1068,13 +1132,19 @@ class ChileMapController {
     const radarOpacityVal = container.querySelector('#radarOpacityVal');
 
     btnRadarPlay?.addEventListener('click', () => {
-      if (!this.radarFrames.length) return;
+      const isSat = this.satelliteOverlayMode === 'rainviewer_sat';
+      const activeFrames = isSat ? this.irFrames : this.radarFrames;
+      if (!activeFrames || !activeFrames.length) return;
+
       this.radarPlaying = !this.radarPlaying;
-      btnRadarPlay.textContent = this.radarPlaying ? '⏸ Pausar Fotogramas' : '▶ Fotogramas IR/Radar';
+      btnRadarPlay.textContent = this.radarPlaying
+        ? (isSat ? '⏸ Pausar IR' : '⏸ Pausar Radar')
+        : (isSat ? '▶ Fotogramas IR' : '▶ Fotogramas Radar');
+
       if (this.radarPlaying) {
         this.radarTimerId = setInterval(() => {
-          if (this.radarFrames.length > 0) {
-            this.radarFrameIdx = (this.radarFrameIdx + 1) % this.radarFrames.length;
+          if (activeFrames.length > 0) {
+            this.radarFrameIdx = (this.radarFrameIdx + 1) % activeFrames.length;
             this.showRadarFrame(this.radarFrameIdx);
           }
         }, 950);

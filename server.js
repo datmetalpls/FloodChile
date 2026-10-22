@@ -7,6 +7,11 @@ import {
   fetchLiveOpenMeteoForLocation,
   buildCartoBuilderGeoJsonClient
 } from './public/js/modules/live-api.js';
+import { fetchDmcObservation, fetchDmcStation, fetchDmcStations } from './public/js/modules/dmc-api.js';
+import { fetchConafDailyReport } from './public/js/modules/conaf-api.js';
+import { appendIngestionRecord, makeIngestionRecord, readIngestionRecords, validateNonNegativeMetrics } from './server/ingestion-store.js';
+
+try { process.loadEnvFile(); } catch (error) { if (error.code !== 'ENOENT') throw error; }
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,11 +29,56 @@ let rainviewerCache = null;
 let rainviewerCacheTime = 0;
 const RAINVIEWER_CACHE_TTL_MS = 5 * 60 * 1000;
 
+function getFallbackRainViewerPayload() {
+  const nowSec = Math.floor(Date.now() / 1000);
+  return {
+    version: '2.0',
+    generated: nowSec,
+    host: 'https://tilecache.rainviewer.com',
+    fallback: true,
+    radar: {
+      past: [
+        { time: nowSec - 3000, path: '/v2/radar/2cc4a675d903' },
+        { time: nowSec - 2400, path: '/v2/radar/f2fd9ad84d0c' },
+        { time: nowSec - 1800, path: '/v2/radar/e9c42e8de3f1' },
+        { time: nowSec - 1200, path: '/v2/radar/3dc3c48cb59c' },
+        { time: nowSec - 600, path: '/v2/radar/3dc3c48cb59c' }
+      ],
+      nowcast: []
+    },
+    satellite: {
+      infrared: []
+    }
+  };
+}
+
 // Caché en memoria para resultados del portal de SENAPRED (TTL 10 minutos)
 let senapredAlertsCache = null;
 let senapredAlertsCacheTime = 0;
 let senapredSourceAvailable = false;
 const SENAPRED_CACHE_TTL_MS = 10 * 60 * 1000;
+const dmcObservationCache = new Map();
+let dmcStationsCache = null;
+let dmcStationsCacheTime = 0;
+const dmcStationMetadataCache = new Map();
+let conafReportCache = null;
+let conafReportCacheTime = 0;
+const ingestionHealth = new Map();
+
+function noteIngestion(sourceId, { ok, retrievedAtUtc = new Date().toISOString(), error = null, latencyMs = null, quality = null }) {
+  const previous = ingestionHealth.get(sourceId) || { successCount: 0, failureCount: 0 };
+  ingestionHealth.set(sourceId, {
+    sourceId,
+    status: ok ? (quality?.status === 'REVIEW' ? 'REVIEW' : quality?.status === 'PARTIAL' ? 'PARTIAL' : quality?.status === 'STALE' ? 'STALE' : 'ONLINE') : 'ERROR',
+    lastAttemptAtUtc: retrievedAtUtc,
+    lastSuccessAtUtc: ok ? retrievedAtUtc : previous.lastSuccessAtUtc || null,
+    lastError: ok ? null : String(error || 'Fuente no disponible'),
+    lastLatencyMs: latencyMs,
+    quality: quality || previous.quality || null,
+    successCount: previous.successCount + Number(ok),
+    failureCount: previous.failureCount + Number(!ok)
+  });
+}
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -116,7 +166,6 @@ async function scrapeSenapredAlerts() {
     });
     clearTimeout(timeout);
     if (sRes.ok) {
-      sourceAvailable = true;
       const html = await sRes.text();
       const articleMatches = [...html.matchAll(/<a[^>]+href="([^"]*alertas[^"]*)"[^>]*>(.*?)<\/a>/gi)];
       for (const m of articleMatches) {
@@ -144,6 +193,7 @@ async function scrapeSenapredAlerts() {
           });
         }
       }
+      sourceAvailable = scrapedAlerts.length > 0;
     }
   } catch {
     // Si no hay conexión o responde con challenge WAF, se preserva la resiliencia operativa
@@ -190,9 +240,13 @@ const server = http.createServer(async (req, res) => {
         'https://marine-api.open-meteo.com/v1/marine',
         'https://api.rainviewer.com/public/weather-maps.json',
         'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/',
-        'https://senapred.cl/alertas/'
+        'https://senapred.cl/alertas/',
+        'https://climatologia.meteochile.gob.cl/application/documentacion/getDocumento/2',
+        'https://www.conaf.cl/mapas-incendios-forestales/ocurrencia-nacional.htm'
       ],
       senapredAlertsLiveEndpoint: '/api/senapred/alertas-live',
+      ingestionStatusEndpoint: '/api/ingestion/status',
+      ingestionHistoryEndpoint: '/api/ingestion/history?source=dmc-meteochile&dias=7',
       cartoBuilderGeoJsonEndpoint: '/api/carto/chile-meteo.geojson',
       cachedLocationsCount: serverLocationSyncTimestamps.size,
       epistemologyPolicy: 'STRICT_SEPARATION_OBS_FORECAST_SCENARIO_ALERT',
@@ -212,6 +266,164 @@ const server = http.createServer(async (req, res) => {
       sourceAvailable: result.sourceAvailable,
       alerts: result.alerts
     });
+  }
+
+  if (pathname === '/api/dmc/observaciones' && req.method === 'GET') {
+    const stationCode = parsedUrl.searchParams.get('estacion') || '';
+    const knownStationCodes = CHILE_LOCATIONS.map((location) => location.stationId.match(/EMA-(\d{6})/)?.[1]);
+    if (!/^\d{6}$/.test(stationCode) || !knownStationCodes.includes(stationCode)) {
+      return sendJson(res, 400, { ok: false, error: 'Código EMA no habilitado en el catálogo local' });
+    }
+    const dmcCredentials = { user: process.env.DMC_API_USER, token: process.env.DMC_API_TOKEN };
+    if (!dmcCredentials.user || !dmcCredentials.token) {
+      return sendJson(res, 424, { ok: false, configured: false, error: 'El servicio DMC requiere configurar DMC_API_USER y DMC_API_TOKEN' });
+    }
+    const cached = dmcObservationCache.get(stationCode);
+    if (cached && Date.now() - cached.fetchedAt < 15 * 60 * 1000) {
+      return sendJson(res, 200, { ok: true, cached: true, ...cached.data });
+    }
+    try {
+      const observation = await fetchDmcObservation(stationCode, dmcCredentials);
+      const retrievedAtUtc = new Date().toISOString();
+      const data = {
+        stationCode,
+        stationName: observation.stationName,
+        retrievedAtUtc,
+        sourceReportedAt: observation.sourceReportedAt,
+        measurementTime: observation.measurementTime,
+        measurementTimeUtc: observation.measurementTimeUtc,
+        precipitationPeriod: observation.precipitationPeriod,
+        ...validateNonNegativeMetrics({
+          temperatureC: observation.values.temperatureC,
+          humidityPct: observation.values.humidityPct,
+          windKmh: observation.values.windKmh,
+          windDirectionDeg: observation.values.windDirectionDeg,
+          precipitationTodayMm: observation.values.precipitationTodayMm
+        }, {
+          temperatureC: [-90, 60], humidityPct: [0, 100], windKmh: [0, 300],
+          windDirectionDeg: [0, 360], precipitationTodayMm: [0, 2000]
+        }),
+        sourceUrl: `https://climatologia.meteochile.gob.cl/application/informacion/fichaDeEstacion/${stationCode}`
+      };
+      const measurementAgeMs = data.measurementTimeUtc ? Date.now() - Date.parse(data.measurementTimeUtc) : null;
+      if (Number.isFinite(measurementAgeMs) && measurementAgeMs > 90 * 60 * 1000) {
+        data.quality = { status: 'STALE', issues: [`Última medición hace ${Math.floor(measurementAgeMs / 60000)} min`] };
+      }
+      dmcObservationCache.set(stationCode, { fetchedAt: Date.now(), data });
+      noteIngestion('dmc-meteochile', { ok: true, retrievedAtUtc: data.retrievedAtUtc, quality: data.quality });
+      await appendIngestionRecord(makeIngestionRecord({
+        sourceId: 'dmc-meteochile', entityId: stationCode, dataType: 'STATION_OBSERVATION',
+        retrievedAtUtc: data.retrievedAtUtc, validAt: data.measurementTimeUtc,
+        sourceReportedAtLocal: data.sourceReportedAt, sourceTimeRaw: data.measurementTime,
+        values: data.values, units: { temperatureC: '°C', humidityPct: '%', windKmh: 'km/h', windDirectionDeg: '°', precipitationTodayMm: 'mm' },
+        sourceUrl: data.sourceUrl, quality: data.quality
+      }));
+      return sendJson(res, 200, { ok: true, cached: false, ...data });
+    } catch (error) {
+      noteIngestion('dmc-meteochile', { ok: false, error: error.message });
+      return sendJson(res, 502, { ok: false, configured: true, error: error.message });
+    }
+  }
+
+  if (pathname === '/api/dmc/estaciones' && req.method === 'GET') {
+    const dmcCredentials = { user: process.env.DMC_API_USER, token: process.env.DMC_API_TOKEN };
+    if (!dmcCredentials.user || !dmcCredentials.token) {
+      return sendJson(res, 424, { ok: false, configured: false, error: 'El servicio DMC requiere configurar DMC_API_USER y DMC_API_TOKEN' });
+    }
+    if (dmcStationsCache && Date.now() - dmcStationsCacheTime < 15 * 60 * 1000) {
+      return sendJson(res, 200, { ok: true, cached: true, count: dmcStationsCache.length, stations: dmcStationsCache });
+    }
+    try {
+      dmcStationsCache = await fetchDmcStations(dmcCredentials);
+      dmcStationsCacheTime = Date.now();
+      noteIngestion('dmc-estaciones-catalogo', { ok: true, quality: { status: 'PASS' } });
+      return sendJson(res, 200, { ok: true, cached: false, count: dmcStationsCache.length, stations: dmcStationsCache });
+    } catch (error) {
+      noteIngestion('dmc-estaciones-catalogo', { ok: false, error: error.message });
+      return sendJson(res, 502, { ok: false, error: error.message });
+    }
+  }
+
+  const dmcStationMatch = pathname.match(/^\/api\/dmc\/estaciones\/(\d{6})$/);
+  if (dmcStationMatch && req.method === 'GET') {
+    const stationCode = dmcStationMatch[1];
+    const dmcCredentials = { user: process.env.DMC_API_USER, token: process.env.DMC_API_TOKEN };
+    if (!dmcCredentials.user || !dmcCredentials.token) {
+      return sendJson(res, 424, { ok: false, configured: false, error: 'El servicio DMC requiere configurar DMC_API_USER y DMC_API_TOKEN' });
+    }
+    const cached = dmcStationMetadataCache.get(stationCode);
+    if (cached && Date.now() - cached.fetchedAt < 6 * 60 * 60 * 1000) {
+      return sendJson(res, 200, { ok: true, cached: true, station: cached.station });
+    }
+    try {
+      const station = await fetchDmcStation(stationCode, dmcCredentials);
+      dmcStationMetadataCache.set(stationCode, { station, fetchedAt: Date.now() });
+      noteIngestion('dmc-estacion-metadata', { ok: true, quality: { status: 'PASS' } });
+      return sendJson(res, 200, { ok: true, cached: false, station });
+    } catch (error) {
+      noteIngestion('dmc-estacion-metadata', { ok: false, error: error.message });
+      return sendJson(res, 502, { ok: false, error: error.message });
+    }
+  }
+
+  if (pathname === '/api/conaf/incendios' && req.method === 'GET') {
+    const now = Date.now();
+    if (conafReportCache && now - conafReportCacheTime < 4 * 60 * 1000) {
+      return sendJson(res, 200, { ok: true, cached: true, ...conafReportCache });
+    }
+    const startedAt = now;
+    try {
+      conafReportCache = await fetchConafDailyReport();
+      conafReportCacheTime = Date.now();
+      noteIngestion('conaf-incendios', {
+        ok: true, retrievedAtUtc: conafReportCache.retrievedAtUtc,
+        latencyMs: conafReportCacheTime - startedAt, quality: conafReportCache.quality
+      });
+      const national = conafReportCache.national;
+      await appendIngestionRecord(makeIngestionRecord({
+        sourceId: conafReportCache.sourceId, entityId: 'CL', dataType: conafReportCache.dataType,
+        retrievedAtUtc: conafReportCache.retrievedAtUtc, sourceReportedAtLocal: conafReportCache.sourceReportedAtLocal,
+        values: national, units: { firesTotal: 'incendios', underObservation: 'incendios', fighting: 'incendios', controlled: 'incendios', extinguishedToday: 'incendios', affectedAreaHa: 'ha' },
+        sourceUrl: conafReportCache.sourceUrl, quality: conafReportCache.quality
+      }));
+      return sendJson(res, 200, { ok: true, cached: false, ...conafReportCache });
+    } catch (error) {
+      noteIngestion('conaf-incendios', { ok: false, error: error.message, latencyMs: Date.now() - startedAt });
+      if (conafReportCache && now - conafReportCacheTime < 60 * 60 * 1000) {
+        return sendJson(res, 200, { ok: true, cached: true, stale: true, ...conafReportCache });
+      }
+      return sendJson(res, 502, { ok: false, error: error.message });
+    }
+  }
+
+  if (pathname === '/api/ingestion/status' && req.method === 'GET') {
+    const dmcConfigured = Boolean(process.env.DMC_API_USER && process.env.DMC_API_TOKEN);
+    const sources = [...ingestionHealth.values()];
+    if (!dmcConfigured && !sources.some((source) => source.sourceId === 'dmc-meteochile')) {
+      sources.push({ sourceId: 'dmc-meteochile', status: 'NOT_CONFIGURED', lastSuccessAtUtc: null, lastError: 'Faltan DMC_API_USER y DMC_API_TOKEN', successCount: 0, failureCount: 0 });
+    }
+    return sendJson(res, 200, {
+      checkedAtUtc: new Date().toISOString(),
+      configuration: { dmcCredentialsConfigured: dmcConfigured },
+      sources
+    });
+  }
+
+  if (pathname === '/api/ingestion/history' && req.method === 'GET') {
+    const sourceId = parsedUrl.searchParams.get('source') || '';
+    const entityId = parsedUrl.searchParams.get('entidad') || '';
+    const days = Number(parsedUrl.searchParams.get('dias') || 7);
+    if (!['dmc-meteochile', 'conaf-incendios'].includes(sourceId)
+      || !Number.isInteger(days) || days < 1 || days > 30
+      || (entityId && !/^(CL|\d{6})$/.test(entityId))) {
+      return sendJson(res, 400, { ok: false, error: 'Parámetros inválidos; días debe ser 1–30 y fuente debe estar habilitada' });
+    }
+    try {
+      const records = await readIngestionRecords({ sourceId, entityId, days });
+      return sendJson(res, 200, { ok: true, sourceId, days, count: records.length, records });
+    } catch {
+      return sendJson(res, 500, { ok: false, error: 'No fue posible leer el histórico de ingesta' });
+    }
   }
 
   // Proxy con caché TTL (15 min) para Open-Meteo + GloFAS + Marine
@@ -249,7 +461,7 @@ const server = http.createServer(async (req, res) => {
     } catch {
       if (rainviewerCache) return sendJson(res, 200, rainviewerCache);
     }
-    return sendJson(res, 502, { error: 'Servicio RainViewer no disponible temporalmente' });
+    return sendJson(res, 200, rainviewerCache || getFallbackRainViewerPayload());
   }
 
   if (pathname === '/api/audit-log' && req.method === 'GET') {

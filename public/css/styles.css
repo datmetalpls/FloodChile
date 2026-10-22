@@ -2129,6 +2129,12 @@ canvas:focus-visible {
               border-color 0.18s ease;
 }
 
+.leaflet-custom-pin .pin-text--compact { display: none; }
+
+@media (max-width: 768px) {
+  .leaflet-custom-pin:not(.selected) .pin-text { display: none; }
+}
+
 [data-theme="light"] .leaflet-custom-pin {
   background: rgba(255, 255, 255, 0.85);
   color: #0f172a;

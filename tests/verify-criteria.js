@@ -13,6 +13,9 @@ import {
 import { MAP_LAYERS_META } from '../public/js/modules/map-engine.js';
 import { SATELLITE_FRAMES } from '../public/js/modules/satellite-viewer.js';
 import { auditSourceCatalog } from '../public/js/modules/source-audit.js';
+import { extractDmcObservation, normalizeDmcObservation, normalizeDmcStations, normalizeDmcStation, parseDmcStationPayload, fetchDmcStation, fetchDmcObservation } from '../public/js/modules/dmc-api.js';
+import { parseConafDailyReport } from '../public/js/modules/conaf-api.js';
+import { validateNonNegativeMetrics } from '../server/ingestion-store.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -101,6 +104,23 @@ for (const hitl of AI_AGENTS_DATA.hitlQueue) {
 }
 console.log('✓ CA-08 y CA-09: Trazabilidad 100% de citas de Agentes IA y bloqueo HITL verificados.');
 
+// Los registros HITL precargados son demostraciones y nunca disparan notificaciones o audio.
+assert.ok(AI_AGENTS_DATA.hitlQueue.every((item) => item.simulationOnly), 'Toda la cola precargada debe estar marcada como simulación');
+assert.equal(AI_AGENTS_DATA.evidenceRegistry['EV-SAE-01'].dataType, 'DEMO_ESCENARIO');
+const appSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'app.js'), 'utf8');
+assert.match(appSource, /decision === 'APROBADO_POR_SUPERVISOR_HUMANO' && !item\.simulationOnly/);
+assert.match(appSource, /if \(item\.simulationOnly\) return/);
+assert.match(appSource, /STATE\.alertOriginFilter === 'OFFICIAL_AUTHORITY' && a\.isLiveScraped/);
+assert.match(appSource, /isDemoRecord: true/);
+assert.match(appSource, /STATE\.liveSenapredAlerts = res\.sourceAvailable \? res\.alerts : \[\]/);
+assert.doesNotMatch(appSource, /isSaeActivation|btnTriggerSaePush|EMERGENCIA_SAE_ACTIVADA/);
+assert.match(appSource, /title: 'Publicación para revisar en el portal SENAPRED'/);
+assert.match(appSource, /Severidad de muestra: \$\{sev\.label\}/);
+const indexSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+assert.match(indexSource, /SAE en tiempo real: sin integración validada/);
+assert.doesNotMatch(indexSource, /saeEmergencyLiveBanner|btnTriggerSaePush/);
+console.log('✓ Escenarios HITL de muestra no activan audio, Web Push ni despacho externo.');
+
 // 8a. Auditor de fuentes: fechas vencidas contradicen ONLINE y requieren revisión.
 const sourceAudit = auditSourceCatalog([
   { id: 'source-a', name: 'Fuente A', shortName: 'A', url: 'https://example.org', accessNotes: 'Catálogo', status: 'ONLINE', lastUpdatedUtc: '2026-10-19T00:00:00Z', ttlMinutes: 60 }
@@ -119,6 +139,22 @@ assert.equal(liveAudit.runtimeChecks[0].status, 'RESPUESTA_RECIENTE');
 assert.equal(liveAudit.reviewRequired, false);
 console.log('✓ Auditor de fuentes: la consulta reciente de Open-Meteo se valida con cobertura y TTL.');
 
+const sourceIngestionAudit = auditSourceCatalog([], {
+  now: Date.parse('2026-10-21T00:10:00Z'),
+  ingestion: [{ sourceId: 'conaf-incendios', name: 'CONAF', status: 'REVIEW', lastSuccessAtUtc: '2026-10-21T00:05:00Z', ttlMinutes: 15 }]
+});
+assert.equal(sourceIngestionAudit.runtimeChecks[0].status, 'DATOS_REQUIEREN_REVISION');
+assert.equal(sourceIngestionAudit.reviewRequired, true);
+console.log('✓ Auditor de fuentes: respuestas recientes con anomalías de QC quedan retenidas para revisión.');
+
+const unconfiguredAudit = auditSourceCatalog([], {
+  now: Date.parse('2026-10-21T00:10:00Z'),
+  ingestion: [{ sourceId: 'dmc-meteochile', name: 'DMC', status: 'NOT_CONFIGURED', lastSuccessAtUtc: null, lastError: 'Faltan credenciales' }]
+});
+assert.equal(unconfiguredAudit.runtimeChecks[0].status, 'NO_CONFIGURADA');
+assert.match(unconfiguredAudit.runtimeChecks[0].detail, /Faltan credenciales/);
+console.log('✓ Auditor de fuentes: credenciales DMC ausentes se exponen como conector no configurado.');
+
 const partialLiveAudit = auditSourceCatalog([], {
   now: Date.parse('2026-10-20T00:10:00Z'),
   openMeteo: { syncedLocationCount: 1, totalLocationCount: 2, lastSuccessAtUtc: '2026-10-20T00:05:00Z' }
@@ -134,6 +170,69 @@ assert.match(serverSource, /isSaeActivation: false/);
 assert.match(serverSource, /sourceAvailable,\s*alerts: result\.alerts/);
 assert.doesNotMatch(serverSource, /SENAPRED-SAE-2026-01|DMC-AVISO-A320-2026|SENAPRED-AMARILLA-2026-03/);
 console.log('✓ Ingesta: no convierte datos de contingencia en alertas oficiales ni activaciones SAE.');
+
+const dmcFixture = {
+  timezone: 'UTC', fechaCreacion: '2026-10-21 11:05:00',
+  datosEstaciones: {
+    estacion: { codigoNacional: '330020', nombreEstacion: 'Quinta Normal' },
+    datos: [{ momento: '2026-10-21 11:00:00', temperatura: '18.2 °C', humedadRelativa: '63 %', fuerzaDelVientoPromedio10Minutos: '10 kt', direccionDelVientoPromedio10Minutos: '350 °', aguaCaida24Horas: '0.4 mm' }]
+  }
+};
+assert.equal(extractDmcObservation(dmcFixture, '330020').temperatura, '18.2 °C');
+assert.equal(extractDmcObservation(dmcFixture, '999999'), null);
+const dmcNormalized = normalizeDmcObservation(dmcFixture, '330020');
+assert.equal(dmcNormalized.stationName, 'Quinta Normal');
+assert.equal(dmcNormalized.values.windKmh, 18.5);
+assert.equal(dmcNormalized.measurementTimeUtc, '2026-10-21T11:00:00.000Z');
+assert.equal(dmcNormalized.precipitationPeriod, '12:01–12:00 UTC');
+const stationPayload = { metaDatos: { estacion: { codigoNacional: 330020, NombreEstacion: 'Quinta Normal' } } };
+assert.deepEqual(parseDmcStationPayload(JSON.stringify(stationPayload)), stationPayload);
+assert.deepEqual(parseDmcStationPayload(`<p class="alert">getModelo</p><pre>Array ([Id] =&gt; 1)</pre>${JSON.stringify(stationPayload)}`), stationPayload);
+assert.throws(() => parseDmcStationPayload('<html>Error DMC</html>'), /sin JSON válido/);
+const dmcStations = normalizeDmcStations({ datosEstacion: [{ codigoNacional: 330020, nombreEstacion: 'Quinta Normal, Santiago', NombreRegion: 'Metropolitana de Santiago', latitud: '-33.44500', longitud: '-70.68278', altura: 520 }, { codigoNacional: 'bad' }] });
+assert.equal(dmcStations.length, 1);
+assert.equal(dmcStations[0].stationCode, '330020');
+assert.equal(dmcStations[0].latitude, -33.445);
+const dmcStation = normalizeDmcStation({ timezone: 'UTC', fechaGeneracion: '2026-10-21 05:00:00', metaDatos: { estacion: { codigoNacional: 330020, NombreEstacion: 'Quinta Normal, Santiago', Comuna: 'Estación Central ', Provincia: 'Santiago ', NumeroRegion: 13, LatitudDecimal: -33.445, LongitudDecimal: -70.683, AltitudCubetaBarometrica: 521, Vigencia: 1 } } });
+assert.equal(dmcStation.stationCode, '330020');
+assert.equal(dmcStation.active, true);
+assert.equal(dmcStation.commune, 'Estación Central');
+await assert.rejects(fetchDmcObservation('330020'), /DMC_API_USER y DMC_API_TOKEN/);
+const originalFetch = global.fetch;
+global.fetch = async () => new Response(JSON.stringify({ momento: '2026-10-21 05:10:13', mensaje: 'Usuario o token inválidos' }), { headers: { 'Content-Type': 'application/json' } });
+try {
+  global.fetch = async () => new Response(JSON.stringify(stationPayload));
+  await assert.rejects(fetchDmcStation('330007', { user: 'test', token: 'test' }), /otra estación/);
+  global.fetch = async () => new Response(JSON.stringify({ mensaje: 'Usuario o token inválidos' }));
+  await assert.rejects(fetchDmcObservation('330020', { user: 'test', token: 'test' }), /no aceptó las credenciales/);
+  global.fetch = async () => new Response(JSON.stringify({ momento: '2026-10-21 05:10:13', mensaje: 'Este servicio ha sido bloqueada para el usuario que consulta' }), { headers: { 'Content-Type': 'application/json' } });
+  await assert.rejects(fetchDmcObservation('330020', { user: 'test', token: 'test' }), /bloqueó este servicio/);
+} finally {
+  global.fetch = originalFetch;
+}
+assert.match(serverSource, /sourceAvailable = scrapedAlerts\.length > 0/);
+assert.match(serverSource, /api\/dmc\/observaciones/);
+assert.match(serverSource, /api\/dmc\/estaciones/);
+assert.match(serverSource, /fetchDmcStation/);
+assert.match(appSource, /DMC EMA ·/);
+assert.match(appSource, /usuario o API key rechazados/);
+assert.match(appSource, /usuario sin habilitación para este servicio/);
+assert.match(appSource, /response\.json\(\)\s*\.then\(\(data\) => response\.ok \? data : \{ \.\.\.data, ok: false \}\)/);
+console.log('✓ DMC EMA: contrato documentado, normalización/unidades/hora y credenciales requeridas verificados.');
+
+const conafFixture = `<p>Fecha: 21-10-2026 Hora 12:00:00</p><table>
+  <tr><th>Región</th><th>Total Incendios</th><th>Bajo observación</th><th>En combate</th><th>Controlado</th><th>Extinguido en este día</th><th>Superficie afectada (ha)</th></tr>
+  <tr><td>Metropolitana</td><td>2</td><td>1</td><td>1</td><td>0</td><td>0</td><td>3.5</td></tr>
+  <tr><td>Total</td><td>2</td><td>1</td><td>1</td><td>0</td><td>0</td><td>3.5</td></tr>
+</table>`;
+const conafData = parseConafDailyReport(conafFixture, '2026-10-21T12:01:00Z');
+assert.equal(conafData.regions[0].firesTotal, 2);
+assert.equal(conafData.quality.status, 'PASS');
+assert.equal(parseConafDailyReport(conafFixture.replace('<td>2</td><td>1</td>', '<td>3</td><td>1</td>'), '2026-10-21T12:01:00Z').quality.status, 'REVIEW');
+assert.equal(validateNonNegativeMetrics({ temperatureC: -150 }, { temperatureC: [-90, 60] }).quality.status, 'REVIEW');
+assert.equal(validateNonNegativeMetrics({ temperatureC: 12, humidityPct: null }, { temperatureC: [-90, 60], humidityPct: [0, 100] }).quality.status, 'PARTIAL');
+assert.match(serverSource, /api\/conaf\/incendios/);
+console.log('✓ CONAF: parsea reporte regional y escala inconsistencias sin convertir cifras en alertas.');
 
 // 9. Verificar existencia de entregables documentales, PWA y mejoras P1–P3
 const docPath = path.join(__dirname, '..', 'docs', 'propuesta-tecnica.md');

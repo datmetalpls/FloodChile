@@ -574,12 +574,12 @@
           <div>
             <h2>Sistema de Alertas Tempranas y Extremas</h2>
             <div class="panel-subtitle">
-              Diferenciación explícita entre <strong>Alertas Oficiales (DMC, SENAPRED, SHOA)</strong> y <strong>Estimaciones Preventivas de la Aplicación</strong>.
+              Enlaces y publicaciones de referencia; las activaciones SAE no se verifican en tiempo real en esta aplicación.
             </div>
           </div>
           <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
             <span class="epistemic-badge badge-estimacion">🧪 Alertas de Demostración (Datos de muestra)</span>
-            <span class="epistemic-badge badge-alerta-oficial">Formato Alerta Oficial</span>
+            <span class="epistemic-badge badge-observacion">Enlaces de SENAPRED sin validar vigencia</span>
             <span class="epistemic-badge badge-alerta-app">Estimación App</span>
           </div>
         </div>
@@ -591,8 +591,10 @@
           </div>
         </details>
 
-        <!-- Banner de Emergencia SAE en Vivo (Cell Broadcast) -->
-        <div id="saeEmergencyLiveBanner" style="display:none; margin: 1rem 0;"></div>
+        <div class="alert-card" role="note" style="margin:0.8rem 0; border-left:4px solid var(--sev-prev-border);">
+          <strong>SAE en tiempo real: sin integración validada.</strong>
+          <span> Esta pantalla no confirma activaciones ni reemplaza los mensajes Cell Broadcast. Verifica las alertas vigentes directamente en <a href="https://senapred.cl/alertas/" target="_blank" rel="noopener noreferrer">SENAPRED ↗</a>.</span>
+        </div>
 
         <!-- Barra de Estado Ingesta en Vivo SENAPRED -->
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; margin: 0.8rem 0 0.5rem; padding: 0.5rem 0.75rem; background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: 8px;">
@@ -612,9 +614,10 @@
           <div class="control-group">
             <label for="alertOriginFilter">Origen de la Alerta</label>
             <select id="alertOriginFilter">
-              <option value="ALL">Todas (Oficiales + Estimaciones de la App)</option>
-              <option value="OFFICIAL_AUTHORITY">Solo Alertas Oficiales (DMC / SENAPRED / SHOA)</option>
+              <option value="ALL">Todas las entradas (incluye muestras)</option>
+              <option value="OFFICIAL_AUTHORITY">Enlaces encontrados en SENAPRED (sin validar)</option>
               <option value="APP_THRESHOLD_ESTIMATE">Solo Estimaciones Preventivas de la App</option>
+              <option value="DEMO">Solo registros de demostración</option>
             </select>
           </div>
 

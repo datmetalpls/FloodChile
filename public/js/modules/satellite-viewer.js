@@ -227,9 +227,10 @@ class FrameBasedSatelliteEngine {
           🌎 Satélite en Vivo (NASA GIBS GOES-East + RainViewer)
         </button>
         <select id="satLiveSourceSelect" class="select-compact hidden" aria-label="Fuente satelital en vivo">
-          <option value="gibs_goes_ir">NASA GIBS · GOES-East Banda 13 IR (En vivo 10m)</option>
+          <option value="rainviewer_radar">📡 RainViewer · Radar Meteorológico Doppler (Lluvia en vivo · dBZ)</option>
+          <option value="rainviewer_sat">🛰 RainViewer · Satélite Infrarrojo (IR)</option>
+          <option value="gibs_goes_ir" selected>NASA GIBS · GOES-East Banda 13 IR (En vivo 10m)</option>
           <option value="gibs_goes_geocolor">NASA GIBS · GOES-East GeoColor (Color real día + IR noche)</option>
-          <option value="rainviewer">RainViewer · Mosaico IR / Radar (En vivo)</option>
           <option value="gibs_viirs_truecolor">NASA GIBS · VIIRS Color Verdadero (250m)</option>
         </select>
       </div>
@@ -362,24 +363,25 @@ class FrameBasedSatelliteEngine {
     }
 
     try {
-      if (!this.liveIrFrames.length) {
-        let res = await fetch('/api/rainviewer/weather-maps').catch(() => null);
-        if (!res || !res.ok) {
-          res = await fetch('https://api.rainviewer.com/public/weather-maps.json').catch(() => null);
-        }
-        if (res && res.ok) {
-          const data = await res.json();
-          const irFrames = data?.satellite?.infrared || [];
-          const radarFrames = data?.radar?.past || [];
-          const isRadar = !irFrames.length && radarFrames.length > 0;
-          const chosen = irFrames.length ? irFrames : radarFrames;
-          if (chosen.length) {
-            const host = data.host || 'https://tilecache.rainviewer.com';
-            this.liveIrFrames = chosen.map((f) => ({
-              time: f.time,
-              url: `${host}${f.path}/256/{z}/{x}/{y}/${isRadar ? '2/1_1.png' : '0/0_0.png'}`
-            }));
-          }
+      const isRadar = sourceKey === 'rainviewer_radar';
+      let res = await fetch('/api/rainviewer/weather-maps').catch(() => null);
+      if (!res || !res.ok) {
+        res = await fetch('https://api.rainviewer.com/public/weather-maps.json').catch(() => null);
+      }
+      if (res && res.ok) {
+        const data = await res.json();
+        const irFrames = data?.satellite?.infrared || [];
+        const radarFrames = data?.radar?.past || [];
+        const chosen = isRadar
+          ? (radarFrames.length ? radarFrames : irFrames)
+          : (irFrames.length ? irFrames : radarFrames);
+        const useRadarColors = isRadar && radarFrames.length > 0;
+        if (chosen.length) {
+          const host = data.host || 'https://tilecache.rainviewer.com';
+          this.liveIrFrames = chosen.slice(-10).map((f) => ({
+            time: f.time,
+            url: `${host}${f.path}/256/{z}/{x}/{y}/${useRadarColors ? '2/1_1.png' : '0/0_0.png'}`
+          }));
         }
       }
       if (this.liveIrFrames.length) {
